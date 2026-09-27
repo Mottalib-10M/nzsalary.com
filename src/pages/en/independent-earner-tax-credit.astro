@@ -1,0 +1,45 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { ietc, compute } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const I = P.ietc;
+const rows = [23000, 24000, 40000, 66000, 67000, 68000, 69000, 70000, 71000].map((i) => [formatMoney(i), formatMoney(ietc(i)), formatMoney(ietc(i) / 52, 2), formatMoney(compute({ gross: i, code: 'ME' }).annual.takeHome - compute({ gross: i, code: 'M' }).annual.takeHome)]);
+const faqs = [
+  { q: 'Who can get the independent earner tax credit?', a: `New Zealand tax residents with net income between ${formatMoney(I.min_income)} and ${formatMoney(I.max_income)} for the tax year who, during the year, did not receive Working for Families tax credits, NZ Super, a veteran’s pension, an overseas equivalent, a main benefit or a student allowance. Self-employed people qualify under the same income limits.` },
+  { q: 'How much is the IETC in 2026-27?', a: `Up to ${formatMoney(I.amount)} a year, $10 a week, for income from ${formatMoney(I.min_income)} to ${formatMoney(I.abate_from)}. Above ${formatMoney(I.abate_from)} it falls by 13 cents for every dollar, reaching zero at ${formatMoney(I.max_income)}. The upper limits were raised on 31 July 2024, from $44,000 and $48,000, which brought many more workers into the credit.` },
+  { q: 'How do I get the IETC, through my pay or at the end of the year?', a: 'Either. With the ME tax code on your main job, your employer adds it to each pay as $10 a week. Without ME, Inland Revenue includes it in your end-of-year assessment if you qualify. If you used ME but ended up ineligible, the credit is recovered in the assessment.' },
+];
+---
+<Guide id="ietcGuide" title="Independent Earner Tax Credit NZ 2026-27: $520 and ME Code" h1="The independent earner tax credit (IETC): up to $520 a year"
+  description="The IETC for 2026-27: $520 a year for incomes from $24,000 to $66,000, reduced by 13 c per dollar to $70,000, who is excluded, and how ME pays it weekly."
+  intro="A tax credit for workers on low and middle incomes who do not receive family or benefit support. It is worth $10 a week, and many people who qualify never claim it."
+  resume={`The independent earner tax credit, IETC, reduces the income tax of New Zealand residents who earn between ${formatMoney(I.min_income)} and ${formatMoney(I.max_income)} a year and do not receive Working for Families, NZ Super, a veteran’s pension, a main benefit or a student allowance. The full credit is ${formatMoney(I.amount)} a year for income from ${formatMoney(I.min_income)} to ${formatMoney(I.abate_from)}. Above ${formatMoney(I.abate_from)}, it is reduced by 13 cents for each dollar of income, so it is worth ${formatMoney(ietc(68000))} at ${formatMoney(68000)} and disappears at ${formatMoney(I.max_income)}. The credit can be paid with each pay, at $10 a week, if you use the ME tax code on your main job, or in your end-of-year assessment otherwise. The income range was widened on 31 July 2024, when the upper limits moved from $44,000 and $48,000 to ${formatMoney(I.abate_from)} and ${formatMoney(I.max_income)}. Income here means net income for the year, from all sources.`}
+  faqs={faqs} related={['taxCodes', 'home', 'incomeTax', 'taxRates', 'refund', 'minimumWage']} sources={[SRC.ird_ietc, SRC.ird_rates, SRC.min_wage]}>
+  <h2>The credit by income</h2>
+  <ContentTable headers={['Annual income', 'IETC per year', 'Per week', 'Extra take-home with ME']} align={['r', 'r', 'r', 'r']} rows={rows} />
+  <p>Below {formatMoney(I.min_income)} there is no credit; a full-time job at the minimum wage, about {formatMoney(P.min_wage.adult * 40 * 52)} a year, qualifies for the full {formatMoney(I.amount)}. In the abatement zone the credit falls quickly, which means the effective marginal rate on income between {formatMoney(I.abate_from)} and {formatMoney(I.max_income)} is 30 % of tax plus 13 % of lost credit.</p>
+
+  <h2>Who is excluded, and why</h2>
+  <p>The IETC was designed for people who work and do not receive other targeted support. Recipients of Working for Families tax credits, which are larger and income-tested, are excluded, as are people on NZ Super, a veteran’s pension, a main benefit or a student allowance, and anyone who received an overseas equivalent. The exclusion applies if you received one of these payments at any time in the tax year; in that case the credit is prorated or lost, depending on the payment. Income from all sources counts towards the limits: salary, self-employed profit, interest, rental profit.</p>
+
+  <h2>ME or end of year?</h2>
+  <p>Taking the credit through ME puts $10 in each weekly pay, or $20 in each fortnightly pay, instead of waiting until after 31 March. The trade-off is that you must be sure of your eligibility: if your income for the year ends up above {formatMoney(I.max_income)}, or you start receiving Working for Families, the credit paid through ME is clawed back in your assessment. If your income is uncertain, the M code and an end-of-year credit are safer. Only one job can use ME; a second job uses a secondary code.</p>
+
+  <h2>The credit and the minimum wage</h2>
+  <p>At the adult minimum wage of {formatMoney(P.min_wage.adult, 2)} an hour from 1 April 2026, a full-time worker earns about {formatMoney(P.min_wage.adult * 40 * 52)} a year. With the IETC through ME, their take-home pay after tax and ACC rises by {formatMoney(10)} a week. A part-time worker on 20 hours a week earns less than {formatMoney(I.min_income)} and does not qualify. The <a href={route('minimumWage', lang)}>minimum wage guide</a> sets out the take-home pay at each minimum rate.</p>
+
+  <h2>Checking you received it</h2>
+  <p>Your end-of-year income tax assessment shows the IETC if it was applied. If you qualified but used M and no credit appears, check that Inland Revenue has your full income and your eligibility details in myIR; the credit can be claimed for up to four previous years. If you used ME and a debt appears, it is usually because your income or circumstances changed during the year.</p>
+
+  <h2>Other tax credits</h2>
+  <p>The IETC is one of several individual tax credits. Donations tax credits give back a third of donations to approved organisations. Working for Families tax credits, paid by Inland Revenue to families with children, include the family tax credit, the in-work tax credit, the minimum family tax credit and Best Start. These family credits are paid separately and do not appear in the PAYE calculation on this site.</p>
+  <h2>Three examples</h2>
+  <p>A retail worker earning {formatMoney(45000)} with no family support qualifies for the full credit: with ME, their take-home pay after PAYE and ACC is {formatMoney(compute({ gross: 45000, code: 'ME' }).annual.takeHome)} a year instead of {formatMoney(compute({ gross: 45000, code: 'M' }).annual.takeHome)} with M. An office worker on {formatMoney(68000)} is in the abatement zone and receives {formatMoney(ietc(68000))}, half the credit. A parent on {formatMoney(45000)} who receives Working for Families tax credits is excluded, whatever their income, because the family credits already target that household. Someone who starts a job in October after months on a benefit is also excluded for that tax year, since the exclusion looks at the whole year, and becomes eligible from the next 1 April if their situation continues.</p>
+  <h2>Part-year workers and self-employed people</h2>
+  <p>The income test looks at the whole tax year. A student who works full time from December to March on {formatMoney(8000)} of pay earns less than {formatMoney(I.min_income)} and gets no credit, even with a weekly wage that would qualify on an annual basis. A self-employed person with a profit of {formatMoney(40000)} and no family support can claim the full credit in their individual tax return, since there is no employer to pay it through ME. If you have both a salary and business income, the total counts: a salary of {formatMoney(60000)} plus {formatMoney(8000)} of profit puts you at {formatMoney(68000)}, where the credit is only {formatMoney(ietc(68000))}.</p>
+</Guide>

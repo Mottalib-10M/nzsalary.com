@@ -1,0 +1,24 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import LegalIdentity from '../../components/LegalIdentity.astro';
+import { route } from '../../i18n/routes';
+import { breadcrumbSchema } from '../../lib/seo';
+const lang = 'en';
+---
+<PageLayout title="Terms of Use and Legal Notice of Take Home Pay NZ" description="Terms of use and legal notice of Take Home Pay NZ: publisher, host, nature of the results, limitation of liability, reuse of content and the free embeddable pay calculator widget." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Terms of use', path: route('terms', lang) }])]} breadcrumbs={[{ label: 'Terms of use' }]}>
+  <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Terms of use and legal notice</h1></header>
+  <div class="prose prose-slate max-w-none">
+    <h2>Publisher</h2>
+    <LegalIdentity lang="en" />
+    <h2>Host</h2>
+    <LegalIdentity lang="en" mode="hosting" />
+    <h2>Nature of the results</h2>
+    <p>The calculators give estimates based on the official rates in force, read on the date shown on each page. They are not financial, tax or legal advice and do not replace your payslip, your income tax assessment or a tax agent. Your situation may involve rules the calculators do not model, listed on the <a href={route('method', lang)}>methodology page</a>.</p>
+    <h2>Liability</h2>
+    <p>We take care to keep the rates accurate and to correct reported errors promptly, but we cannot guarantee that the site is free of error or always available. We are not liable for decisions taken on the basis of the estimates. Nothing in these terms limits a liability that cannot be limited by law, including under the Consumer Guarantees Act 1993 where it applies.</p>
+    <h2>Reuse</h2>
+    <p>Texts, tables and code on this site are protected by copyright. You may quote short extracts with a link to the page. The pay calculator may be embedded freely using the code on the <a href={route('widget', lang)}>widget page</a>, provided the credit link stays visible.</p>
+    <h2>Applicable law</h2>
+    <p>These terms are governed by French law, the law of the publisher’s establishment, without prejudice to mandatory consumer protection rules of your country of residence.</p>
+  </div>
+</PageLayout>

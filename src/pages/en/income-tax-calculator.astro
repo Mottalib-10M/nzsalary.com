@@ -1,0 +1,28 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { incomeTax, marginalRate, ietc } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const rows = [20000, 40000, 60000, 78100, 100000, 150000, 250000].map((i) => [formatMoney(i), formatMoney(incomeTax(i)), formatPercent(incomeTax(i) / i), formatPercent(marginalRate(i), 1), ietc(i) ? formatMoney(ietc(i)) : 'none']);
+const faqs = [
+  { q: 'How much income tax do I pay on $60,000 in NZ?', a: `${formatMoney(incomeTax(60000))} for the 2026-27 tax year: ${formatMoney(1638)} on the first ${formatMoney(15600)}, ${formatMoney(6632.5)} on the next ${formatMoney(37900)} at 17.5 %, and 30 % on the last ${formatMoney(6500)}. That is an average rate of ${formatPercent(incomeTax(60000) / 60000)}, before the ACC earners’ levy of 1.75 %, which is not income tax.` },
+  { q: 'Is there a tax-free threshold in New Zealand?', a: 'No. Unlike Australia or the United Kingdom, New Zealand taxes income from the first dollar, at 10.5 % up to $15,600. Low earners are supported through tax credits instead: the independent earner tax credit of up to $520, Working for Families and the minimum family tax credit, which are paid separately from the tax scale.' },
+  { q: 'Does income tax include my rental income and interest?', a: 'Yes. Income tax is charged on your total taxable income: salary, interest, dividends, rental profit, self-employed profit and most other income, all added together and taxed with the same scale. Interest and dividends usually have tax deducted at source. This calculator treats the amount you enter as your total taxable income.' },
+];
+---
+<ToolPage id="incomeTax" title="Income Tax Calculator NZ 2026-27: Brackets 10.5 % to 39 %" h1="Income tax calculator NZ for the 2026-27 tax year"
+  description="Income tax on any income for 2026-27 in New Zealand, bracket by bracket from 10.5 % to 39 %, with average and marginal rates and the independent earner credit."
+  intro="The tax scale applied to your total taxable income for the year from 1 April 2026, with the credit that low and middle earners can claim."
+  mode="incomeTax" initialGross={60000} initialPeriod="annual" faqs={faqs} related={['taxRates', 'payeRates', 'refund', 'home', 'ietcGuide', 'selfEmployed']}
+  sources={[SRC.ird_rates, SRC.ird_ietc, SRC.ird_provisional]}>
+  <p>New Zealand income tax is a single progressive scale applied to all your taxable income for the year, whether it comes from wages, self-employment, rent or interest. For the 2026-27 tax year, from 1 April 2026 to 31 March 2027, the scale charges 10.5 % on the first {formatMoney(15600)}, 17.5 % on income from {formatMoney(15601)} to {formatMoney(53500)}, 30 % up to {formatMoney(78100)}, 33 % up to {formatMoney(180000)} and 39 % above. On a taxable income of {formatMoney(60000)}, that gives {formatMoney(incomeTax(60000))} of income tax, an average rate of {formatPercent(incomeTax(60000) / 60000)}, although every extra dollar is taxed at 30 %. Tax credits then reduce the bill: the independent earner tax credit of up to {formatMoney(P.ietc.amount)} for incomes between {formatMoney(P.ietc.min_income)} and {formatMoney(P.ietc.max_income)}, and credits for donations. The calculator applies the scale and, if you choose the ME code, the independent earner credit. The ACC earners’ levy is shown separately in the breakdown, because it is a levy for injury cover, not income tax.</p>
+  <h2>Income tax at a glance</h2>
+  <ContentTable headers={['Taxable income', 'Income tax', 'Average rate', 'Marginal rate', 'IETC']} align={['r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>The thresholds were raised on 31 July 2024, for the first time since 2010. The 2024-25 tax year used blended rates to cover the change; since 1 April 2025 the new thresholds apply in full. The <a href={route('taxRates', lang)}>income tax rates guide</a> gives the history and the blended rates.</p>
+  <h2>From income tax to what you pay</h2>
+  <p>For employees, income tax is deducted through PAYE and squared up automatically after 31 March: Inland Revenue compares the tax deducted with the tax due and issues a refund or a bill. Self-employed people file an IR3 return and may pay provisional tax during the year if their residual income tax exceeds {formatMoney(P.provisional.rit_threshold)}. If you worked only part of the year, PAYE was probably too high; see the <a href={route('refund', lang)}>IRD tax refund calculator</a>.</p>
+</ToolPage>

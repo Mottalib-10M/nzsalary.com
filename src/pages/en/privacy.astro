@@ -1,0 +1,23 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import LegalIdentity from '../../components/LegalIdentity.astro';
+import { route } from '../../i18n/routes';
+import { breadcrumbSchema } from '../../lib/seo';
+import { CONTACT_EMAIL, LEGAL } from '../../data/site-config';
+const lang = 'en';
+---
+<PageLayout title="Privacy Policy of Take Home Pay NZ: What We Collect and Why" description="Privacy policy of Take Home Pay NZ: calculations run in your browser, no personal data is sent, no account is needed, and what hosting logs and optional analytics involve." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Privacy', path: route('privacy', lang) }])]} breadcrumbs={[{ label: 'Privacy' }]}>
+  <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Privacy policy</h1></header>
+  <div class="prose prose-slate max-w-none">
+    <h2>Controller</h2>
+    <LegalIdentity lang="en" />
+    <h2>What we do not collect</h2>
+    <p>The calculators run entirely in your browser. The salary, tax code, KiwiSaver rate and other values you enter are not sent to us or to anyone else, are not stored on a server and are not linked to you. There is no account, no newsletter and no form that collects personal data. If you use the share link, your inputs are written into the page address, and only the people you send that address to can see them.</p>
+    <h2>Hosting logs</h2>
+    <p>The site is hosted by {LEGAL.hosting.name}. Like any web server, the host records technical data for each request, such as the IP address, the page requested, the date and the browser type, to deliver the site and protect it against abuse. We do not use these logs to identify visitors.</p>
+    <h2>Audience measurement and advertising</h2>
+    <p>No analytics or advertising script is active at the moment. If we add audience measurement, a notice will tell you before it runs and let you refuse it, and the <a href={route('cookies', lang)}>cookies page</a> will list what is set. Your choice is stored in your browser only.</p>
+    <h2>Your rights</h2>
+    <p>New Zealand’s Privacy Act 2020 and, since the publisher is established in the European Union, the General Data Protection Regulation give you rights to access and correct any personal information we hold. As explained above, we hold none from the calculators. For any request, write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. You may also complain to the Office of the Privacy Commissioner in New Zealand or to the French supervisory authority, the {LEGAL.supervisoryAuthority}.</p>
+  </div>
+</PageLayout>

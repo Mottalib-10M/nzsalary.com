@@ -1,0 +1,41 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { route } from '../../i18n/routes';
+import { breadcrumbSchema, webPageSchema } from '../../lib/seo';
+import { P } from '../../lib/tables';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const title = 'PAYE and KiwiSaver Glossary NZ: IETC, ESCT, ACC, IR330';
+const description = 'Plain definitions of the terms on a New Zealand payslip and tax assessment: PAYE, tax codes, IR330, IETC, ESCT, ACC earners’ levy and provisional tax.';
+const terms: Array<[string, string, string?]> = [
+  ['ACC earners’ levy', `A levy of 1.75 % on earnings up to ${formatMoney(P.acc.max_liable)} in 2026-27, deducted with PAYE, that funds cover for injuries outside work.`, 'acc'],
+  ['Employer superannuation contribution tax (ESCT)', 'Tax deducted from an employer’s KiwiSaver contribution before it reaches the fund, at a rate set by salary plus employer contributions.', 'kiwisaver'],
+  ['Extra pay', 'A bonus, back pay or other lump sum paid on top of regular pay; PAYE on it uses the annualised pay of the last four weeks to find the rate.', 'y-120000'],
+  ['Government contribution', `The KiwiSaver top-up of 25 cents per dollar a member contributes, up to ${formatMoney(P.kiwisaver.govt_max, 2)} a year, for members earning up to ${formatMoney(P.kiwisaver.govt_income_cap)}.`, 'ksChanges'],
+  ['Income tax assessment', 'Inland Revenue’s end-of-year calculation, issued automatically for most employees after 31 March, which settles refunds and bills.', 'refund'],
+  ['Independent earner tax credit (IETC)', `A credit of up to ${formatMoney(P.ietc.amount)} a year for incomes from ${formatMoney(P.ietc.min_income)} to ${formatMoney(P.ietc.max_income)}, for people without Working for Families, NZ Super or a benefit.`, 'ietcGuide'],
+  ['IR330', 'The tax code declaration an employee gives an employer when starting a job; without it, the no-declaration rate of 45 % applies.', 'taxCodes'],
+  ['IR330C', 'The tax rate notification a contractor on schedular payments gives the payer, choosing a rate of at least 10 %.', 'contractor'],
+  ['KiwiSaver', `The voluntary workplace savings scheme; employees contribute 3.5 % by default since 1 April 2026, or 4, 6, 8 or 10 %.`, 'kiwisaver'],
+  ['Marginal tax rate', 'The rate applied to the next dollar of income: 10.5, 17.5, 30, 33 or 39 % depending on the band.', 'taxRates'],
+  ['myIR', 'Inland Revenue’s online account, used to check income, change tax codes, request a tailored code or a KiwiSaver rate reduction.', 'taxCodes'],
+  ['PAYE', 'Pay as you earn: income tax plus the ACC earners’ levy, deducted by the employer from each pay and passed to Inland Revenue.', 'payeRates'],
+  ['Provisional tax', `Tax paid in instalments during the year by people whose residual income tax exceeded ${formatMoney(P.provisional.rit_threshold)} the year before.`, 'selfEmployed'],
+  ['Residual income tax (RIT)', 'The income tax left to pay after tax withheld at source and tax credits; it decides whether provisional tax applies.', 'selfEmployed'],
+  ['Schedular payments', 'Payments to certain contractors from which the payer withholds tax at the rate on the IR330C.', 'contractor'],
+  ['Secondary tax code', 'SB, S, SH, ST or SA: a flat rate applied to a second job’s pay, chosen from total income from all jobs.', 'secondary'],
+  ['Student loan repayment threshold', `The income below which no repayment is deducted: ${formatMoney(P.student_loan.threshold_annual)} a year, ${formatMoney(P.student_loan.threshold_weekly)} a week for 2026-27.`, 'studentLoan'],
+  ['Tailored tax code', 'A code with a rate set by Inland Revenue for one person, used when standard codes would deduct too much or too little.', 'taxCodes'],
+  ['Tax year', 'In New Zealand, 1 April to 31 March: the 2026-27 tax year runs from 1 April 2026 to 31 March 2027.', 'taxRates'],
+  ['Temporary rate reduction', 'A KiwiSaver option to contribute 3 % instead of 3.5 % for three to twelve months, granted by Inland Revenue.', 'ksChanges'],
+  ['Total remuneration package', 'A pay offer expressed as salary plus employer KiwiSaver; the cash salary is lower than the headline figure.', 'employerCost'],
+];
+const jsonLd = [webPageSchema({ name: title, description, path: route('glossary', lang), lang }), breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Glossary', path: route('glossary', lang) }])];
+---
+<PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} breadcrumbs={[{ label: 'Glossary' }]}>
+  <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Glossary of PAYE, KiwiSaver and tax terms</h1>
+    <p class="mt-3 text-lg text-navy-600">The words used on New Zealand payslips, IR330 forms and Inland Revenue assessments, each with a link to the page that explains it in full.</p></header>
+  <dl class="prose prose-slate max-w-none">
+    {terms.map(([t, d, id]) => <><dt class="font-semibold text-navy-900">{id ? <a href={route(id, lang)}>{t}</a> : t}</dt><dd>{d}</dd></>)}
+  </dl>
+</PageLayout>

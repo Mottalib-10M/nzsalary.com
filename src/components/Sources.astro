@@ -1,0 +1,42 @@
+---
+/**
+ * Section « Sources » de la page pilier — RECETTE-SITE.md §7.
+ * Au moins trois liens vers des textes officiels ; les URL viennent du fichier de
+ * paramètres, jamais codées en dur, pour rester synchronisées avec ce que le moteur
+ * applique et suivre la mise à jour annuelle.
+ *
+ * Prérequis : src/data/params-<année>.json contient un objet `sources`
+ *   { "<clé>": { "url": "...", "label": { "<lang>": "..." } } }
+ * Contrôlé par scripts/check-seo.py (échec si < 3 liens officiels sur le pilier).
+ */
+import P from '../data/params-2026.json';
+interface Props { lang: string }
+const { lang } = Astro.props;
+
+const INTRO: Record<string, string> = {
+  fr: 'Chaque chiffre de cette page provient d’une de ces sources officielles, consultées le',
+  de: 'Jede Zahl auf dieser Seite stammt aus einer dieser amtlichen Quellen, abgerufen am',
+  en: 'Every figure on this page comes from one of these official sources, read on',
+  es: 'Cada cifra de esta página procede de una de estas fuentes oficiales, consultadas el',
+  nl: 'Elk bedrag op deze pagina komt uit een van deze officiële bronnen, geraadpleegd op',
+  it: 'Ogni cifra di questa pagina proviene da una di queste fonti ufficiali, consultate il',
+  pt: 'Cada valor desta página provém de uma destas fontes oficiais, consultadas em',
+};
+const H2: Record<string, string> = {
+  fr: 'Sources', de: 'Quellen', en: 'Sources', es: 'Fuentes',
+  nl: 'Bronnen', it: 'Fonti', pt: 'Fontes',
+};
+type Src = { url: string; label: Record<string, string> };
+const sources: Src[] = Object.values((P as { sources?: Record<string, Src> }).sources ?? {});
+---
+{sources.length > 0 && (
+  <>
+    <h2 id="sources">{H2[lang] ?? H2.en}</h2>
+    <p>{INTRO[lang] ?? INTRO.en} {P.retrieved_at}.</p>
+    <ul>
+      {sources.map((s) => (
+        <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.label[lang] ?? s.label.en}</a></li>
+      ))}
+    </ul>
+  </>
+)}

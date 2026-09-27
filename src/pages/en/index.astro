@@ -1,0 +1,99 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import NzCalculator from '../../components/calc/NzCalculator';
+import ContentTable from '../../components/ContentTable.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import Sources from '../../components/Sources.astro';
+import { YEAR, LAST_UPDATED, AUTHOR_NAME, LANG_TAGS } from '../../data/site-config';
+import { route, ANNUAL, HOURLY } from '../../i18n/routes';
+import { annualLabel, hourlyLabel, label } from '../../i18n/nav';
+import { webApplicationSchema, faqSchema, breadcrumbSchema, organizationSchema, personSchema, websiteSchema } from '../../lib/seo';
+import { ex, P } from '../../lib/tables';
+import { incomeTax } from '../../lib/engine/nz';
+import { formatMoney, formatPercent, displayDate } from '../../lib/format';
+import { SRC } from '../../lib/sources';
+const lang = 'en';
+const title = `PAYE Calculator NZ 2026-27: Take-Home Pay After Tax`;
+const description = `New Zealand PAYE for 2026-27 by pay period: income tax, ACC at 1.75 %, KiwiSaver at the new 3.5 % default, student loan and IETC, with every tax code. Free.`;
+const e = ex(65000, { period: 'fortnightly' });
+const e0 = ex(65000, { ks: 0, period: 'fortnightly' });
+const rows = [35000, 50000, 65000, 80000, 100000, 130000, 180000].map((g) => { const r = ex(g, { period: 'fortnightly' }); return [formatMoney(g), formatMoney(r.perPeriod.paye), formatMoney(r.perPeriod.acc), formatMoney(r.perPeriod.kiwisaver), formatMoney(r.perPeriod.takeHome), formatMoney(r.annual.takeHome)]; });
+const faqs = [
+  { q: 'How is PAYE calculated in New Zealand?', a: 'Your employer takes the pay for the period, works out the tax as if you earned that amount every period for a full year, divides back to the period, and adds the ACC earners’ levy of 1.75 %. KiwiSaver and student loan deductions come on top if they apply. That is why a one-off overtime pay can look heavily taxed: it is treated as if it were your normal rate for the year.' },
+  { q: 'What are the tax brackets for 2026-27 in New Zealand?', a: 'The first $15,600 is taxed at 10.5 %, income from $15,601 to $53,500 at 17.5 %, $53,501 to $78,100 at 30 %, $78,101 to $180,000 at 33 %, and anything above $180,000 at 39 %. These thresholds applied from 1 April 2025 and are unchanged for the tax year that started on 1 April 2026.' },
+  { q: 'What changed for KiwiSaver on 1 April 2026?', a: 'The default employee contribution rose from 3 % to 3.5 % of gross pay, and so did the minimum employer contribution. You can apply for a temporary rate reduction to stay at 3 % for three to twelve months. Employees aged 16 and 17 now receive employer contributions too. A further rise to 4 % is scheduled for 1 April 2028.' },
+  { q: 'What does the ME tax code do?', a: `ME tells your employer to pay you the independent earner tax credit through PAYE: $520 a year, or $10 a week, if your income is between $24,000 and $66,000, reducing to nothing at $70,000. You cannot use ME if you receive Working for Families, NZ Super, a main benefit or student allowance. On ${formatMoney(50000)}, ME lowers your PAYE by ${formatMoney(520)} over the year.` },
+  { q: 'How much is the ACC levy in 2026-27?', a: `The ACC earners’ levy is $1.75 per $100 of liable earnings, 1.75 %, up to a maximum of ${formatMoney(P.acc.max_liable)} of earnings, so no more than ${formatMoney(P.acc.max_liable * P.acc.rate, 2)} a year. It rose from 1.67 % on 1 April 2026. It funds cover for injuries outside work and is deducted with PAYE on every pay.` },
+  { q: 'Why is my take-home pay different from this calculator?', a: 'The most common reasons are a different tax code, a one-off payment taxed at the extra pay rate, salary sacrifice or other deductions such as union fees, or rounding in Inland Revenue’s weekly and fortnightly tables, which can differ from the annualised calculation by a few cents per pay. Check your payslip lines one by one against the breakdown here.' },
+  { q: 'Does this calculator store my salary?', a: 'No. Everything is calculated in your browser from the 2026-27 rates built into the page. Nothing you type is sent to a server or kept after you close the page. The share link, if you use it, puts your inputs in the address itself, visible only to the people you send it to.' },
+];
+const related = ['salary', 'takeHome', 'incomeTax', 'refund', 'kiwisaver', 'studentLoan', 'secondary', 'contractor', 'taxCodes'].map((id) => ({ href: route(id, lang), name: label(id), description: '' }));
+const sources = [SRC.ird_rates, SRC.ird_kiwisaver, SRC.ird_esct, SRC.ird_ietc, SRC.ird_student_loan, SRC.acc_levy];
+const jsonLd = [webApplicationSchema({ name: `PAYE Calculator NZ ${P.tax_year}`, description, path: route('home', lang), lang }), faqSchema(faqs, lang), breadcrumbSchema([{ name: 'Home', path: route('home', lang) }]), organizationSchema(lang), personSchema(lang), websiteSchema(lang)];
+---
+<PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} faqs={faqs} related={related} sources={sources}>
+  <header class="mb-6">
+    <h1 class="text-3xl font-bold text-navy-900 md:text-4xl">PAYE calculator NZ {P.tax_year}: your take-home pay after tax</h1>
+    <p class="mt-3 text-lg text-navy-600">Enter your salary, pay frequency and tax code. You get the PAYE, the ACC levy, KiwiSaver at the rate you chose and your student loan repayment for each pay, with your employer’s KiwiSaver after ESCT and the government contribution. Rates are Inland Revenue’s for the tax year from 1 April {YEAR}.</p>
+    <p class="mt-3"><span class="inline-block rounded-full border border-navy-200 bg-white px-3 py-1 text-xs font-medium text-navy-600">Inland Revenue rates {P.tax_year} · checked on <time datetime={LAST_UPDATED}>{displayDate(LAST_UPDATED, LANG_TAGS[lang])}</time> by {AUTHOR_NAME}</span></p>
+  </header>
+  <NzCalculator client:load mode="paye" methodHref={route('method', lang)} />
+  <AdSlot slot="home-1" />
+  <section class="prose prose-slate max-w-none">
+    <h2 id="short-answer">What you take home on {formatMoney(65000)} a year</h2>
+    <p>On a salary of {formatMoney(65000)} paid fortnightly with a standard M tax code, each pay of {formatMoney(e.perPeriod.gross)} loses {formatMoney(e.perPeriod.paye)} to PAYE, {formatMoney(e.perPeriod.acc)} to the ACC earners’ levy and {formatMoney(e.perPeriod.kiwisaver)} to KiwiSaver at the new 3.5 % default, leaving {formatMoney(e.perPeriod.takeHome)} in your account every two weeks. Over the year, that is {formatMoney(e.annual.takeHome)} of take-home pay. The KiwiSaver deduction is not a cost in the same sense as tax: your employer adds another {formatMoney(e.annual.employerKsGross)}, of which {formatMoney(e.annual.employerKsNet)} reaches your account after employer superannuation contribution tax, and the government adds {formatMoney(e.annual.govtContribution)}. Without KiwiSaver, the same salary would leave {formatMoney(e0.perPeriod.takeHome)} a fortnight. The income tax itself, {formatMoney(e.annual.paye)} for the year, is {formatPercent(e.annual.paye / 65000)} of gross pay, because only the part of the salary above {formatMoney(53500)} is taxed at the 30 % rate.</p>
+
+    <h2 id="how">How PAYE is calculated</h2>
+    <p>PAYE, pay as you earn, is New Zealand’s system of taking income tax out of every pay so that most employees never have to file a return. For the 2026-27 tax year, running from 1 April {YEAR} to 31 March {YEAR + 1}, your employer follows these steps each pay day.</p>
+    <ol>
+      <li><strong>Gross pay for the period.</strong> Salary or wages, overtime, allowances and taxable benefits paid in the period.</li>
+      <li><strong>Annualise.</strong> The pay is multiplied by the number of periods in a year, 52 for weekly, 26 for fortnightly, 12 for monthly, to find the income you would have if every pay were the same.</li>
+      <li><strong>Apply the tax rates.</strong> 10.5 % on the first {formatMoney(15600)}, 17.5 % up to {formatMoney(53500)}, 30 % up to {formatMoney(78100)}, 33 % up to {formatMoney(180000)} and 39 % above, then divide back to the period.</li>
+      <li><strong>Apply the tax code.</strong> An ME code deducts the independent earner tax credit; a secondary code such as S or SH replaces the scale with a flat rate; an SL suffix adds student loan repayments.</li>
+      <li><strong>Add the ACC earners’ levy.</strong> 1.75 % of gross pay, up to {formatMoney(P.acc.max_liable)} of earnings a year.</li>
+      <li><strong>Deduct KiwiSaver and student loan.</strong> KiwiSaver at your chosen rate of gross pay; student loan at 12 % of pay above the repayment threshold, {formatMoney(P.student_loan.threshold_weekly)} a week.</li>
+    </ol>
+    <p>The calculator reproduces the annual version of this calculation. Inland Revenue’s printed tables round each pay slightly differently, so your payslip can differ by a few cents; over a year the totals match.</p>
+
+    <h2 id="codes">Why your tax code changes everything</h2>
+    <p>The same {formatMoney(30000)} can be taxed in very different ways depending on the code on the IR330 form you gave your employer. As a main job with an M code, the tax is {formatMoney(incomeTax(30000))}, an average of {formatPercent(incomeTax(30000) / 30000)}. With ME, the independent earner tax credit takes {formatMoney(520)} off. As a second job with an SH code, because your other job already pays {formatMoney(60000)}, the whole {formatMoney(30000)} is taxed at 30 %, {formatMoney(9000)}. Neither figure is wrong: the secondary code simply anticipates that this income sits on top of the other. A wrong code, on the other hand, means you pay too much or too little all year and settle it at the end. The <a href={route('taxCodes', lang)}>tax codes guide</a> explains each code, and the <a href={route('secondary', lang)}>secondary tax calculator</a> picks the right one from your two incomes.</p>
+
+    <h2 id="parameters">Rates and thresholds for {P.tax_year}</h2>
+    <ContentTable headers={['Parameter', 'Value']} align={['l', 'r']} rows={[
+      ['Income up to $15,600', '10.5 %'], ['$15,601 to $53,500', '17.5 %'], ['$53,501 to $78,100', '30 %'], ['$78,101 to $180,000', '33 %'], ['Over $180,000', '39 %'],
+      ['ACC earners’ levy', `1.75 % up to ${formatMoney(P.acc.max_liable)}`],
+      ['KiwiSaver default employee and employer rate', '3.5 % (4 % from 1 April 2028)'],
+      ['Government KiwiSaver contribution', `25 c per $1, up to ${formatMoney(P.kiwisaver.govt_max, 2)}; none above ${formatMoney(P.kiwisaver.govt_income_cap)}`],
+      ['Student loan repayment', `12 % above ${formatMoney(P.student_loan.threshold_annual)} a year`],
+      ['Independent earner tax credit', `${formatMoney(P.ietc.amount)} a year, $24,000 to $70,000`],
+      ['Adult minimum wage from 1 April 2026', `${formatMoney(P.min_wage.adult, 2)} an hour`],
+    ]} />
+
+    <h2 id="examples">Take-home pay by salary, fortnightly, M code, KiwiSaver 3.5 %</h2>
+    <ContentTable headers={['Salary', 'PAYE', 'ACC', 'KiwiSaver', 'Take-home per fortnight', 'Take-home per year']} align={['r', 'r', 'r', 'r', 'r', 'r']} rows={rows} />
+    <p>The step from 17.5 % to 30 % at {formatMoney(53500)} is the one most people feel: a raise that crosses it keeps 70 cents in the dollar before ACC and KiwiSaver, against 82.5 cents below. Above {formatMoney(180000)}, the 39 % rate applies and the government KiwiSaver contribution stops.</p>
+
+    <AdSlot slot="home-2" />
+
+    <h2 id="popular">Salary examples</h2>
+    <p>Each page below starts from one income and explains the threshold that matters there: the IETC range, the tax bracket edges, the ACC ceiling, the loss of the government KiwiSaver contribution.</p>
+    <ul class="columns-2 sm:columns-3" data-chrome>
+      {ANNUAL.map((a) => <li><a href={route(`y-${a}`, lang)}>{annualLabel(a)}</a></li>)}
+      {HOURLY.map((a) => <li><a href={route(`h-${a}`, lang)}>{hourlyLabel(a)}</a></li>)}
+    </ul>
+
+    <h2 id="tips">Six ways to keep more of your pay</h2>
+    <ol>
+      <li><strong>Check your tax code.</strong> A secondary code on your main job, or ND (no declaration), costs you money every pay until the end-of-year square-up. ND is taxed at 45 %.</li>
+      <li><strong>Use ME if you qualify.</strong> Earning between $24,000 and $70,000 and not on Working for Families, NZ Super or a benefit? ME adds up to $520 a year to your pay.</li>
+      <li><strong>Contribute at least $1,042.86 a year to KiwiSaver.</strong> That is the amount that earns the full government contribution of {formatMoney(P.kiwisaver.govt_max, 2)}; at 3.5 %, a salary of about {formatMoney(29800)} reaches it.</li>
+      <li><strong>Get a tailored tax code for a second job.</strong> If your combined income is near a threshold, a tailored code can avoid over-deduction on the secondary job.</li>
+      <li><strong>Claim donations.</strong> A tax credit of 33.3 % of donations to approved charities, up to your taxable income, is claimed after the year ends.</li>
+      <li><strong>Watch the end-of-year assessment.</strong> Inland Revenue automatically calculates refunds for most salary earners; check that your bank account number is up to date in myIR.</li>
+    </ol>
+
+    <h2 id="limits">What the calculator does not do</h2>
+    <p>It assumes the same pay every period and a full tax year. It does not include salary sacrifice, union fees, child support, or Working for Families tax credits, which are paid separately. It applies the extra pay rate only through the annual calculation, so a bonus shown as part of salary is taxed at your marginal rate as it will be at the end of the year. It does not compute ACC levies for self-employed people beyond the earners’ levy. The <a href={route('method', lang)}>methodology page</a> lists every rule and the tests that check them.</p>
+    <Sources lang={lang} />
+  </section>
+</PageLayout>

@@ -1,11 +1,9 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { route, DEFAULT_LOCALE } from '../i18n/routes';
+import { t } from '../i18n/ui';
+const ui = t(DEFAULT_LOCALE);
 ---
-<Layout title="Page Not Found - TakeHomePay.nz" description="The page you're looking for doesn't exist or has been moved.">
-  <div class="max-w-2xl mx-auto px-4 py-20 text-center">
-    <h1 class="text-6xl font-bold text-gray-300 mb-4">404</h1>
-    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Page Not Found</h2>
-    <p class="text-gray-600 mb-8">The page you are looking for does not exist or has been moved.</p>
-    <a href="/" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Back to Home</a>
-  </div>
-</Layout>
+<BaseLayout title="404" description="404" lang={DEFAULT_LOCALE} noindex={true}>
+  <div class="mx-auto max-w-3xl px-4 py-16 text-center"><h1 class="text-3xl font-bold text-navy-900">404</h1><p class="mt-4 text-navy-600">{ui.notFound}</p><p class="mt-6"><a href={route('home', DEFAULT_LOCALE)} class="rounded-lg bg-accent-600 px-5 py-2.5 font-semibold text-white hover:bg-accent-700">{ui.breadcrumbHome}</a></p></div>
+</BaseLayout>

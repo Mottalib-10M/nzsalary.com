@@ -1,0 +1,47 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { compute, incomeTax } from '../../lib/engine/nz';
+import { ex, P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const wk = [500, 800, 1000, 1250, 1500, 2000, 3000, 4000].map((w) => { const r = compute({ gross: w * 52, period: 'weekly' }); return [formatMoney(w), formatMoney(r.perPeriod.paye), formatMoney(r.perPeriod.acc), formatMoney(r.perPeriod.paye + r.perPeriod.acc), formatPercent((r.perPeriod.paye + r.perPeriod.acc) / w)]; });
+const normal = compute({ gross: 1200 * 52, period: 'weekly' }); const withOt = compute({ gross: 1600 * 52, period: 'weekly' });
+const extraPayTax = incomeTax(62400 + 4000) - incomeTax(62400);
+const faqs = [
+  { q: 'What is the PAYE rate in New Zealand?', a: 'There is no single PAYE rate. PAYE applies the income tax scale, 10.5 %, 17.5 %, 30 %, 33 % and 39 %, to your pay as if it continued all year, then adds the ACC earners’ levy of 1.75 %. The effective PAYE on a weekly pay of $1,000 is about 17 %, and on $2,000 about 24 %, including ACC.' },
+  { q: 'Does PAYE include ACC?', a: 'Yes. In Inland Revenue’s PAYE tables and on most payslips, the PAYE deduction includes the ACC earners’ levy. This site shows the two separately so you can see each, but your payslip may show a single PAYE line equal to their sum. The levy is 1.75 % of pay for 2026-27, up to $156,641 of earnings a year.' },
+  { q: 'How is a bonus taxed under PAYE?', a: `As an extra pay: your employer adds the bonus to your last four weeks of pay annualised, finds the marginal rate that applies, and taxes the whole bonus at that rate. On a $4,000 bonus for someone earning $1,200 a week, the extra tax is about ${formatMoney(extraPayTax)} for the year, taxed at 30 %.` },
+  { q: 'Why was my holiday pay taxed more?', a: 'When several weeks of holiday pay are paid in one pay, the employer should spread them across the weeks they cover to work out PAYE. If the payroll treats them as a single large week, the tax is higher, and the excess is refunded after 31 March. Payroll software normally applies the spreading rule automatically.' },
+];
+---
+<Guide id="payeRates" title="PAYE Tax Rates NZ 2026-27: Weekly Tables, ACC, Extra Pays" h1="PAYE tax rates in New Zealand for 2026-27"
+  description="How PAYE is worked out on each pay in New Zealand for 2026-27: the tax scale annualised, ACC at 1.75 %, weekly examples, bonuses, extra pays and codes."
+  intro="PAYE is the tax your employer takes from every pay. It follows the income tax scale, but applies it to each pay as if it were your pay for the whole year."
+  resume={`PAYE in New Zealand is not a flat rate. For the 2026-27 tax year, your employer takes each pay, treats it as if it repeated for the whole year, applies the income tax scale of 10.5 % up to ${formatMoney(15600)}, 17.5 % up to ${formatMoney(53500)}, 30 % up to ${formatMoney(78100)}, 33 % up to ${formatMoney(180000)} and 39 % above, divides the result back to the pay period and adds the ACC earners’ levy of 1.75 %. On a weekly pay of $1,200, that gives ${formatMoney(normal.perPeriod.paye)} of tax and ${formatMoney(normal.perPeriod.acc)} of ACC. Tax codes adjust the calculation: ME for the independent earner tax credit, secondary codes for a second job, SL for a student loan. Bonuses and other one-off payments follow the extra pay rules, and are taxed at the marginal rate reached when they are added to your normal income. At the end of the year Inland Revenue compares the PAYE deducted with the tax actually due and refunds or bills the difference.`}
+  faqs={faqs} related={['home', 'taxRates', 'taxCodes', 'takeHome', 'refund', 'acc']} sources={[SRC.ird_rates, SRC.acc_levy, SRC.ird_ietc]}>
+  <h2>PAYE on weekly pay, M code</h2>
+  <p>The table gives the tax and ACC deducted from a weekly pay with a standard M code and no KiwiSaver or student loan. It is computed with the annual method: weekly pay times 52, tax on the result, divided by 52.</p>
+  <ContentTable headers={['Weekly pay', 'Tax', 'ACC', 'Total PAYE', 'Share of pay']} align={['r', 'r', 'r', 'r', 'r']} rows={wk} />
+  <p>Inland Revenue publishes weekly, fortnightly and four-weekly PAYE tables and an equivalent formula for payroll software. The tables round in dollar steps, so a payslip can show a few cents more or less than the annual method; over a full year of regular pay the difference disappears.</p>
+
+  <h2>Why a week with overtime is taxed more</h2>
+  <p>PAYE has no memory of your other weeks. A week at $1,200 is taxed as if you earned {formatMoney(1200 * 52)} a year: {formatMoney(normal.perPeriod.paye)} of tax. A week at $1,600, because of overtime, is taxed as if you earned {formatMoney(1600 * 52)}, where part of the income reaches the 30 % band: {formatMoney(withOt.perPeriod.paye)} of tax, so the extra $400 costs {formatMoney(withOt.perPeriod.paye - normal.perPeriod.paye)}. If your overtime is occasional and your annual income stays below {formatMoney(53500)}, you have paid too much and the difference comes back after 31 March. Overtime paid as part of regular pay is taxed this way; lump sums, such as a bonus, are taxed as extra pays.</p>
+
+  <h2>Extra pays: bonuses, back pay and lump sums</h2>
+  <p>An extra pay is a payment made in addition to regular pay and not for a normal pay period: a bonus, commission paid separately, back pay, a redundancy payment, a retiring allowance. Payroll adds the extra pay to the employee’s pay for the last four weeks, annualised, to find the marginal rate that applies to it, then taxes the whole extra pay at that rate, adding ACC. The effect is to tax the bonus at the rate it would bear in your annual return, rather than as an enormous week. Someone earning {formatMoney(62400)} a year who receives a $4,000 bonus has it taxed at 30 %, since {formatMoney(62400)} already sits in that band.</p>
+
+  <h2>Tax codes change the scale</h2>
+  <p>The M code applies the scale described above. ME applies the same scale minus the independent earner tax credit, $10 a week for eligible incomes. Secondary codes, SB, S, SH, ST and SA, replace the scale with a flat rate for a second job. SL adds student loan repayments. ND, used when no tax code declaration has been given, taxes all pay at 45 % plus ACC. A special tax code or a tailored tax code can be issued by Inland Revenue when none of these fits. The <a href={route('taxCodes', lang)}>tax codes guide</a> covers each one.</p>
+
+  <h2>ACC inside PAYE</h2>
+  <p>The ACC earners’ levy pays for accident cover outside work. It is set by the government for three years at a time and is 1.75 % of liable earnings for 2026-27, up from 1.67 % in 2025-26, on earnings up to {formatMoney(P.acc.max_liable)}. Once your earnings for the year pass that ceiling, no more levy is due; payroll stops deducting it automatically if it knows your year-to-date earnings. For people with several jobs, each employer deducts the levy separately, and any excess over the annual maximum is refunded after the year.</p>
+
+  <h2>Holiday pay and PAYE</h2>
+  <p>When you take annual leave and are paid for several weeks at once, the payroll should work out PAYE by spreading the holiday pay over the weeks it covers, so that the tax matches what you would have paid week by week. When holiday pay is paid out at the end of employment, it is treated as an extra pay. Casual workers paid 8 % holiday pay with each pay have it included in their gross pay for PAYE. The <a href={route('holidayPay', lang)}>holiday pay guide</a> explains the calculations under the Holidays Act.</p>
+
+  <h2>The end-of-year square-up</h2>
+  <p>Because PAYE is computed pay by pay, it is only an estimate of your annual tax. After 31 March, Inland Revenue uses the income and tax reported by employers through payday filing to calculate the tax due on your actual annual income, then issues an automatic assessment. People whose income varied during the year, who worked only part of it or whose tax code was wrong are the ones most likely to see a refund or a bill. The <a href={route('refund', lang)}>IRD tax calculator</a> estimates the refund for a part-year job.</p>
+</Guide>

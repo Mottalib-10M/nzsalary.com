@@ -1,0 +1,29 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { studentLoanAnnual } from '../../lib/engine/nz';
+import { ex, P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const s = ex(55000, { sl: true, period: 'fortnightly' });
+const rows = [24128, 30000, 45000, 55000, 70000, 90000, 120000].map((g) => { const x = ex(g, { sl: true, period: 'weekly' }); return [formatMoney(g), formatMoney(studentLoanAnnual(g)), formatMoney(x.perPeriod.studentLoan), formatMoney(x.perPeriod.takeHome)]; });
+const faqs = [
+  { q: 'How much is the student loan repayment in NZ for 2026-27?', a: `12 cents for every dollar of income above the repayment threshold of ${formatMoney(P.student_loan.threshold_annual)} a year, which is ${formatMoney(P.student_loan.threshold_weekly)} a week. On ${formatMoney(55000)}, that is ${formatMoney(studentLoanAnnual(55000))} a year, deducted from each pay by your employer if your tax code includes SL, such as M SL.` },
+  { q: 'Is my NZ student loan interest-free?', a: 'Yes, while you live in New Zealand. Borrowers based in New Zealand pay no interest on their student loan. If you move overseas for more than six months, interest is charged and a different repayment obligation applies, based on the loan balance rather than your income.' },
+  { q: 'What if I have a second job and a student loan?', a: 'Use a secondary tax code with SL, such as S SL. On a secondary job there is no threshold: the 12 % applies to all earnings, because the threshold is already used by your main job. If your main job pays less than the threshold, you can apply for a special deduction rate to avoid over-deduction.' },
+];
+---
+<ToolPage id="studentLoan" title="Student Loan Repayment Calculator NZ 2026-27: 12 % Rule" h1="Student loan repayment calculator NZ for 2026-27"
+  description="How much of each pay goes to your New Zealand student loan in 2026-27: 12 % of income above $24,128, weekly, fortnightly or monthly, and your pay after it."
+  intro="Turn on the student loan option: the calculator applies the 12 % repayment above the threshold to each pay and shows your take-home after it."
+  mode="studentLoan" initialGross={55000} initialPeriod="fortnightly" faqs={faqs} related={['home', 'taxCodes', 'secondary', 'takeHome', 'refund', 'salary']}
+  sources={[SRC.ird_student_loan, SRC.ird_rates, SRC.ird_kiwisaver]}>
+  <p>A New Zealand student loan is repaid through your pay once your income passes the repayment threshold, {formatMoney(P.student_loan.threshold_annual)} a year, or {formatMoney(P.student_loan.threshold_weekly)} a week. Your employer deducts 12 cents of every dollar above it, on top of PAYE, when your tax code carries the SL suffix. On {formatMoney(55000)} a year paid fortnightly, each pay of {formatMoney(s.perPeriod.gross)} includes {formatMoney(s.perPeriod.studentLoan)} of student loan repayment, and take-home falls to {formatMoney(s.perPeriod.takeHome)}. Over the year that is {formatMoney(studentLoanAnnual(55000))}. The repayment is a fixed share of income, not of the balance, so it does not change with the size of your loan; a larger loan simply takes longer to clear. The threshold has been frozen, which means rising wages bring more of each pay into repayment. The calculator uses the annual method; payroll uses the threshold for the pay period, which gives the same total when your pay is regular.</p>
+  <h2>Repayments by salary, weekly pay, M SL code</h2>
+  <ContentTable headers={['Salary', 'Repayment per year', 'Per week', 'Weekly take-home after it']} align={['r', 'r', 'r', 'r']} rows={rows} />
+  <p>At exactly the threshold the repayment is nil. Above it, each extra dollar of salary costs 12 cents of repayment on top of your marginal tax rate: a raise at {formatMoney(60000)} keeps about 53 cents in the dollar after the 30 % tax rate, ACC, KiwiSaver at 3.5 % and the 12 % repayment.</p>
+  <h2>Voluntary repayments and the end of the year</h2>
+  <p>You can pay more at any time through myIR; voluntary repayments reduce the balance directly. At the end of the tax year, Inland Revenue checks that your deductions matched your income; if you had income without deductions, such as self-employment or interest above a small amount, an end-of-year repayment may be due. Secondary jobs need their own SL code, as the <a href={route('taxCodes', lang)}>tax codes guide</a> explains.</p>
+</ToolPage>

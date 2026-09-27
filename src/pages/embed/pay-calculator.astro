@@ -1,0 +1,19 @@
+---
+/** Page embarquable (iframe) : calculateur nu, lien de crédit visible (RECETTE §13). */
+import '../../styles/global.css';
+import NzCalculator from '../../components/calc/NzCalculator';
+import { SITE_URL } from '../../data/site-config';
+---
+<!doctype html>
+<html lang="en-NZ">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Zealand take-home pay calculator, widget</title>
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href={`${SITE_URL}/en/`} />
+  </head>
+  <body class="bg-white p-2 text-navy-900">
+    <NzCalculator client:load />
+    <p class="mt-2 text-center text-xs text-navy-500"><a href={`${SITE_URL}/en/`} target="_blank" rel="noopener" class="hover:underline">takehomepay.nz</a> · PAYE, KiwiSaver and ACC calculated in your browser</p>
+  </body>
+</html>

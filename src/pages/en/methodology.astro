@@ -1,0 +1,54 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { breadcrumbSchema, webPageSchema } from '../../lib/seo';
+import { P, ex } from '../../lib/tables';
+import { incomeTax, accLevy, ietc, studentLoanAnnual, esctRate } from '../../lib/engine/nz';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const title = 'PAYE and KiwiSaver Calculation Method: Sources and Tests';
+const description = 'How takehomepay.nz computes PAYE, ACC, KiwiSaver, ESCT, student loan and the IETC for 2026-27: official sources, rounding, test cases and known limits.';
+const checks = [
+  ['Tax on $15,600', formatMoney(incomeTax(15600), 2), '10.5 % × $15,600 = $1,638'],
+  ['Tax on $53,500', formatMoney(incomeTax(53500), 2), '$1,638 + 17.5 % × $37,900'],
+  ['Tax on $78,100', formatMoney(incomeTax(78100), 2), '+ 30 % × $24,600 = $15,650.50'],
+  ['Tax on $180,000', formatMoney(incomeTax(180000), 2), '+ 33 % × $101,900 = $49,277.50'],
+  ['Maximum ACC earners’ levy', formatMoney(accLevy(1000000), 2), '1.75 % × $156,641'],
+  ['IETC at $68,000', formatMoney(ietc(68000)), '$520 − 13 % × $2,000'],
+  ['Student loan on $50,000', formatMoney(studentLoanAnnual(50000), 2), '12 % × ($50,000 − $24,128)'],
+  ['ESCT rate, salary $65,000 + 3.5 %', formatPercent(esctRate(65000 * 1.035), 0), 'Band $64,201 to $93,720'],
+  ['Government KiwiSaver, $50,000 at 3.5 %', formatMoney(ex(50000).annual.govtContribution, 2), 'Maximum $260.72'],
+];
+const jsonLd = [webPageSchema({ name: title, description, path: route('method', lang), lang }), breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Methodology', path: route('method', lang) }])];
+---
+<PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} breadcrumbs={[{ label: 'Methodology' }]} sources={Object.values(SRC)}>
+  <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">How the calculations are made</h1>
+    <p class="mt-3 text-lg text-navy-600">Every figure on this site comes from one engine, written as pure functions that run in your browser, and every parameter it uses is read from a single file of 2026-27 values, each with the official source it was taken from.</p></header>
+  <div class="prose prose-slate max-w-none">
+    <h2>Sources and update cycle</h2>
+    <p>Income tax rates and secondary codes come from Inland Revenue’s page on tax rates for individuals, in force since 31 July 2024 and applying to the whole 2026-27 tax year. The ACC earners’ levy rate and maximum liable earnings come from MBIE’s decision on levy rates for 2025-26 to 2027-28. KiwiSaver rates, the government contribution and the 2026 and 2028 steps come from Inland Revenue’s KiwiSaver changes page; ESCT thresholds from its page on the April 2025 threshold changes. Student loan, IETC, schedular and provisional tax rules come from the corresponding Inland Revenue pages, the minimum wage from Employment New Zealand and wage statistics from Stats NZ. All values were last read on {P.retrieved_at}. They are reviewed before each 1 April, after each Budget, and whenever an official change is published in between.</p>
+    <h2>PAYE</h2>
+    <p>For a main job, the engine applies the progressive scale to the annual salary, band by band, and subtracts the independent earner tax credit when the ME code is chosen. For a secondary code, it applies the code’s flat rate to all the second job’s pay. The ACC earners’ levy of {formatPercent(P.acc.rate, 2)} is added on earnings up to {formatMoney(P.acc.max_liable)}. Per-period amounts are the annual amounts divided by 52, 26 or 12. This is how the annual liability is built; Inland Revenue’s weekly and fortnightly PAYE tables round each period’s deduction, so a payslip can differ by a few cents a pay.</p>
+    <h2>KiwiSaver and ESCT</h2>
+    <p>The employee contribution is the chosen rate times gross pay. The employer contribution is {formatPercent(P.kiwisaver.employer_min, 1)} unless another rate is entered, and ESCT is charged on it at the rate for salary plus employer contributions over the year. The government contribution is 25 cents per dollar of member contributions, capped at {formatMoney(P.kiwisaver.govt_max, 2)}, and nil above {formatMoney(P.kiwisaver.govt_income_cap)} of income. The engine treats the salary as the year’s income for this cap and does not model the 1 July to 30 June contribution year separately.</p>
+    <h2>Student loan and IETC</h2>
+    <p>On a main job, student loan deductions are 12 % of income above {formatMoney(P.student_loan.threshold_annual)} a year; on a secondary code, 12 % of all the pay. The IETC is {formatMoney(P.ietc.amount)} from {formatMoney(P.ietc.min_income)} to {formatMoney(P.ietc.abate_from)}, reduced by 13 cents per dollar above, and nil above {formatMoney(P.ietc.max_income)}. Eligibility conditions other than income, such as not receiving Working for Families, are left to you, through the choice of the ME code.</p>
+    <h2>Refunds, contractors and conversions</h2>
+    <p>The refund estimate for a part year compares PAYE deducted at the annualised rate over the months worked with the tax on the income actually earned. The contractor calculator compares tax withheld at the chosen schedular rate with income tax and earners’ levy on profit, and suggests the lowest rate that covers them. Net to gross is found by searching for the salary whose take-home equals the target. Hourly pay is converted at 52 weeks a year.</p>
+    <h2>Checks against official figures</h2>
+    <p>These cases are part of the automated tests that run before every publication; the build fails if any of them changes.</p>
+    <ContentTable headers={['Case', 'Engine result', 'Official reference']} align={['l', 'r', 'l']} rows={checks} />
+    <h2>Known limits</h2>
+    <ul>
+      <li>Working for Families, Best Start and other family credits are not computed.</li>
+      <li>The salary is assumed constant over the year; PAYE on extra pays such as bonuses is shown at the marginal rate.</li>
+      <li>The ACC work levy for self-employed people depends on the industry and is not included.</li>
+      <li>Voluntary student loan repayments, overseas-based borrowers and special deduction rates are not modelled.</li>
+      <li>Income from other sources, such as interest or rental profit, is not added to the calculation.</li>
+      <li>Tailored tax codes and special tax codes are not modelled.</li>
+    </ul>
+    <p>Results are estimates for planning. Your payslip and your income tax assessment prevail. If you find a difference that these limits do not explain, write to us through the <a href={route('contact', lang)}>contact page</a>: corrections are dated as set out in the <a href={route('editorial', lang)}>editorial policy</a>.</p>
+  </div>
+</PageLayout>

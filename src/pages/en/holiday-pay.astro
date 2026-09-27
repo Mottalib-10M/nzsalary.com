@@ -1,0 +1,45 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { hourlyToAnnual } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const L = P.leave;
+const payg = [P.min_wage.adult, 30, 40].flatMap((h) => [20, 40].map((hw) => [formatMoney(h, 2), `${hw} h`, formatMoney(h * hw, 2), formatMoney(h * hw * L.payg_rate, 2), formatMoney(h * hw * (1 + L.payg_rate), 2)]));
+const salary = 72800; const weekly = salary / 52;
+const faqs = [
+  { q: 'How much annual leave do I get in NZ?', a: 'At least four weeks of paid annual holidays after each 12 months of continuous employment with the same employer, under the Holidays Act 2003. Before the 12 months, you can take leave in advance by agreement. Employees on fixed terms of less than a year, or with irregular work, can be paid holiday pay of 8 % of gross earnings with each pay instead.' },
+  { q: 'What is 8 % holiday pay?', a: 'Pay-as-you-go holiday pay: 8 % of your gross earnings added to each pay, instead of paid time off. It is allowed for fixed-term employees on contracts of less than 12 months and for employees whose work is so intermittent or irregular that it is impractical to give four weeks off. It must be shown as a separate line on the payslip.' },
+  { q: 'Is the Holidays Act being replaced?', a: 'Yes. The Employment Leave Act 2026 has been passed and will replace the Holidays Act 2003 from August 2028, with leave accruing by hours worked. Until then, the Holidays Act rules described here continue to apply, including four weeks of annual leave after twelve months and the ordinary weekly pay versus average weekly earnings calculation.' },
+];
+---
+<Guide id="holidayPay" title="Holiday Pay NZ 2026: Annual Leave, 8 % Pay-As-You-Go Rules" h1="Holiday pay in New Zealand: annual leave, 8 % and public holidays"
+  description="Holiday pay in New Zealand in 2026: four weeks of annual leave, 8 % pay-as-you-go for casual work, the greater of two weekly rates, public holidays and tax."
+  intro="The Holidays Act 2003 sets the rules until the Employment Leave Act replaces it in 2028. Here is how leave is earned, how it is paid and how it is taxed."
+  resume={`Employees in New Zealand are entitled to at least four weeks of paid annual holidays after each 12 months of continuous employment with the same employer, under the Holidays Act 2003. When leave is taken, it must be paid at the greater of ordinary weekly pay or average weekly earnings over the previous 12 months, which protects people whose pay varies. Fixed-term employees on contracts of less than 12 months, and employees whose work is too irregular to give four weeks off, can instead receive 8 % of gross earnings with each pay as holiday pay, a method called pay-as-you-go. On top of annual leave, employees receive paid public holidays that fall on an otherwise working day, time and a half plus an alternative holiday if they work on one, and 10 days of paid sick leave a year after six months. Holiday pay is taxed through PAYE like wages. The Employment Leave Act 2026 will replace these rules from August 2028.`}
+  faqs={faqs} related={['takeHome', 'hourly', 'minimumWage', 'payeRates', 'employeeVsContractor', 'home']} sources={[SRC.holidays, SRC.min_wage, SRC.ird_rates]}>
+  <h2>8 % pay-as-you-go holiday pay</h2>
+  <ContentTable headers={['Hourly rate', 'Hours', 'Weekly pay', 'Holiday pay at 8 %', 'Weekly pay with holiday pay']} align={['r', 'l', 'r', 'r', 'r']} rows={payg} />
+  <p>The 8 % corresponds roughly to four weeks of pay for every 48 weeks worked. Because it is paid with each pay, there is no paid time off; if the job continues beyond 12 months or becomes regular, the employer must switch to annual leave.</p>
+
+  <h2>How annual leave is paid</h2>
+  <p>When you take annual leave, your employer pays the greater of two rates. <strong>Ordinary weekly pay</strong> is what you are normally paid for a week under your agreement, including regular allowances and overtime. <strong>Average weekly earnings</strong> are your gross earnings over the previous 12 months divided by 52. For a salaried employee on {formatMoney(salary)}, both usually come to {formatMoney(weekly)} a week. For someone whose earnings rose during the year, or who worked a lot of overtime, the average can be higher, and must be used if it is. Leave must be paid before it is taken, unless the employee agrees otherwise.</p>
+
+  <h2>Public holidays</h2>
+  <p>New Zealand has twelve public holidays, including Matariki since 2022, plus regional anniversary days. An employee is entitled to a paid day off on a public holiday that falls on a day they would otherwise work. If they work, they receive at least time and a half for the hours worked and, if it was an otherwise working day, an alternative holiday, a paid day off to be taken later. Public holidays falling on a weekend are transferred to the following Monday for those who do not normally work weekends.</p>
+
+  <h2>Sick leave and other leave</h2>
+  <p>After six months of continuous employment, employees receive 10 days of paid sick leave a year, which can be used for their own illness or to care for a partner or dependant. Unused sick leave carries over up to 20 days. Bereavement leave of three days applies on the death of a close family member, one day for others. Family violence leave of 10 days a year is also provided. Parental leave is paid by the government, not the employer.</p>
+
+  <h2>How holiday pay is taxed</h2>
+  <p>Holiday pay is taxed as income through PAYE. When several weeks of leave are paid at once, PAYE is calculated by spreading the payment over the weeks it covers, so the tax is the same as if it had been paid weekly. When leave is cashed up, which is allowed for up to one week a year at the employee’s request, or paid out at the end of employment, it is taxed as an extra pay at your marginal rate. KiwiSaver and student loan deductions apply to holiday pay too. The <a href={route('payeRates', lang)}>PAYE guide</a> explains extra pays.</p>
+
+  <h2>What changes in 2028</h2>
+  <p>The Employment Leave Act 2026, passed to fix the long-standing difficulty of calculating holiday pay correctly, will replace the Holidays Act in August 2028. It moves to leave that accrues with hours worked, which simplifies the calculation for part-time and variable-hours workers. Employers have until then to update their systems. The calculators on this site will follow the change when it takes effect.</p>
+  <h2>Holiday pay when you leave a job</h2>
+  <p>When employment ends, untaken annual leave is paid out. Leave you were already entitled to is paid at the greater of your ordinary weekly pay and your average weekly earnings over the last twelve months. Leave building up since your last anniversary is paid at 8 % of gross earnings since that date, minus any leave already taken in advance. The final payment is taxed as an extra pay, at your marginal rate plus the ACC levy, and KiwiSaver is deducted from it if you are a member.</p>
+  <p>If you are on 8 % pay-as-you-go holiday pay because your work is casual or a fixed term under twelve months, nothing extra is owed when you leave: the 8 % has already been paid with each pay and should appear as a separate line on every payslip. If it does not, ask your employer to show it; an hourly rate that simply includes holiday pay without saying so is not allowed.</p>
+</Guide>

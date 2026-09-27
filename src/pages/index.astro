@@ -1,251 +1,44 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import SalaryCalculator from "../components/SalaryCalculator";
-import "../styles/global.css";
+// Racine : redirige vers la langue par défaut. Page noindex, mais elle doit rester
+// lisible et navigable sans JS — un visiteur d'une autre langue du site doit pouvoir
+// atteindre sa version depuis ici.
+import { DEFAULT_LOCALE, LOCALES, route } from '../i18n/routes';
+import { SITE_NAMES, SITE_URL } from '../data/site-config';
 
-const siteUrl = "https://takehomepay.nz";
-const pageDescription = "Free New Zealand salary calculator for 2025-2026. Calculate your take home pay after PAYE income tax, ACC levy, KiwiSaver contributions, and student loan repayments.";
-
-const webAppSchema = {
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "NZ Salary Calculator - TakeHomePay.nz",
-  "description": pageDescription,
-  "url": siteUrl,
-  "applicationCategory": "FinanceApplication",
-  "operatingSystem": "All",
-  "inLanguage": "en-NZ",
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "NZD"
-  },
-  "provider": {
-    "@type": "Organization",
-    "name": "Take Home Pay New Zealand",
-    "url": siteUrl
-  }
+const target = route('home', DEFAULT_LOCALE);
+const title = SITE_NAMES[DEFAULT_LOCALE];
+const languageName = (loc: string) => {
+  const name = new Intl.DisplayNames([loc], { type: 'language' }).of(loc) ?? loc;
+  return name.charAt(0).toUpperCase() + name.slice(1);
 };
-
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "How many PAYE tax brackets are there in New Zealand?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "There are five PAYE income tax brackets for the 2025-2026 tax year: 10.5% on income up to $15,600; 17.5% on income from $15,601 to $53,500; 30% on income from $53,501 to $78,100; 33% on income from $78,101 to $180,000; and 39% on income above $180,000. These brackets are progressive, meaning each rate only applies to the income within that particular range."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What is the ACC Earner's Levy?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "The ACC Earner's Levy is a contribution all NZ employees pay to fund the Accident Compensation Corporation scheme for no-fault personal injury cover. For 2025-2026, the levy is 1.60% of your earnings, capped at approximately $142,283 per year. The maximum annual levy is around $2,276.53."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What KiwiSaver contribution rates are available?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "KiwiSaver offers employee contribution rates of 3%, 4%, 6%, 8%, or 10% of gross pay. The default rate is 3%. Your employer is required to contribute a minimum of 3% on top of your contribution. Higher contributions reduce your take home pay but build more retirement savings through compound growth."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How are student loan repayments calculated in NZ?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Student loan repayments are calculated at 12% on every dollar earned above the annual repayment threshold of $22,828 (approximately $439 per week). Repayments are deducted automatically by your employer through the PAYE system. Student loans are interest-free for borrowers who remain in New Zealand."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What is the Independent Earner Tax Credit (IETC)?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "The IETC is a tax credit of up to $520 per year for NZ tax residents earning between $24,000 and $48,000 annually who do not receive income-tested benefits. The full credit applies between $24,000 and $44,000, then reduces by 13 cents for each dollar over $44,000 until it reaches zero at $48,000."
-      }
-    }
-  ]
-};
+const links = LOCALES.map((loc) => ({
+  href: route('home', loc),
+  label: `${SITE_NAMES[loc] ?? title} (${languageName(loc)})`,
+}));
 ---
-
-<Layout
-  title="NZ Salary Calculator 2026 - Take Home Pay, PAYE Tax, KiwiSaver | TakeHomePay.nz"
-  description={pageDescription}
-  canonical="/"
->
-  <!-- Hero Section -->
-  <section class="bg-gradient-to-br from-primary via-primary-light to-accent py-12 sm:py-16">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-white">
-        New Zealand Salary Calculator 2025–2026
-      </h1>
-      <p class="text-lg sm:text-xl text-white/90 max-w-3xl mx-auto">
-        Calculate your take home pay after PAYE income tax, ACC Earner's Levy, KiwiSaver contributions, and student loan repayments. Free, accurate, and up to date for the current NZ tax year.
-      </p>
-    </div>
-  </section>
-
-  <!-- Calculator Section -->
-  <section class="py-10 sm:py-14 bg-surface">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SalaryCalculator client:idle />
-    </div>
-  </section>
-
-  <!-- Content Section -->
-  <section class="py-12 sm:py-16">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <article class="prose prose-lg max-w-none">
-        <h2 class="text-3xl font-bold text-primary mb-6">
-          Understanding Your New Zealand Take Home Pay
-        </h2>
-
-        <p>
-          Working out your actual take home pay in New Zealand involves understanding several different deductions that come off your gross salary before the money reaches your bank account. Whether you are a first-time employee, a skilled migrant new to New Zealand, or a seasoned professional looking to verify your payslip, knowing how each deduction works helps you budget effectively and plan for your financial future. This comprehensive guide covers every component that affects your net pay in the 2025-2026 tax year (1 April 2025 to 31 March 2026).
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          PAYE Income Tax in New Zealand
-        </h3>
-
-        <p>
-          PAYE stands for Pay As You Earn, and it is the primary method through which Inland Revenue (IRD) collects income tax in New Zealand. Unlike some countries that use a flat tax rate, New Zealand operates a progressive tax system with five income tax brackets. This means that different portions of your income are taxed at different rates, with higher portions of your earnings subject to higher tax rates.
-        </p>
-
-        <p>
-          For the 2025-2026 tax year, the PAYE income tax brackets are as follows. The first $15,600 of your annual income is taxed at just 10.5 percent, making this the most tax-efficient portion of your earnings. Income between $15,601 and $53,500 is taxed at 17.5 percent. The third bracket covers income from $53,501 to $78,100 at a rate of 30 percent. Income between $78,101 and $180,000 falls into the 33 percent bracket. Finally, any income above $180,000 is taxed at the top rate of 39 percent, which was introduced to ensure higher earners contribute a fair share to public services.
-        </p>
-
-        <p>
-          It is important to understand that these brackets are progressive. If you earn $60,000 per year, you do not pay 30 percent on your entire income. Instead, you pay 10.5 percent on the first $15,600, then 17.5 percent on the next $37,900 (up to $53,500), and then 30 percent only on the remaining $6,500. This progressive structure means your effective (average) tax rate is always lower than your marginal (top bracket) rate. Our calculator above computes both your effective and marginal tax rates so you can understand the full picture.
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          ACC Earner's Levy
-        </h3>
-
-        <p>
-          The Accident Compensation Corporation (ACC) provides comprehensive, no-fault personal injury cover for all New Zealand residents and visitors. To fund this scheme, every employee in New Zealand pays an ACC Earner's Levy, which is deducted from their pay alongside PAYE tax. For the 2025-2026 year, the ACC Earner's Levy is set at 1.60 percent of your liable earnings.
-        </p>
-
-        <p>
-          There is an important cap on the ACC levy: it is only charged on earnings up to approximately $142,283 per year. If you earn more than this amount, your ACC levy does not increase beyond the maximum. This cap exists because ACC benefits are also capped, so there is a corresponding ceiling on contributions. For an employee earning $142,283 or more, the maximum annual ACC Earner's Levy works out to approximately $2,276.53 per year.
-        </p>
-
-        <p>
-          Your employer also pays an ACC Work Levy, but this is a business cost and does not appear as a deduction on your payslip. The ACC scheme covers treatment costs, rehabilitation, and weekly compensation if you are unable to work due to an injury, regardless of how or where the injury occurred. This universal coverage is a distinctive feature of the New Zealand system that many newcomers find reassuring.
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          KiwiSaver: New Zealand's Retirement Savings Scheme
-        </h3>
-
-        <p>
-          KiwiSaver is New Zealand's voluntary, work-based retirement savings scheme. While joining is not strictly mandatory, most new employees are automatically enrolled when they start a new job. KiwiSaver plays a vital role in helping New Zealanders build savings for retirement, complementing New Zealand Superannuation (the state pension).
-        </p>
-
-        <p>
-          As an employee enrolled in KiwiSaver, you can choose to contribute 3, 4, 6, 8, or 10 percent of your gross pay. The default rate if you do not choose is 3 percent. Your employer is required to contribute a minimum of 3 percent on top of your contribution. This employer contribution is subject to Employer Superannuation Contribution Tax (ESCT), which varies based on your income level.
-        </p>
-
-        <p>
-          While KiwiSaver contributions reduce your immediate take home pay, they are an investment in your future. The money goes into a managed fund of your choice, where it is invested and grows over time. You generally cannot access your KiwiSaver savings until you reach the age of eligibility for New Zealand Superannuation (currently 65 years old), though there are exceptions for first home purchases, significant financial hardship, or serious illness. Many financial advisors recommend contributing at a higher rate if you can afford it, as the compounding returns over decades of employment can make a substantial difference to your retirement savings.
-        </p>
-
-        <p>
-          If you are a member of KiwiSaver and meet certain criteria, you may also be eligible for the government's annual KiwiSaver Member Tax Credit, which provides up to $521.43 per year in matching government contributions. To receive the full credit, you need to contribute at least $1,042.86 to your KiwiSaver account during the year.
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          Student Loan Repayments
-        </h3>
-
-        <p>
-          Many New Zealanders fund their tertiary education through the government's Student Loan Scheme. If you have a student loan and are earning above the repayment threshold, repayments are automatically deducted from your pay by your employer, similar to PAYE tax. For the 2025-2026 tax year, the repayment rate is 12 percent on every dollar you earn above the annual threshold of $22,828 (equivalent to approximately $439 per week).
-        </p>
-
-        <p>
-          Student loan repayments are interest-free for borrowers who remain in New Zealand for the majority of the tax year. This is a significant benefit that encourages graduates to stay and work in New Zealand. However, if you move overseas, interest may be charged on your remaining balance, and you are still required to make repayments. The repayment obligation continues until your loan is fully repaid, so higher earners will pay off their loans more quickly as a larger portion of their income exceeds the threshold.
-        </p>
-
-        <p>
-          If you are a new graduate starting your first job, you will need to inform your employer that you have a student loan so they can apply the correct tax code (such as MSL for primary employment with a student loan). IRD also sends employers information about their employees' student loan obligations, but it is good practice to ensure the correct tax code is being used from day one to avoid unexpected bills at the end of the tax year.
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          Independent Earner Tax Credit (IETC)
-        </h3>
-
-        <p>
-          The Independent Earner Tax Credit is a tax credit available to New Zealand tax residents who earn between $24,000 and $48,000 per year and do not receive any income-tested benefits or Working for Families tax credits, as well as not receiving New Zealand Superannuation. The IETC provides up to $520 per year, which effectively reduces the amount of PAYE tax you owe.
-        </p>
-
-        <p>
-          For individuals earning between $24,000 and $44,000, the full $520 credit applies. Between $44,000 and $48,000, the credit abates (reduces) at a rate of 13 cents for every dollar earned above $44,000. By the time your income reaches $48,000, the credit has reduced to zero. The IETC is automatically applied through the PAYE system when you use the "ME" tax code (primary employment with IETC entitlement). Our calculator factors in this credit automatically for residents whose income falls within the eligible range.
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          Working for Families Tax Credits
-        </h3>
-
-        <p>
-          Working for Families (WFF) is a package of tax credits designed to help families with dependent children. The package includes several components: the Family Tax Credit (FTC), the In-Work Tax Credit (IWTC), the Best Start Tax Credit, and the Minimum Family Tax Credit. These credits are income-tested and abate as family income increases above certain thresholds.
-        </p>
-
-        <p>
-          The Family Tax Credit is the main payment and provides a set amount per child, with the rate varying by the age of the child. The In-Work Tax Credit is available to families where the parents or caregivers work a minimum number of hours per week (20 hours for sole parents, 30 hours combined for couples). The Best Start Tax Credit provides additional support for families with children under the age of three. These credits can provide substantial financial support for working families on low to moderate incomes. While our calculator focuses on individual salary deductions, understanding that these credits exist is important for families budgeting their household income.
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          New Zealand Minimum Wage
-        </h3>
-
-        <p>
-          As of April 2025, the New Zealand minimum wage is $23.15 per hour for adult workers (those aged 16 and over who are not starting-out or training workers). This means that for a full-time employee working 40 hours per week, the minimum annual salary would be approximately $48,152. New Zealand reviews its minimum wage annually, and any changes typically take effect on 1 April to align with the start of the new tax year. Employers are legally required to pay at least the minimum wage, and there are significant penalties for non-compliance.
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          Tax Codes and Getting Them Right
-        </h3>
-
-        <p>
-          Your tax code determines how much PAYE and other deductions are taken from your pay. The most common tax code for a primary job is "M" (or "ME" if you are entitled to the IETC). If you have a student loan, you would use "MSL" or "MESL". For a secondary job, you would use "S", "SH", or "ST" depending on your total expected income for the year. Using the wrong tax code can result in either over-payment or under-payment of tax, which will need to be corrected when IRD completes your income tax assessment after the end of the tax year.
-        </p>
-
-        <p>
-          If you have multiple sources of income, it is essential to choose the correct tax code for each one. Your primary (highest-earning) job should use the "M" code, while secondary jobs use the appropriate "S" code. IRD provides a tax code finder tool on their website to help you determine the right code for your situation. Getting your tax codes right from the start saves hassle and avoids unexpected tax bills or refunds at the end of the year.
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          How to Use This Calculator
-        </h3>
-
-        <p>
-          Our New Zealand salary calculator makes it easy to work out your take home pay. Simply enter your gross annual salary or hourly rate in the calculator above. Select your KiwiSaver contribution rate from the available options (3%, 4%, 6%, 8%, or 10%). Toggle the student loan option if you have an outstanding student loan balance. The calculator will instantly show you a complete breakdown of your PAYE income tax, ACC Earner's Levy, KiwiSaver contributions, student loan repayments (if applicable), and any Independent Earner Tax Credit you may be entitled to. You can view your results on an annual, monthly, fortnightly, or weekly basis using the toggle buttons in the results panel.
-        </p>
-
-        <p>
-          This calculator is designed for New Zealand employees on the standard PAYE system for the 2025-2026 tax year. It provides estimates based on the current tax rates published by Inland Revenue and is intended for informational purposes. For complex tax situations, such as income from multiple jobs, self-employment, investment income, or overseas income, we recommend consulting a qualified tax advisor or accountant. Always refer to the official IRD website for the most up-to-date information about tax rates and entitlements.
-        </p>
-
-        <h3 class="text-2xl font-bold text-primary mt-10 mb-4">
-          Planning Your Finances in New Zealand
-        </h3>
-
-        <p>
-          Understanding your take home pay is the first step towards effective financial planning. Once you know exactly how much money you will receive each pay period, you can create a realistic budget that covers your essential expenses, savings goals, and discretionary spending. New Zealand has a relatively straightforward tax system compared to many countries, but taking the time to understand each component, from PAYE to KiwiSaver, empowers you to make informed financial decisions and take advantage of the credits and benefits available to you.
-        </p>
-      </article>
-    </div>
-  </section>
-
-  <script type="application/ld+json" set:html={JSON.stringify(webAppSchema)} />
-  <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
-</Layout>
+<!doctype html>
+<html lang={DEFAULT_LOCALE}>
+  <head>
+    <meta charset="utf-8" />
+    <title>{title}</title>
+    <meta http-equiv="refresh" content={`0; url=${target}`} />
+    <link rel="canonical" href={`${SITE_URL}${target}`} />
+    <meta name="robots" content="noindex" />
+    <!-- La racine doit declarer sa favicon comme n'importe quelle page. Le robot
+         de Google qui collecte les favicons interroge d'abord la racine du
+         domaine et /favicon.ico ; une racine muette le laisse repartir les mains
+         vides, et Search Console affiche une icone generique pendant des
+         semaines. Constate le 2026-09-26 sur huit sites du portefeuille. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script is:inline define:vars={{ locales: LOCALES, target }}>
+      const nav = (navigator.language || '').slice(0, 2).toLowerCase();
+      const m = locales.find((l) => l === nav);
+      location.replace(m ? `/${m}/` : target);
+    </script>
+  </head>
+  <body>
+    {links.map((l, i) => <>{i > 0 && ' · '}<a href={l.href}>{l.label}</a></>)}
+  </body>
+</html>

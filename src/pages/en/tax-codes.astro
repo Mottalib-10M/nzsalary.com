@@ -1,0 +1,58 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { compute } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const codes = [
+  ['M', 'Main job, most employees', 'Tax scale 10.5 % to 39 %'],
+  ['ME', 'Main job, income $24,000 to $70,000, no Working for Families, NZ Super or main benefit', 'Scale minus the IETC ($10 a week)'],
+  ['SB', 'Second job, total income up to $15,600', '10.5 % flat'],
+  ['S', 'Second job, total income $15,601 to $53,500', '17.5 % flat'],
+  ['SH', 'Second job, total income $53,501 to $78,100', '30 % flat'],
+  ['ST', 'Second job, total income $78,101 to $180,000', '33 % flat'],
+  ['SA', 'Second job, total income over $180,000', '39 % flat'],
+  ['… SL', 'Any of the above with a student loan (M SL, S SL…)', 'Adds 12 % repayment'],
+  ['CAE', 'Casual agricultural worker', '15 % flat'],
+  ['EDW', 'Election day worker', '17.5 % flat'],
+  ['NSW', 'Recognised seasonal worker', '10.5 % flat'],
+  ['STC', 'Special tax code issued by Inland Revenue', 'Rate on the certificate'],
+  ['ND', 'No declaration given to the employer', '45 % flat'],
+];
+const on30 = [['M', 'M'], ['ME', 'ME'], ['S', 'S'], ['SH', 'SH']].map(([c]) => { const r = compute({ gross: 30000, code: c as 'M' }); return [c, formatMoney(r.annual.paye), formatMoney(r.annual.acc), formatMoney(r.annual.takeHome)]; });
+const faqs = [
+  { q: 'What tax code should I use for my main job in NZ?', a: 'M, unless you qualify for the independent earner tax credit, in which case ME. ME applies if your annual income is between $24,000 and $70,000 and you do not receive Working for Families, NZ Super, a veteran’s pension, a main benefit or a student allowance. Add SL if you have a student loan: M SL or ME SL.' },
+  { q: 'What happens if I do not give my employer a tax code?', a: 'Your employer must deduct tax at the no-declaration rate, ND, which is 45 % plus the ACC levy, on all your pay. The excess comes back after the end of the tax year, but in the meantime you lose almost half your pay. Complete the IR330 tax code declaration as soon as you start a job.' },
+  { q: 'Can I use a secondary code for my main job?', a: 'You can, but it is rarely right. A secondary code applies a flat rate to all income, ignoring the lower bands, so on a main job it deducts too much for low earners and possibly too little for others. The difference is corrected at year end. Use M or ME for the job that pays you the most.' },
+];
+---
+<Guide id="taxCodes" title="Tax Codes NZ 2026-27: M, ME, S, SH, ST, SA, SL and ND" h1="New Zealand tax codes: which one to give your employer"
+  description="Every New Zealand tax code for 2026-27: M and ME for a main job, SB to SA for a second job, SL for student loans, CAE, NSW, STC, ND, and what each deducts."
+  intro="The tax code on your IR330 tells your employer how to deduct PAYE. The wrong one does not change the tax you owe, but it changes when you pay it."
+  resume={`A tax code is the instruction you give an employer, on the IR330 form, for deducting PAYE from your pay. For a main job, the code is M, or ME if your income is between ${formatMoney(P.ietc.min_income)} and ${formatMoney(P.ietc.max_income)} and you are eligible for the independent earner tax credit, which adds $10 a week. For a second job, you choose a secondary code according to your total annual income from all jobs: SB up to ${formatMoney(15600)}, S up to ${formatMoney(53500)}, SH up to ${formatMoney(78100)}, ST up to ${formatMoney(180000)} and SA above; each applies a single flat rate to the second job’s pay. Any code takes the suffix SL if you have a student loan. Special situations have their own codes, such as CAE for casual agricultural workers, and ND applies 45 % when no code is given. The tax you owe for the year does not depend on the code; the code decides how close PAYE comes to it, and so whether you get a refund or a bill after 31 March.`}
+  faqs={faqs} related={['secondary', 'home', 'refund', 'studentLoan', 'ietcGuide', 'payeRates']} sources={[SRC.ird_rates, SRC.ird_ietc, SRC.ird_student_loan]}>
+  <h2>All the codes</h2>
+  <ContentTable headers={['Code', 'Who uses it', 'What is deducted, before ACC']} align={['l', 'l', 'l']} rows={codes} />
+  <p>The ACC earners’ levy of 1.75 % is deducted in addition to the rate in the last column for every code. Secondary rates match the tax rates of the brackets: the logic is that your main job already uses the bands below.</p>
+
+  <h2>The same $30,000 under four codes</h2>
+  <p>The table below shows the PAYE deducted over a year on {formatMoney(30000)} of pay under four codes. Only one of them is right for a given person; the others would lead to a refund or a bill at the end of the year.</p>
+  <ContentTable headers={['Code', 'Tax deducted', 'ACC', 'Take-home']} align={['l', 'r', 'r', 'r']} rows={on30} />
+  <p>M and ME differ by the {formatMoney(P.ietc.amount)} of independent earner tax credit. S and SH apply 17.5 % and 30 % to every dollar; they are right only when this income is a second job on top of another.</p>
+
+  <h2>ME and the independent earner tax credit</h2>
+  <p>ME is M plus the independent earner tax credit, paid through your pay at $10 a week rather than as a lump sum after the year. Inland Revenue checks your eligibility at the end of the year: if your income ended up above {formatMoney(P.ietc.max_income)}, or you received one of the excluded payments, the credit paid through ME is recovered in your assessment. The <a href={route('ietcGuide', lang)}>IETC guide</a> explains the conditions and the abatement between {formatMoney(P.ietc.abate_from)} and {formatMoney(P.ietc.max_income)}.</p>
+
+  <h2>Choosing a secondary code</h2>
+  <p>Add up what you expect to earn in the year from all your jobs, including the main one, and pick the code whose range contains that total. If your hours change and the total moves into another range, give your second employer a new IR330. When your total is close to a threshold, the flat rate can over-deduct on the part of the second income that falls below it; a tailored tax code, requested through myIR, fixes a rate that matches your situation. The <a href={route('secondary', lang)}>secondary tax calculator</a> picks the code and shows the effect.</p>
+
+  <h2>Student loans and SL</h2>
+  <p>With a main-job code, SL deducts 12 % of your pay above the repayment threshold, {formatMoney(P.student_loan.threshold_weekly)} a week. With a secondary code, SL deducts 12 % of all the second job’s pay, since the threshold is used by the main job. If you have a student loan and do not use SL, the repayment becomes due at the end of the year. If your total income is below the threshold but spread over jobs, you can apply for a special deduction rate.</p>
+
+  <h2>When to change your code</h2>
+  <p>Give a new IR330 when you start a second job, when your main job changes, when your expected income moves across a threshold, when you start or stop receiving Working for Families or NZ Super, and when you take out or repay a student loan. The employer applies the new code from the next pay; Inland Revenue corrects the past at the end of the year. A code given to an employer stays in force until you give a new one, even across tax years, so check it each April.</p>
+  <p>If you are unsure which code applies, the IR330 form includes a short set of questions that leads to the right one.</p>
+</Guide>

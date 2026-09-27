@@ -1,0 +1,19 @@
+---
+import AmountPage from '../../components/AmountPage.astro';
+import { route, ANNUAL } from '../../i18n/routes';
+import { annualLabel } from '../../i18n/nav';
+import { annualAngle } from '../../lib/amount-angles';
+import { ex } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+export function getStaticPaths() { return ANNUAL.map((a) => ({ params: { amount: String(a) } })); }
+const amount = Number(Astro.params.amount);
+const cases = [['No KiwiSaver', 0, false], ['KiwiSaver 3.5 %', 0.035, false], ['KiwiSaver 6 %', 0.06, false], ['KiwiSaver 3.5 % and student loan', 0.035, true]] as const;
+const rows = cases.map(([label, ks, sl]) => { const a = ex(amount, { ks, sl }); const f = ex(amount, { ks, sl, period: 'fortnightly' }); const w = ex(amount, { ks, sl, period: 'weekly' }); return [label, formatMoney(a.annual.paye + a.annual.acc), formatMoney(a.annual.kiwisaver + a.annual.studentLoan), formatMoney(w.perPeriod.takeHome, 2), formatMoney(f.perPeriod.takeHome, 2), formatMoney(a.annual.takeHome)]; });
+const i = ANNUAL.indexOf(amount as (typeof ANNUAL)[number]);
+const near = [ANNUAL[i - 1], ANNUAL[i + 1]].filter(Boolean) as number[];
+---
+<AmountPage id={`y-${amount}`} crumb={annualLabel(amount)} angle={annualAngle(amount)} gross={amount} mode="paye"
+  table={{ caption: `${formatMoney(amount)} a year with and without deductions`, headers: ['Situation', 'PAYE and ACC', 'KiwiSaver and loan', 'Weekly take-home', 'Fortnightly take-home', 'Yearly take-home'], rows }}
+  neighbours={[...near.map((n) => ({ href: route(`y-${n}`, 'en'), name: annualLabel(n) })), { href: route('takeHome', 'en'), name: 'Take-home pay calculator' }, { href: route('payeRates', 'en'), name: 'PAYE tax rates' }]}
+  sources={[SRC.ird_rates, SRC.ird_kiwisaver, SRC.acc_levy]} />

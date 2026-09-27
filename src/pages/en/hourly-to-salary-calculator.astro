@@ -1,0 +1,29 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { hourlyToAnnual } from '../../lib/engine/nz';
+import { ex, P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const a30 = hourlyToAnnual(30); const r30 = ex(a30, { period: 'weekly' });
+const rows = [P.min_wage.adult, 28, 30, 35, 40, 50].map((h) => { const a = hourlyToAnnual(h); const r = ex(a, { period: 'weekly' }); return [formatMoney(h, 2), formatMoney(h * 40), formatMoney(a), formatMoney(r.perPeriod.takeHome)]; });
+const faqs = [
+  { q: 'How much is $30 an hour per year in NZ?', a: `${formatMoney(a30)} a year for a 40-hour week over 52 weeks, or ${formatMoney(30 * 40)} a week before tax. After PAYE, ACC and KiwiSaver at 3.5 %, a weekly pay of ${formatMoney(r30.perPeriod.gross)} leaves ${formatMoney(r30.perPeriod.takeHome)}. Paid annual holidays are included in the 52 weeks for permanent staff; casual staff receive 8 % holiday pay on top instead.` },
+  { q: 'How many working hours are in a year in New Zealand?', a: 'The usual conversion is 40 hours a week for 52 weeks, 2,080 hours a year, because permanent employees are paid for annual holidays and public holidays. For a casual job without paid leave, the hours you actually work are fewer; count your real weekly hours and add the 8 % holiday pay you receive with each pay.' },
+  { q: 'Is my hourly rate before or after tax?', a: 'Hourly rates in New Zealand are quoted before tax. PAYE, ACC and KiwiSaver are deducted from the resulting weekly or fortnightly pay. The minimum wage, currently $23.95 an hour for adults, is also a gross rate before any deduction, and so is the rate in an employment agreement.' },
+];
+---
+<ToolPage id="hourly" title="Hourly to Salary Calculator NZ 2026-27: Weekly and Yearly" h1="Hourly to salary calculator NZ: from an hourly rate to take-home pay"
+  description="Convert an hourly wage into weekly, fortnightly and annual pay in New Zealand, then see PAYE, ACC and KiwiSaver for 2026-27. Works for part-time hours too."
+  intro="Enter your hourly rate and your usual hours. The calculator turns them into an annual salary, then applies the 2026-27 deductions to each pay."
+  mode="hourly" initialHourly={30} initialPeriod="weekly" faqs={faqs} related={['minimumWage', 'takeHome', 'holidayPay', 'home', 'averageSalary', 'contractor']}
+  sources={[SRC.min_wage, SRC.ird_rates, SRC.holidays]}>
+  <p>An hourly rate becomes a salary by multiplying by the hours in a year: 40 hours a week times 52 weeks is 2,080 hours, the standard conversion for a full-time permanent job in New Zealand, where annual holidays and public holidays are paid. At {formatMoney(30, 2)} an hour, that is {formatMoney(30 * 40)} a week and {formatMoney(a30)} a year. From there the calculator applies the same PAYE as for any salary: each weekly pay of {formatMoney(r30.perPeriod.gross)} loses {formatMoney(r30.perPeriod.paye)} of PAYE, {formatMoney(r30.perPeriod.acc)} of ACC and {formatMoney(r30.perPeriod.kiwisaver)} of KiwiSaver, leaving {formatMoney(r30.perPeriod.takeHome)}. For part-time work, change the hours: 20 hours a week at the same rate gives half the salary but more than half the take-home, because more of the income stays in the lower tax bands. Casual workers who are paid holiday pay as they go receive 8 % on top of their gross earnings; add it to the rate if you want to compare with a permanent role.</p>
+  <h2>Hourly rates converted, 40 hours a week</h2>
+  <ContentTable headers={['Hourly rate', 'Weekly gross', 'Yearly gross', 'Weekly take-home']} align={['r', 'r', 'r', 'r']} rows={rows} />
+  <p>The first row is the adult minimum wage from 1 April 2026, {formatMoney(P.min_wage.adult, 2)} an hour. The Stats NZ median hourly wage was {formatMoney(P.stats.median_hourly_jun2026, 2)} in the June 2026 quarter, which corresponds to about {formatMoney(hourlyToAnnual(P.stats.median_hourly_jun2026))} a year full-time.</p>
+  <h2>Overtime and penal rates</h2>
+  <p>New Zealand law does not require overtime to be paid at a higher rate; it depends on the employment agreement, and many agreements pay time and a half or double time after a set number of hours or on weekends. Work on a public holiday must be paid at least time and a half, with an alternative day off if it is an otherwise working day. PAYE on an overtime-heavy week is higher, because the week’s pay is annualised; see the <a href={route('payeRates', lang)}>PAYE guide</a> for how this evens out.</p>
+</ToolPage>

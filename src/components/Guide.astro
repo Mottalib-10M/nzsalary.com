@@ -1,0 +1,16 @@
+---
+import { fitDescription, fitTitle } from '../lib/snippet';
+/** Guide (≥ 1 200 mots) : GuideLayout + liens associés par identifiant de route. */
+import GuideLayout from './GuideLayout.astro';
+import { route, type Locale } from '../i18n/routes';
+import { label } from '../i18n/nav';
+import type { FAQItem } from '../lib/seo';
+interface Props { id: string; title: string; h1: string; description: string; intro: string; resume: string; faqs: FAQItem[]; related: string[]; sources: Array<{ name: string; url: string }> }
+const { id, title: rawTitle, h1, description: rawDesc, intro, resume, faqs, related, sources } = Astro.props;
+const title = fitTitle(rawTitle); const description = fitDescription(rawDesc);
+const lang: Locale = 'en';
+const rel = related.map((r) => ({ href: route(r, lang), name: label(r), description: '' }));
+---
+<GuideLayout lang={lang} id={id} title={title} h1={h1} description={description} intro={intro} resume={resume} faqs={faqs} related={rel} sources={sources} breadcrumbLabel={label(id)}>
+  <slot />
+</GuideLayout>

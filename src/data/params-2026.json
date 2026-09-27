@@ -1,0 +1,55 @@
+{
+  "_lisezmoi": "Every legal parameter lives here, never hard-coded (RECETTE-SITE.md §4). Tax year 2026-27 runs from 1 April 2026 to 31 March 2027. Each value was read on the source cited, on retrieved_at.",
+  "year": 2026,
+  "tax_year": "2026-27",
+  "retrieved_at": "2026-09-27",
+  "valid_from": "2026-04-01",
+  "valid_to": "2027-03-31",
+  "sources": {
+    "ird_rates": { "url": "https://www.ird.govt.nz/income-tax/income-tax-for-individuals/tax-codes-and-tax-rates-for-individuals/tax-rates-for-individuals", "label": { "en": "Inland Revenue: Tax rates for individuals, including secondary tax codes" } },
+    "ird_kiwisaver": { "url": "https://www.ird.govt.nz/kiwisaver-changes", "label": { "en": "Inland Revenue: KiwiSaver changes from 1 April 2026 and 1 April 2028" } },
+    "ird_esct": { "url": "https://www.ird.govt.nz/employing-staff/deductions-from-income/employer-superannuation-contribution-tax", "label": { "en": "Inland Revenue: Employer superannuation contribution tax (ESCT) rates" } },
+    "ird_student_loan": { "url": "https://www.ird.govt.nz/student-loans/living-in-new-zealand-with-a-student-loan/repaying-my-student-loan-when-i-earn-salary-or-wages", "label": { "en": "Inland Revenue: Repaying a student loan from salary or wages" } },
+    "ird_ietc": { "url": "https://www.ird.govt.nz/income-tax/income-tax-for-individuals/individual-tax-credits/independent-earner-tax-credit-ietc", "label": { "en": "Inland Revenue: Independent earner tax credit (IETC)" } },
+    "ird_schedular": { "url": "https://www.ird.govt.nz/income-tax/withholding-taxes/schedular-payments/getting-schedular-payments/work-out-and-declare-my-tax-rate-for-schedular-payments", "label": { "en": "Inland Revenue: Choosing a tax rate for schedular payments" } },
+    "ird_provisional": { "url": "https://www.ird.govt.nz/income-tax/provisional-tax", "label": { "en": "Inland Revenue: Provisional tax" } },
+    "acc_levy": { "url": "https://www.mbie.govt.nz/business-and-employment/employment-and-skills/employment-legislation-reviews/setting-the-average-acc-levy-rates-for-2025-26-2026-27-and-2027-28", "label": { "en": "MBIE: ACC levy rates for 2025-26 to 2027-28" } },
+    "min_wage": { "url": "https://www.employment.govt.nz/pay-and-hours/pay-and-wages/minimum-wage/minimum-wage-rates-and-types", "label": { "en": "Employment New Zealand: Minimum wage rates" } },
+    "holidays": { "url": "https://www.employment.govt.nz/leave-and-holidays", "label": { "en": "Employment New Zealand: Leave and holidays" } },
+    "stats_income": { "url": "https://www.stats.govt.nz/information-releases/labour-market-statistics-income-june-2026-quarter/", "label": { "en": "Stats NZ: Labour market statistics (income), June 2026 quarter" } }
+  },
+  "tax": {
+    "brackets": [
+      { "upto": 15600, "rate": 0.105 },
+      { "upto": 53500, "rate": 0.175 },
+      { "upto": 78100, "rate": 0.30 },
+      { "upto": 180000, "rate": 0.33 },
+      { "upto": null, "rate": 0.39 }
+    ],
+    "secondary": { "SB": 0.105, "S": 0.175, "SH": 0.30, "ST": 0.33, "SA": 0.39 },
+    "secondary_bands": [ { "code": "SB", "upto": 15600 }, { "code": "S", "upto": 53500 }, { "code": "SH", "upto": 78100 }, { "code": "ST", "upto": 180000 }, { "code": "SA", "upto": null } ],
+    "brackets_2024_25_blended": [
+      { "upto": 14000, "rate": 0.105 }, { "upto": 15600, "rate": 0.1282 }, { "upto": 48000, "rate": 0.175 }, { "upto": 53500, "rate": 0.2164 },
+      { "upto": 70000, "rate": 0.30 }, { "upto": 78100, "rate": 0.3099 }, { "upto": 180000, "rate": 0.33 }, { "upto": null, "rate": 0.39 }
+    ]
+  },
+  "acc": { "rate": 0.0175, "max_liable": 156641, "rate_2025_26": 0.0167, "max_liable_2025_26": 152790 },
+  "ietc": { "amount": 520, "min_income": 24000, "abate_from": 66000, "max_income": 70000, "abate_rate": 0.13 },
+  "student_loan": { "rate": 0.12, "threshold_annual": 24128, "threshold_weekly": 464 },
+  "kiwisaver": {
+    "employee_rates": [0.035, 0.04, 0.06, 0.08, 0.10],
+    "temporary_rate": 0.03,
+    "employer_min": 0.035, "employer_min_from": "2026-04-01", "employer_min_2028": 0.04, "rate_2028_from": "2028-04-01",
+    "govt_rate": 0.25, "govt_max": 260.72, "govt_income_cap": 180000
+  },
+  "esct": [
+    { "upto": 18720, "rate": 0.105 }, { "upto": 64200, "rate": 0.175 }, { "upto": 93720, "rate": 0.30 }, { "upto": 216000, "rate": 0.33 }, { "upto": null, "rate": 0.39 }
+  ],
+  "min_wage": { "adult": 23.95, "starting_out": 19.16, "training": 19.16, "from": "2026-04-01", "previous_adult": 23.50, "adult_history": { "2023": 22.70, "2024": 23.15, "2025": 23.50, "2026": 23.95 } },
+  "stats": { "median_weekly_wages_jun2026": 1419, "median_weekly_wages_jun2025": 1381, "median_hourly_jun2026": 35.96 },
+  "schedular": { "min_rate": 0.10, "min_rate_non_resident_visa": 0.15, "no_notification": 0.45 },
+  "provisional": { "rit_threshold": 5000 },
+  "gst": { "threshold": 60000 },
+  "leave": { "annual_weeks": 4, "payg_rate": 0.08, "sick_days": 10 },
+  "periods": { "weekly": 52, "fortnightly": 26, "monthly": 12, "annual": 1 }
+}

@@ -1,0 +1,30 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { compute, secondaryCode, incomeTax } from '../../lib/engine/nz';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const main = 60000, second = 15000; const code = secondaryCode(main + second);
+const s = compute({ gross: second, code });
+const trueTax = incomeTax(main + second) - incomeTax(main);
+const rows = [[20000, 8000], [45000, 10000], [60000, 15000], [70000, 20000], [150000, 25000]].map(([m, s2]) => { const c = secondaryCode(m + s2); const x = compute({ gross: s2, code: c }); const t = incomeTax(m + s2) - incomeTax(m); return [formatMoney(m), formatMoney(s2), c, formatMoney(x.annual.paye), formatMoney(t), formatMoney(x.annual.paye - t)]; });
+const faqs = [
+  { q: 'Which secondary tax code should I use in NZ?', a: 'The one that matches your total annual income from all jobs: SB up to $15,600, S from $15,601 to $53,500, SH from $53,501 to $78,100, ST from $78,101 to $180,000 and SA above. Each code applies a flat rate, 10.5 %, 17.5 %, 30 %, 33 % or 39 %, to the second job, plus the ACC levy. Add SL if you have a student loan.' },
+  { q: 'Why is my second job taxed so much?', a: `Because your main job has already used the lower tax bands. With ${formatMoney(main)} from a main job, every extra dollar falls in the 30 % band, so the second job is taxed at 30 % with the SH code. That is the correct rate for that income, not a penalty; on ${formatMoney(second)} the tax is ${formatMoney(s.annual.paye)}.` },
+  { q: 'What is a tailored tax code?', a: 'A rate calculated by Inland Revenue for your situation when the standard secondary codes would deduct too much or too little, for example when your combined income is just above a threshold or your hours vary a lot. You apply through myIR, and Inland Revenue gives you a certificate with the rate to pass to your employer.' },
+];
+---
+<ToolPage id="secondary" title="Secondary Tax Calculator NZ 2026-27: SB, S, SH, ST, SA Codes" h1="Secondary tax calculator: the right code for a second job"
+  description="Pick the secondary tax code for a second job in New Zealand from your total income: SB, S, SH, ST or SA, the tax and ACC on that job, and what it leaves you."
+  intro="Enter both incomes. The calculator picks the secondary code that matches your total income and shows what the second job pays after tax, ACC and KiwiSaver."
+  mode="secondary" initialGross={15000} initialPeriod="weekly" faqs={faqs} related={['taxCodes', 'home', 'refund', 'studentLoan', 'payeRates', 'incomeTax']}
+  sources={[SRC.ird_rates, SRC.ird_student_loan, SRC.acc_levy]}>
+  <p>When you have two jobs, only one can use the main M or ME code. The second uses a secondary code, which taxes all of its income at one flat rate chosen from your total income across both jobs. With {formatMoney(main)} from a main job and {formatMoney(second)} from a second, total income is {formatMoney(main + second)}, which falls in the 30 % band, so the right code is {code}. The second job then pays {formatMoney(s.annual.paye)} of tax on {formatMoney(second)}, plus {formatMoney(s.annual.acc)} of ACC. That matches the tax the second income actually adds to your year, {formatMoney(trueTax)}, because every dollar of it sits in the 30 % band. The calculator makes the same choice from your two incomes and shows the take-home from the second job for each pay. Choosing a code that is too low, often S when SH is due, is the most common cause of an end-of-year tax bill for people with two jobs; choosing one that is too high leads to a refund, but ties up your money for months.</p>
+  <h2>Secondary codes in practice</h2>
+  <ContentTable headers={['Main job', 'Second job', 'Code', 'Tax deducted on second job', 'Tax it really adds', 'Difference']} align={['r', 'r', 'l', 'r', 'r', 'r']} rows={rows} />
+  <p>A difference close to zero means the code fits. It is not zero when your total income straddles a threshold: part of the second income is then taxed at a lower rate in reality than the flat code assumes. In those cases a tailored tax code avoids the over-deduction.</p>
+  <h2>Changing codes during the year</h2>
+  <p>If your hours change, update the IR330 with each employer; the new code applies from the next pay. Deductions already made are squared up after 31 March. If you have a student loan, both jobs need the SL suffix, and the secondary job repays 12 % of all its earnings, since the threshold is used by the main job. The <a href={route('taxCodes', lang)}>tax codes guide</a> lists every code, including those for students and casual agricultural workers.</p>
+</ToolPage>

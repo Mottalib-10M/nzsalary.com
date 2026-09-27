@@ -1,0 +1,48 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { accLevy } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const A = P.acc;
+const rows = [30000, 60000, 90000, 120000, A.max_liable, 200000].map((i) => [formatMoney(i), formatMoney(Math.min(i, A.max_liable_2025_26) * A.rate_2025_26, 2), formatMoney(accLevy(i), 2), formatMoney(accLevy(i) - Math.min(i, A.max_liable_2025_26) * A.rate_2025_26, 2), formatMoney(accLevy(i) / 52, 2)]);
+const faqs = [
+  { q: 'What is the ACC earners’ levy for 2026-27?', a: `$1.75 per $100 of liable earnings, 1.75 %, on earnings up to ${formatMoney(A.max_liable)} a year, so at most ${formatMoney(A.max_liable * A.rate, 2)}. It applies from 1 April 2026 and was 1.67 % on earnings up to ${formatMoney(A.max_liable_2025_26)} in 2025-26. Employees pay it through PAYE; self-employed people are invoiced by ACC.` },
+  { q: 'Is the ACC levy tax deductible?', a: 'For employees, no: it is deducted from gross pay with PAYE and is not a deduction from taxable income. For self-employed people, ACC levies paid are a deductible business expense in the year they are paid, because they relate to earning business income. The earners’ levy portion of their invoice is based on liable earnings.' },
+  { q: 'Do I get the ACC levy back if I have two jobs?', a: 'If your total earnings from all jobs exceed the maximum liable earnings, each employer still deducts the levy on its own pay, so you can pay more than the annual maximum. Inland Revenue refunds the excess at the end of the tax year when it squares up your income tax.' },
+];
+---
+<Guide id="acc" title="ACC Levy NZ 2026-27: Earners’ Levy 1.75 %, Maximum $2,741" h1="The ACC earners’ levy in 2026-27: what you pay and why"
+  description="The ACC earners’ levy for 2026-27 in New Zealand: 1.75 % of earnings up to $156,641, how it is collected with PAYE, the work levy, and what it costs by income."
+  intro="Every pay has an ACC line. It is not income tax: it pays for New Zealand’s no-fault accident cover for injuries that happen away from work."
+  resume={`The ACC earners’ levy is a charge on your earnings that funds the Accident Compensation Corporation’s cover for injuries outside work, such as sport, home and road accidents that are not motor vehicle claims. For the 2026-27 tax year it is 1.75 % of liable earnings, or $1.75 per $100, up from 1.67 % in 2025-26, on earnings up to ${formatMoney(A.max_liable)} a year. The maximum levy is therefore ${formatMoney(A.max_liable * A.rate, 2)}. Employees pay it through PAYE, often shown together with income tax on the payslip. Self-employed people pay it on an invoice from ACC after the year, together with a work levy for their industry. Employers pay a separate work levy for their employees’ workplace injuries. On a salary of ${formatMoney(60000)}, the earners’ levy costs ${formatMoney(accLevy(60000))} a year, ${formatMoney(accLevy(60000) / 52, 2)} a week. The levy rates are set by the government every three years after public consultation, and the current settings run to 2027-28.`}
+  faqs={faqs} related={['home', 'payeRates', 'selfEmployed', 'employerCost', 'contractor', 'taxRates']} sources={[SRC.acc_levy, SRC.ird_rates, SRC.ird_provisional]}>
+  <h2>What the levy costs by income</h2>
+  <ContentTable headers={['Earnings', 'Levy 2025-26', 'Levy 2026-27', 'Increase', 'Per week 2026-27']} align={['r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>The levy is proportional up to the ceiling, then flat: an income of {formatMoney(200000)} pays the same as {formatMoney(A.max_liable)}. The 2026-27 increase adds between a few dollars and about {formatMoney(accLevy(A.max_liable) - A.max_liable_2025_26 * A.rate_2025_26)} a year.</p>
+
+  <h2>Three levies, three payers</h2>
+  <p>ACC is funded by several accounts. The <strong>earners’ account</strong>, funded by the earners’ levy, covers non-work injuries of people in paid work. The <strong>work account</strong>, funded by the work levy that employers pay on their payroll and self-employed people pay on their earnings, covers injuries at work; its rate depends on the industry’s risk classification. The <strong>motor vehicle account</strong>, funded through petrol excise and vehicle licensing, covers road injuries. The government funds cover for people who are not earning. Only the earners’ levy appears on an employee’s payslip.</p>
+
+  <h2>How employees pay it</h2>
+  <p>Inland Revenue collects the earners’ levy with PAYE on ACC’s behalf. Your employer deducts 1.75 % of your gross pay each pay day until your earnings for the year reach {formatMoney(A.max_liable)}, if it has that information; many payslips show a single PAYE figure that already includes it. Some payments, such as redundancy payments, are not liable earnings and do not attract the levy.</p>
+
+  <h2>Self-employed and shareholder-employees</h2>
+  <p>People who work for themselves are invoiced by ACC once Inland Revenue has their income, for the earners’ levy and the work levy under CoverPlus, or they can choose CoverPlus Extra to agree a fixed level of weekly compensation in advance. The invoice arrives after the tax year and is deductible. Shareholder-employees of their own company are treated as self-employed for ACC on their shareholder salary. The <a href={route('selfEmployed', lang)}>self-employed tax guide</a> puts ACC alongside income tax and GST.</p>
+
+  <h2>What the cover gives you</h2>
+  <p>In return for the levy, anyone injured in an accident in New Zealand is covered for treatment costs, and people in paid work receive weekly compensation of up to 80 % of their earnings, capped at the maximum liable earnings, if they cannot work because of the injury. There is no right to sue for personal injury damages in most cases, which is the trade-off of the no-fault scheme. The cover applies whatever the cause of the accident and whoever is at fault.</p>
+
+  <h2>How rates are set</h2>
+  <p>ACC recommends levy rates for three years, the government consults publicly and sets them by regulation. The current consultation set the earners’ levy for 2025-26, 2026-27 and 2027-28, rising each year to restore the account’s funding after higher claim costs. The maximum liable earnings are adjusted each year in line with average wages. The <a href={route('home', lang)}>PAYE calculator</a> uses the 2026-27 rate and ceiling.</p>
+  <h2>Weekly compensation and the levy base</h2>
+  <p>The earnings on which you pay the levy are also the earnings ACC uses if you cannot work after an injury. Weekly compensation is 80 % of your earnings before the injury, capped by the same maximum: at the {formatMoney(A.max_liable)} ceiling, the most ACC pays is about {formatMoney(A.max_liable * 0.8 / 52, 2)} a week before tax. For a work injury, your employer pays the first week at 80 %; for an injury outside work, the first week is not compensated, and ACC pays from the second week. Weekly compensation is taxable income, and PAYE is deducted from it, but no earners’ levy is charged on it.</p>
+
+  <h2>Two jobs and the ceiling</h2>
+  <p>Each employer deducts the levy on the pay it knows about, without seeing your other jobs, so someone with two jobs whose total exceeds {formatMoney(A.max_liable)} pays more than the maximum during the year. The excess is refunded through your end-of-year income tax assessment, with no application needed, as long as Inland Revenue has the income from both jobs. The levy applies to salary and wages, holiday pay, bonuses and commissions, but not to employer KiwiSaver contributions, interest, dividends or NZ Super.</p>
+  <h2>Checking the levy on your payslip</h2>
+  <p>Payslips rarely show the ACC levy separately: most employers include it in the PAYE line, since Inland Revenue’s PAYE tables combine income tax and the earners’ levy. To check it, multiply your gross pay for the period by 1.75 % and compare the PAYE line with the tax alone from the calculator. If the difference is larger than the levy, your tax code is the first thing to look at. The <a href={route('payeRates', lang)}>PAYE rates guide</a> shows the combined deduction for each band.</p>
+</Guide>

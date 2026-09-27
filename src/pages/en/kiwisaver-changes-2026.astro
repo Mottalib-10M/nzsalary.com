@@ -1,0 +1,49 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { compute } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const cmp = [40000, 60000, 80000, 120000].map((g) => { const a = compute({ gross: g, kiwisaver: 0.03, employerKs: 0.03 }); const b = compute({ gross: g, kiwisaver: 0.035 }); const c = compute({ gross: g, kiwisaver: 0.04, employerKs: 0.04 }); return [formatMoney(g), formatMoney(a.annual.takeHome - b.annual.takeHome), formatMoney(b.annual.employerKsNet - a.annual.employerKsNet), formatMoney((b.annual.kiwisaver + b.annual.employerKsNet) - (a.annual.kiwisaver + a.annual.employerKsNet)), formatMoney((c.annual.kiwisaver + c.annual.employerKsNet) - (a.annual.kiwisaver + a.annual.employerKsNet))]; });
+const faqs = [
+  { q: 'Did KiwiSaver contributions go up in April 2026?', a: 'Yes. From 1 April 2026 the default employee contribution rose from 3 % to 3.5 % of gross pay, and the minimum employer contribution rose from 3 % to 3.5 %. The change applied to every pay day from 1 April, even for pay periods that started in March. A second step to 4 % for both is scheduled for 1 April 2028.' },
+  { q: 'Can I stay at 3 % KiwiSaver?', a: 'Yes, temporarily. You can apply to Inland Revenue for a temporary rate reduction to 3 % for between three and twelve months, and apply again when it ends. Your employer may choose to reduce its own contribution to 3 % while yours is reduced. At the end of the period, the default rate applies again automatically.' },
+  { q: 'What changed for the KiwiSaver government contribution?', a: 'From 1 July 2025, the government contributes 25 cents per dollar you contribute, instead of 50 cents, up to $260.72 a year instead of $521.43. Members with taxable income over $180,000 no longer receive it, and 16 and 17-year-olds became eligible. The contribution year runs from 1 July to 30 June.' },
+];
+---
+<Guide id="ksChanges" title="KiwiSaver Changes 2026: 3.5 % Default, Employers, 2028 Step" h1="KiwiSaver changes in 2026: the new 3.5 % default and what comes next"
+  description="What changed in KiwiSaver on 1 April 2026: the 3.5 % default for employees and employers, the temporary rate reduction, 16-17 year olds, the 2028 step."
+  intro="The biggest change to KiwiSaver contributions since 2009, in three steps: the government contribution in 2025, the 3.5 % default in 2026 and 4 % in 2028."
+  resume={`KiwiSaver contribution rules changed on 1 April 2026. The default rate for employees rose from 3 % to 3.5 % of gross pay, and the minimum employer contribution rose from 3 % to 3.5 %, for every pay day from that date. Employees who prefer to keep 3 % can apply for a temporary rate reduction lasting three to twelve months, renewable, and employers may match it. Employees aged 16 and 17 now receive the employer contribution as well. A second step, to 4 % for both employee and employer, is scheduled for 1 April 2028. The changes follow Budget 2025, which also halved the government contribution from 1 July 2025, to 25 cents per dollar contributed and a maximum of ${formatMoney(P.kiwisaver.govt_max, 2)} a year, and removed it for members earning more than ${formatMoney(P.kiwisaver.govt_income_cap)}. For a member on ${formatMoney(60000)}, the 2026 step costs about ${formatMoney(compute({ gross: 60000, kiwisaver: 0.03, employerKs: 0.03 }).annual.takeHome - compute({ gross: 60000, kiwisaver: 0.035 }).annual.takeHome)} a year of take-home pay and adds more than that to the fund, because the employer’s share rises too.`}
+  faqs={faqs} related={['kiwisaver', 'employerCost', 'home', 'salary', 'taxRates', 'averageSalary']} sources={[SRC.ird_kiwisaver, SRC.ird_esct, SRC.ird_rates]}>
+  <h2>The timeline</h2>
+  <ContentTable headers={['Date', 'Change']} align={['l', 'l']} rows={[
+    ['1 July 2025', 'Government contribution becomes 25 c per $1, maximum $260.72; none above $180,000 of income; 16 and 17-year-olds eligible'],
+    ['1 April 2026', 'Default employee rate and minimum employer rate rise from 3 % to 3.5 %; temporary rate reduction to 3 % available; employer contributions for 16 and 17-year-olds'],
+    ['1 April 2028', 'Default employee rate and minimum employer rate rise to 4 %'],
+  ]} />
+
+  <h2>What it means for your pay and your fund</h2>
+  <p>The table compares the old 3 % with the new 3.5 %, for both employee and employer, and shows the 2028 step to 4 %. The employer’s contribution is shown after employer superannuation contribution tax.</p>
+  <ContentTable headers={['Salary', 'Less take-home per year', 'More from employer, net', 'More into fund per year', 'More into fund at 4 % (2028)']} align={['r', 'r', 'r', 'r', 'r']} rows={cmp} />
+  <p>The take-home cost is half a percent of gross pay; the gain to the fund is larger, because the employer’s extra half percent is added, minus ESCT. Over a working life, the higher rates compound into a noticeably larger balance at 65, which is the purpose of the change.</p>
+
+  <h2>For employees</h2>
+  <p>If you were contributing at the default 3 %, nothing to do: payroll moved you to 3.5 % from 1 April. If you already contributed 4 %, 6 %, 8 % or 10 %, your rate did not change, but your employer’s contribution rose to 3.5 % if it was paying the minimum. If the extra half percent is a strain, apply for the temporary rate reduction in myIR or through your provider; you will receive a letter to give your employer. Remember that the government contribution requires {formatMoney(1042.86, 2)} of member contributions in the year to 30 June to reach its maximum; at 3.5 %, a salary of about {formatMoney(29800)} gets there.</p>
+
+  <h2>For employers</h2>
+  <p>Employers must update payroll to 3.5 % for both deductions and contributions, start contributing for existing members aged 16 and 17, and process temporary rate reduction letters. Where an employee chooses the temporary reduction, the employer may lower its own contribution to 3 % for the same period. Employment agreements that express pay as a total remuneration package including KiwiSaver need care: the extra employer half percent then comes out of the package unless it is renegotiated. The <a href={route('employerCost', lang)}>employer cost calculator</a> shows the new cost.</p>
+
+  <h2>What did not change</h2>
+  <p>The contribution options of 4 %, 6 %, 8 % and 10 % remain. ESCT rates and thresholds are unchanged since April 2025. Members aged 65 and over, eligible for NZ Super, still do not receive compulsory employer contributions, although some employers keep paying them. Savings suspensions, now called savings breaks, remain available for up to a year at a time. The first-home withdrawal and the lock-in until 65 are unchanged.</p>
+
+  <h2>Is it worth contributing more than the default?</h2>
+  <p>Contributions above 3.5 % do not attract more from your employer or the government, so the extra is ordinary saving, taxed like any other fund returns through the prescribed investor rate. It can still make sense if you prefer locked-in retirement savings or are saving for a first home. The <a href={route('kiwisaver', lang)}>KiwiSaver calculator</a> shows the effect of each rate on your take-home pay and your fund.</p>
+  <h2>The government contribution year</h2>
+  <p>The government contribution is not calculated on the tax year. It uses a year from 1 July to 30 June, and it is paid into your account after that year ends, once your provider has claimed it. To receive the maximum of {formatMoney(P.kiwisaver.govt_max, 2)} for the year to 30 June 2027, you need to contribute at least {formatMoney(1042.86, 2)} yourself between 1 July 2026 and 30 June 2027; below that, you receive 25 cents for each dollar. Contributions made through your employer count, as do voluntary lump sums, so someone who has not reached the threshold by June can top up directly before the deadline.</p>
+  <p>Members who are not employees, such as self-employed people and those on parental leave, receive the government contribution on the same terms, based on what they pay in voluntarily over the year.</p>
+  <p>The rules on this page are those in force on the date shown at the top.</p>
+</Guide>

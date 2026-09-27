@@ -1,0 +1,27 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { route } from '../../i18n/routes';
+import { breadcrumbSchema, webPageSchema } from '../../lib/seo';
+import { REVIEW_CYCLE_MONTHS } from '../../data/site-config';
+const lang = 'en';
+const title = 'Editorial Policy of Take Home Pay NZ: Sources, Corrections';
+const description = 'How Take Home Pay NZ chooses its sources, checks every PAYE, KiwiSaver and ACC parameter, dates its updates and corrects errors, and its review cycle.';
+const jsonLd = [webPageSchema({ name: title, description, path: route('editorial', lang), lang }), breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Editorial policy', path: route('editorial', lang) }])];
+---
+<PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} breadcrumbs={[{ label: 'Editorial policy' }]}>
+  <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Editorial policy</h1></header>
+  <div class="prose prose-slate max-w-none">
+    <h2>Sources</h2>
+    <p>Rates and rules come from primary sources only: Inland Revenue, ACC and MBIE, Employment New Zealand and Stats NZ, and the legislation they apply. Press articles and other calculators are never a source for a figure. Each page lists the sources it relies on, and each parameter in our engine carries the address it was read from.</p>
+    <h2>Figures</h2>
+    <p>Amounts on the pages are computed by the same engine as the calculators, from the same parameter file, so a correction to a rate updates every page at once. Test cases built from Inland Revenue’s published rates and thresholds run before every publication.</p>
+    <h2>Review cycle</h2>
+    <p>Every page is reviewed at least every {REVIEW_CYCLE_MONTHS} months, all parameters before each 1 April, when new rates take effect, and after each Budget. The date shown at the top and bottom of each page is the date of the last check.</p>
+    <h2>Corrections</h2>
+    <p>When we find or are told about an error, we correct it, rerun the tests and note the date of the change. Significant corrections are described on the page concerned. Reports can be sent through the <a href={route('contact', lang)}>contact page</a>.</p>
+    <h2>Independence</h2>
+    <p>No company, KiwiSaver provider or government body pays for or reviews our content. Advertising, if shown, never appears inside a calculator and never influences what we write.</p>
+    <h2>Use of software</h2>
+    <p>We use software tools, including language models, to help draft and check text. Every figure is produced by the tested engine, and every rule is checked against the official source before publication.</p>
+  </div>
+</PageLayout>

@@ -1,0 +1,51 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { compute, hourlyToAnnual } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const M = P.min_wage;
+const rows = ([['Adult', M.adult], ['Starting-out', M.starting_out], ['Training', M.training]] as const).flatMap(([l, h]) => [40, 30, 20].map((hw) => { const g = hourlyToAnnual(h, hw); const r = compute({ gross: g, code: 'ME', kiwisaver: 0.035, period: 'weekly' }); return [`${l}, ${hw} h`, formatMoney(h * hw, 2), formatMoney(g), formatMoney(r.perPeriod.takeHome, 2)]; }));
+const full = compute({ gross: hourlyToAnnual(M.adult), code: 'ME', kiwisaver: 0.035, period: 'weekly' });
+const faqs = [
+  { q: 'What is the minimum wage in New Zealand in 2026?', a: `${formatMoney(M.adult, 2)} an hour for adult employees from 1 April 2026, up from ${formatMoney(M.previous_adult, 2)}. The starting-out and training minimum wages are ${formatMoney(M.starting_out, 2)}, 80 % of the adult rate. A full-time week of 40 hours at the adult rate is ${formatMoney(M.adult * 40, 2)} before tax.` },
+  { q: 'Who can be paid the starting-out minimum wage?', a: 'Workers aged 16 or 17 who have not yet completed six months of continuous employment with their current employer, workers aged 16 to 19 who have received certain benefits for six months or more, and they must be paid the adult rate once the conditions no longer apply. The training minimum wage applies to employees aged 20 or over in recognised training of at least 60 credits a year.' },
+  { q: 'What is the minimum wage take-home pay per week in NZ?', a: `About ${formatMoney(full.perPeriod.takeHome, 2)} a week for 40 hours at ${formatMoney(M.adult, 2)}, with the ME tax code and KiwiSaver at 3.5 %. That is after PAYE of ${formatMoney(full.perPeriod.paye, 2)}, which includes the independent earner tax credit, ACC of ${formatMoney(full.perPeriod.acc, 2)} and KiwiSaver of ${formatMoney(full.perPeriod.kiwisaver, 2)}. Without KiwiSaver, the week’s pay in hand is higher by that amount.` },
+];
+---
+<Guide id="minimumWage" title="Minimum Wage NZ 2026: $23.95 an Hour, Weekly Take-Home" h1="Minimum wage in New Zealand from 1 April 2026"
+  description="The New Zealand minimum wage from 1 April 2026: $23.95 an hour for adults, $19.16 starting-out and training, with weekly take-home after PAYE and ACC."
+  intro="Three minimum wage rates, set each year by the government and reviewed by MBIE. Here are the 2026 rates and what they leave after deductions."
+  resume={`The adult minimum wage in New Zealand is ${formatMoney(M.adult, 2)} an hour from 1 April 2026, an increase of ${formatMoney(M.adult - M.previous_adult, 2)} on the previous ${formatMoney(M.previous_adult, 2)}. The starting-out minimum wage, for young workers in their first months of work, and the training minimum wage, for adults in recognised training, are both ${formatMoney(M.starting_out, 2)} an hour, 80 % of the adult rate. For a 40-hour week, the adult rate gives ${formatMoney(M.adult * 40, 2)} before tax and about ${formatMoney(hourlyToAnnual(M.adult))} a year. After PAYE with the ME code, the ACC levy and KiwiSaver at 3.5 %, a full-time worker takes home about ${formatMoney(full.perPeriod.takeHome, 2)} a week. The minimum wage applies to all employees aged 16 or over, whether full-time, part-time, casual or on a fixed term, and whether paid by the hour, by salary or by piece rates. Employers must also pay holiday pay, public holidays and sick leave on top.`}
+  faqs={faqs} related={['hourly', 'ietcGuide', 'holidayPay', 'averageSalary', 'takeHome', 'h-25']} sources={[SRC.min_wage, SRC.ird_rates, SRC.holidays]}>
+  <h2>Weekly pay at the minimum wage rates</h2>
+  <ContentTable headers={['Rate and hours', 'Weekly gross', 'Yearly gross', 'Weekly take-home (ME, KiwiSaver 3.5 %)']} align={['l', 'r', 'r', 'r']} rows={rows} />
+  <p>Take-home pay is higher with the ME code for incomes above {formatMoney(P.ietc.min_income)}, because the independent earner tax credit adds $10 a week. At 20 hours a week the income is below that threshold and the credit does not apply.</p>
+
+  <h2>How the minimum wage is set</h2>
+  <p>The Minister for Workplace Relations and Safety reviews the minimum wage every year, on advice from the Ministry of Business, Innovation and Employment, which weighs wage growth, inflation, employment effects and the relationship with the median wage. The new rates take effect on 1 April. The 2026 increase was 1.9 %; the adult minimum is about {formatPercent(M.adult / P.stats.median_hourly_jun2026, 0)} of the median hourly wage of {formatMoney(P.stats.median_hourly_jun2026, 2)} reported by Stats NZ for the June 2026 quarter.</p>
+
+  <h2>What counts towards the minimum wage</h2>
+  <p>The minimum is an hourly floor on pay for all hours worked, including training time and time on call at the workplace. Salaried employees must earn at least the minimum for every hour they work, so long hours can push a salary below the floor. Piece-rate workers must be topped up to the minimum for their hours. Deductions for accommodation, meals or uniforms cannot bring pay below the minimum except within limits set by the Minimum Wage Act. Tips do not count towards the minimum wage.</p>
+
+  <h2>On top of the minimum</h2>
+  <p>Minimum-wage workers are entitled to the same leave as others: four weeks of annual holidays after twelve months, or 8 % holiday pay for casual work; ten days of sick leave after six months; paid public holidays; and time and a half for work on a public holiday. KiwiSaver employer contributions of 3.5 % apply to members. The <a href={route('holidayPay', lang)}>holiday pay guide</a> explains how to calculate them.</p>
+
+  <h2>The living wage is not the minimum wage</h2>
+  <p>The Living Wage, promoted by the Living Wage Movement Aotearoa, is a voluntary benchmark calculated by an independent organisation, higher than the legal minimum. Some councils and employers pay it by choice. It has no legal force: only the minimum wage set by government can be enforced by the Labour Inspectorate.</p>
+
+  <h2>If you are paid less</h2>
+  <p>An employer who pays below the minimum wage breaches the Minimum Wage Act, and the Labour Inspectorate can recover arrears and impose penalties. Start by raising it with your employer in writing, with your hours and pay records; employers must keep time and wage records for six years. Employment New Zealand’s contact centre can advise on next steps.</p>
+  <h2>Recent adult minimum wage rates</h2>
+  <ContentTable headers={['From 1 April', 'Adult rate per hour', '40-hour week']} align={['l', 'r', 'r']} rows={Object.entries(M.adult_history).map(([y, h]) => [y, formatMoney(h, 2), formatMoney(h * 40, 2)])} />
+  <p>The adult rate has risen by smaller steps since 2024 than in the years before, when increases of around 6 to 7 % a year were common. The 2026 increase of {formatMoney(M.adult - M.previous_adult, 2)} an hour is {formatPercent(M.adult / M.previous_adult - 1, 1)}.</p>
+
+  <h2>Who can be paid the starting-out rate</h2>
+  <p>The starting-out rate, {formatMoney(M.starting_out, 2)} an hour, is 80 % of the adult rate. It can be paid to 16 and 17-year-olds who have not yet completed six months of continuous employment with their current employer, to 18 and 19-year-olds who have been on a main benefit for six months or more, until they have worked six months for any employer, and to 16 to 19-year-olds whose employment agreement requires at least 40 credits a year of recognised training. The training minimum wage, at the same {formatMoney(M.training, 2)}, applies to employees aged 20 or over in recognised training of at least 60 credits a year. Everyone else aged 16 or over must receive at least the adult rate.</p>
+  <h2>The minimum wage over a year</h2>
+  <p>A full-time adult on the minimum wage earns {formatMoney(hourlyToAnnual(M.adult))} in a year of 52 paid weeks, which include {formatMoney(P.leave.annual_weeks * 40 * M.adult)} of paid annual leave. With the ME code and KiwiSaver at 3.5 %, the year’s take-home pay is about {formatMoney(compute({ gross: hourlyToAnnual(M.adult), code: 'ME', kiwisaver: 0.035 }).annual.takeHome)}. Someone working 30 hours a week earns {formatMoney(hourlyToAnnual(M.adult, 30))} a year, still inside the range of the independent earner tax credit, and keeps {formatMoney(compute({ gross: hourlyToAnnual(M.adult, 30), code: 'ME', kiwisaver: 0.035 }).annual.takeHome)}.</p>
+  <p>These annual figures assume the same hours every week; casual workers paid 8 % holiday pay instead of leave receive a similar total over the year.</p>
+</Guide>

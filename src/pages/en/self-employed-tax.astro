@@ -1,0 +1,45 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { incomeTax, accLevy, contractor } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const rows = [30000, 50000, 75000, 100000, 150000].map((p) => [formatMoney(p), formatMoney(incomeTax(p)), formatMoney(accLevy(p)), formatMoney(incomeTax(p) + accLevy(p)), formatPercent((incomeTax(p) + accLevy(p)) / p)]);
+const c = contractor({ fees: 100000, expenses: 20000, rate: 0.2 });
+const faqs = [
+  { q: 'How much tax do self-employed people pay in NZ?', a: `The same income tax rates as employees, 10.5 % to 39 %, on profit after business expenses, plus ACC levies invoiced separately. On a profit of ${formatMoney(75000)}, income tax is ${formatMoney(incomeTax(75000))} and the ACC earners’ levy about ${formatMoney(accLevy(75000))}, before the ACC work levy for your industry. GST is separate and passed on to customers.` },
+  { q: 'When do I have to pay provisional tax?', a: `When your residual income tax, the tax left to pay after deductions at source, is more than ${formatMoney(P.provisional.rit_threshold)} for a year. You then pay provisional tax for the following year in instalments, usually three under the standard method, on 28 August, 15 January and 7 May for a March balance date, or through other methods such as the ratio or AIM method.` },
+  { q: 'Do I need to register for GST as a sole trader?', a: `Yes, if your turnover exceeds ${formatMoney(P.gst.threshold)} in any 12-month period, or you expect it to. Below that you can register voluntarily, which lets you claim GST on business purchases but requires you to charge 15 % GST on your sales. GST collected belongs to Inland Revenue and is not part of your income.` },
+];
+---
+<Guide id="selfEmployed" title="Self-Employed Tax NZ 2026-27: Income Tax, ACC, Provisional" h1="Self-employed tax in New Zealand: income tax, ACC, GST and provisional tax"
+  description="What a sole trader pays in New Zealand for 2026-27: income tax on profit, ACC levies, GST above $60,000, provisional tax above $5,000, and when each is due."
+  intro="Working for yourself means paying the same income tax as an employee, but on profit, at different times, and with ACC and GST to handle yourself."
+  resume={`A self-employed person in New Zealand pays income tax at the same rates as employees, 10.5 % to 39 % for 2026-27, but on business profit rather than wages, and without PAYE deducting it along the way. Profit is income minus deductible business expenses. On top of income tax, ACC invoices the earners’ levy of 1.75 % and a work levy that depends on the industry, after the year. GST registration is compulsory once turnover exceeds ${formatMoney(P.gst.threshold)} in 12 months. If the tax left to pay after any withholding, the residual income tax, exceeds ${formatMoney(P.provisional.rit_threshold)} for a year, provisional tax becomes due for the next year, paid in instalments. Contractors paid schedular payments have tax withheld by the client at a rate of their choice, at least 10 %. On a profit of ${formatMoney(75000)}, income tax is ${formatMoney(incomeTax(75000))} and the earners’ levy about ${formatMoney(accLevy(75000))}, together ${formatPercent((incomeTax(75000) + accLevy(75000)) / 75000)} of profit. The main difference from employment is timing: the bills arrive after the income, sometimes more than a year later.`}
+  faqs={faqs} related={['contractor', 'employeeVsContractor', 'acc', 'incomeTax', 'taxRates', 'kiwisaver']} sources={[SRC.ird_provisional, SRC.ird_schedular, SRC.acc_levy]}>
+  <h2>Tax and ACC on business profit</h2>
+  <ContentTable headers={['Profit', 'Income tax', 'ACC earners’ levy', 'Total', 'Share of profit']} align={['r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>The table leaves out the ACC work levy, which depends on your industry classification and can range from a fraction of a percent for office work to several percent for construction or forestry. It also leaves out the independent earner tax credit, which self-employed people can claim if their income is between {formatMoney(P.ietc.min_income)} and {formatMoney(P.ietc.max_income)}.</p>
+
+  <h2>Deductible expenses</h2>
+  <p>Expenses are deductible if they are incurred to earn business income: materials, tools and equipment, which are depreciated if they cost more than {formatMoney(1000)}, business vehicle costs in proportion to business use, the business share of home office costs, insurance, accounting fees, ACC levies, phone and internet in proportion to business use, and interest on business borrowing. Private and capital expenses are not. Records must be kept for seven years.</p>
+
+  <h2>Provisional tax</h2>
+  <p>Provisional tax is a way of paying this year’s tax during the year instead of all at once afterwards. It applies when your residual income tax for the previous year exceeded {formatMoney(P.provisional.rit_threshold)}. Under the standard method, you pay last year’s residual income tax plus 5 % in three instalments; under the estimation method, you estimate this year’s tax; under the accounting income method, AIM, you pay with each GST period based on actual results. Newly self-employed people often get two bills in their second year, the terminal tax for the first year and the first provisional instalment for the second, which is why setting aside a share of every payment matters.</p>
+
+  <h2>Contractors on schedular payments</h2>
+  <p>Some contractors, such as those in construction, labour hire, media, teaching and cleaning, receive schedular payments, from which the client withholds tax at the rate on the contractor’s IR330C, at least 10 %. The withholding is a prepayment of the income tax on profit. On {formatMoney(100000)} of fees with {formatMoney(20000)} of expenses, a 20 % rate withholds {formatMoney(c.withheld)} against about {formatMoney(c.tax + c.acc)} of tax and earners’ levy due. The <a href={route('contractor', lang)}>contractor tax calculator</a> finds a rate that fits your figures.</p>
+
+  <h2>GST</h2>
+  <p>Once registered, you add 15 % GST to your prices, claim back the GST on business purchases, and file GST returns monthly, two-monthly or six-monthly. The difference is paid to Inland Revenue. GST is not income: the calculators on this site assume figures excluding GST. If you are close to the {formatMoney(P.gst.threshold)} threshold, remember that it applies to the last twelve months or the next twelve, whichever is higher.</p>
+
+  <h2>KiwiSaver and ACC cover</h2>
+  <p>Self-employed people can join KiwiSaver and contribute directly, and qualify for the government contribution of 25 cents per dollar, up to {formatMoney(P.kiwisaver.govt_max, 2)} a year, if their income is under {formatMoney(P.kiwisaver.govt_income_cap)}. There is no employer contribution. ACC cover works as for employees, with weekly compensation based on liable earnings; CoverPlus Extra lets you agree a fixed level of cover in advance, which is useful when earnings fluctuate.</p>
+  <h2>Drawings, set-asides and the first year</h2>
+  <p>A sole trader is taxed on profit, not on what they take out of the business. Money you draw for yourself is not an expense, and profit left in the business account is taxed all the same. Because no tax is deducted during the first year, the first bill arrives only after the return is filed, often with the first provisional tax instalment for the following year. A simple rule is to transfer a fixed share of every payment received into a separate account: on a profit of {formatMoney(75000)}, income tax and the earners’ levy take {formatPercent((incomeTax(75000) + accLevy(75000)) / 75000)} of profit, so setting aside around a quarter of what you earn, plus any GST collected, covers most situations.</p>
+  <h2>Sole trader or company</h2>
+  <p>Many small businesses start as sole traders and later form a company. A company pays tax at a flat 28 % on its profit, and the owner is then paid a salary or shareholder-employee salary, taxed on the individual scale, or dividends with imputation credits for the tax the company already paid. A company does not reduce tax on income that is paid out to the owner, since the individual rates still apply to it, but it can help when profit is retained in the business and it separates business debts from personal assets. The choice has legal and accounting costs, and advice from an accountant is worth it before changing.</p>
+</Guide>

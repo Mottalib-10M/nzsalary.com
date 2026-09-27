@@ -1,0 +1,27 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { grossForNet } from '../../lib/engine/nz';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const g50 = grossForNet(50000, { kiwisaver: 0.035 });
+const rows = [30000, 40000, 50000, 60000, 75000, 100000].map((n) => [formatMoney(n), formatMoney(grossForNet(n, { kiwisaver: 0 })), formatMoney(grossForNet(n, { kiwisaver: 0.035 })), formatMoney(grossForNet(n, { kiwisaver: 0.035, studentLoan: true }))]);
+const faqs = [
+  { q: 'What salary do I need to take home $50,000 a year in NZ?', a: `About ${formatMoney(g50)} with KiwiSaver at 3.5 %, or ${formatMoney(grossForNet(50000, { kiwisaver: 0 }))} without KiwiSaver, on an M tax code. A student loan raises the figure to ${formatMoney(grossForNet(50000, { kiwisaver: 0.035, studentLoan: true }))}. These are annual amounts before tax; divide by 52 or 26 for the weekly or fortnightly equivalent.` },
+  { q: 'Should I ask for a salary including or excluding KiwiSaver?', a: 'Most New Zealand offers quote the salary before KiwiSaver, with the employer contribution of at least 3.5 % paid on top. Some quote a total remuneration package that already includes it. Ask which one applies: on a $90,000 package, the difference is about $3,000 of salary a year.' },
+  { q: 'How much more gross do I need for $100 more a week in the hand?', a: 'Between about $125 and $155 more a week, depending on your bracket: the 17.5 % and 30 % tax rates, ACC at 1.75 % and KiwiSaver at 3.5 % all apply to the extra pay. With a student loan, add the 12 % repayment on top. The calculator finds the exact figure for your situation.' },
+];
+---
+<ToolPage id="netToGross" title="Net to Gross Salary NZ 2026-27: Salary for Your Take-Home" h1="Net to gross: the salary you need for a take-home figure"
+  description="Work out the gross salary that gives the take-home pay you need in New Zealand for 2026-27, with or without KiwiSaver and student loan, on a main M tax code."
+  intro="Type the yearly amount you want to keep. The calculator finds the salary that produces it after PAYE, ACC and your deductions."
+  mode="netToGross" initialPeriod="annual" faqs={faqs} related={['salary', 'home', 'kiwisaver', 'studentLoan', 'hourly', 'averageSalary']}
+  sources={[SRC.ird_rates, SRC.acc_levy, SRC.ird_kiwisaver]}>
+  <p>Budgets are built on what you keep, offers are written in gross salary, and the gap between the two depends on your tax bracket and your deductions. To keep {formatMoney(50000)} a year in New Zealand with KiwiSaver at the default 3.5 %, you need a salary of about {formatMoney(g50)}. The calculator gets there by testing salaries until the take-home after PAYE, the ACC levy, KiwiSaver and, if you choose, student loan repayments matches your target, using the same 2026-27 rules as the other calculators on this site. The answer is sensitive to thresholds: once the target salary crosses {formatMoney(53500)}, each extra dollar of take-home costs more gross, because the tax rate jumps from 17.5 % to 30 %. It is a useful way to set the minimum salary to accept, to compare a hourly job with a salaried one, or to check a job ad that quotes a take-home figure. Remember that KiwiSaver, although it reduces take-home pay, stays yours, and your employer’s contribution adds at least 3.5 % more to your savings.</p>
+  <h2>Gross salary needed for a yearly take-home, M code</h2>
+  <ContentTable headers={['Take-home wanted', 'No KiwiSaver', 'KiwiSaver 3.5 %', 'KiwiSaver and student loan']} align={['r', 'r', 'r', 'r']} rows={rows} />
+  <h2>From the gross figure to the negotiation</h2>
+  <p>Once you have the gross, check whether the employer quotes salary plus KiwiSaver or a total package, and whether overtime, allowances or a bonus are part of the offer. For hourly roles, divide the annual figure by 2,080 hours to get the hourly rate, or use the <a href={route('hourly', lang)}>hourly calculator</a>.</p>
+</ToolPage>

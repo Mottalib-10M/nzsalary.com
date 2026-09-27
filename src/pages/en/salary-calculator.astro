@@ -1,0 +1,28 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { ex, P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const e = ex(85000, { ks: 0.035 });
+const rows = [45000, 60000, 75000, 85000, 95000, 110000, 140000].map((g) => { const r = ex(g); const k0 = ex(g, { ks: 0 }); return [formatMoney(g), formatMoney(r.annual.paye), formatMoney(r.annual.acc), formatMoney(k0.annual.takeHome), formatMoney(r.annual.takeHome), formatPercent(k0.annual.takeHome / g)]; });
+const faqs = [
+  { q: 'What is my salary after tax in NZ on $85,000?', a: `${formatMoney(ex(85000, { ks: 0 }).annual.takeHome)} a year without KiwiSaver, after ${formatMoney(e.annual.paye)} of income tax and ${formatMoney(e.annual.acc)} of ACC levy, with an M tax code. With KiwiSaver at 3.5 % you take home ${formatMoney(e.annual.takeHome)}, but ${formatMoney(e.annual.kiwisaver)} goes into your KiwiSaver account, with ${formatMoney(e.annual.employerKsNet)} from your employer after ESCT.` },
+  { q: 'Is salary after tax in NZ the same as take-home pay?', a: 'Salary after tax usually means after income tax and ACC only. Take-home pay also removes KiwiSaver and student loan deductions, which are not taxes but reduce what reaches your bank account. This calculator shows both: the annual take-home in the headline and the tax and ACC lines separately.' },
+  { q: 'How much of a pay rise do I keep in New Zealand?', a: `It depends on your marginal rate. Between ${formatMoney(53500)} and ${formatMoney(78100)} you keep 70 cents per dollar before ACC, 68.25 cents after it; between ${formatMoney(78100)} and ${formatMoney(180000)}, 67 cents before ACC. KiwiSaver takes another 3.5 cents if you are a member, but that part stays yours in your fund.` },
+];
+---
+<ToolPage id="salary" title="Salary Calculator NZ 2026-27: Annual Salary After Tax" h1="Salary calculator NZ: your annual salary after tax"
+  description="Turn an annual salary into take-home pay for 2026-27 in New Zealand: income tax, ACC, KiwiSaver and student loan by year, month and week, at IRD rates."
+  intro="Start from the salary on your offer letter. The calculator gives the year after PAYE, ACC and your deductions, then the monthly and weekly equivalents."
+  mode="salary" initialGross={85000} initialPeriod="annual" faqs={faqs} related={['home', 'takeHome', 'incomeTax', 'netToGross', 'taxRates', 'averageSalary']}
+  sources={[SRC.ird_rates, SRC.acc_levy, SRC.ird_kiwisaver]}>
+  <p>A New Zealand salary is quoted per year, before tax, and it can hide very different amounts of take-home pay. On {formatMoney(85000)}, income tax for 2026-27 is {formatMoney(e.annual.paye)}: 10.5 % on the first {formatMoney(15600)}, 17.5 % to {formatMoney(53500)}, 30 % to {formatMoney(78100)} and 33 % on the last {formatMoney(6900)}. The ACC earners’ levy adds {formatMoney(e.annual.acc)}. KiwiSaver at the default 3.5 % takes {formatMoney(e.annual.kiwisaver)} into your own fund. What remains, {formatMoney(e.annual.takeHome)} a year, is about {formatMoney(e.annual.takeHome / 12)} a month or {formatMoney(e.annual.takeHome / 52)} a week. The calculator uses the same annual method as Inland Revenue’s end-of-year assessment, so its figures are what you should see on your summary of earnings once the year is complete, whatever the pay frequency. Use the options to add a student loan or change your KiwiSaver rate; the headline shows the annual take-home and the table breaks down every deduction.</p>
+  <h2>Annual salary after tax, M tax code</h2>
+  <ContentTable headers={['Salary', 'Income tax', 'ACC', 'After tax and ACC', 'After KiwiSaver 3.5 %', 'Kept, before KiwiSaver']} align={['r', 'r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>The share of salary kept falls slowly with income, from about {formatPercent(ex(45000, { ks: 0 }).annual.takeHome / 45000, 0)} at {formatMoney(45000)} to about {formatPercent(ex(140000, { ks: 0 }).annual.takeHome / 140000, 0)} at {formatMoney(140000)}. New Zealand’s top rate of 39 % only applies above {formatMoney(180000)}, and there is no tax-free threshold: the 10.5 % rate starts on the first dollar.</p>
+  <h2>Comparing two offers</h2>
+  <p>When two offers differ in salary and benefits, compare what you keep. An extra {formatMoney(5000)} at {formatMoney(85000)} adds {formatMoney(ex(90000, { ks: 0 }).annual.takeHome - ex(85000, { ks: 0 }).annual.takeHome)} after tax and ACC. Employer contributions above the 3.5 % KiwiSaver minimum, health insurance or a car are benefits with their own tax treatment: employer KiwiSaver is taxed through ESCT, and most other benefits through fringe benefit tax paid by the employer. For the amount you should ask to reach a given take-home, use the <a href={route('netToGross', lang)}>net to gross calculator</a>.</p>
+</ToolPage>

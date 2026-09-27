@@ -1,0 +1,28 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { partYearRefund } from '../../lib/engine/nz';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const r = partYearRefund({ monthly: 6000, months: 4 });
+const rows = [[4000, 3], [5000, 6], [6000, 4], [7000, 9], [9000, 6]].map(([m, mo]) => { const x = partYearRefund({ monthly: m, months: mo }); return [formatMoney(m * 12), `${mo} months`, formatMoney(x.actualIncome), formatMoney(x.deducted), formatMoney(x.actual), formatMoney(x.refund)]; });
+const faqs = [
+  { q: 'Will I get a tax refund if I only worked part of the year in NZ?', a: `Very often, yes. PAYE on each pay assumes that pay continues for the whole year, so someone who works four months at ${formatMoney(72000)} a year has tax deducted at the 30 % rate on part of their pay, while their actual income of ${formatMoney(24000)} only reaches the 17.5 % band. Inland Revenue refunds the difference after the year ends: about ${formatMoney(r.refund)} in that example.` },
+  { q: 'When does Inland Revenue pay tax refunds?', a: 'After the tax year ends on 31 March. Inland Revenue receives your income details from your employers through payday filing and sends an automatic income tax assessment, usually from late May to July. If a refund is due and your bank account is in myIR, it is paid directly, often within a few weeks.' },
+  { q: 'Can I get my refund before the end of the tax year?', a: 'Only in specific cases, for example if you are leaving New Zealand permanently, when you can request an early assessment. Otherwise the refund comes after 31 March. Using the right tax code during the year, or a tailored code if your income is irregular, reduces over-deduction in the first place.' },
+];
+---
+<ToolPage id="refund" title="IRD Tax Calculator NZ 2026-27: Refund for a Part-Year Job" h1="IRD tax calculator: your refund after a part-year job"
+  description="Estimate the tax refund Inland Revenue will pay if you worked only part of the 2026-27 year in New Zealand: PAYE deducted, tax actually due and the difference."
+  intro="Arrived mid-year, left for study, took a break? PAYE assumes a full year of pay. This calculator estimates what Inland Revenue will give back at the end of the year."
+  mode="refund" initialGross={72000} faqs={faqs} related={['incomeTax', 'home', 'taxCodes', 'secondary', 'payeRates', 'studentLoan']}
+  sources={[SRC.ird_rates, SRC.ird_ietc, SRC.ird_student_loan]}>
+  <p>PAYE is designed for people who earn the same pay all year. Each pay is taxed as if it continued for 52 weeks or 12 months, so the tax bands are spread evenly over the year. If you work only part of the year, you are taxed as a full-year earner on each pay, but your actual income for the year is lower and falls into lower bands. The difference comes back as a refund when Inland Revenue squares up the year after 31 March. Take someone paid {formatMoney(6000)} a month who works for four months: PAYE is deducted as if they earned {formatMoney(72000)} a year, {formatMoney(r.deducted)} in total, while the tax on the {formatMoney(r.actualIncome)} actually earned is {formatMoney(r.actual)}, including the independent earner tax credit it qualifies for. Inland Revenue refunds about {formatMoney(r.refund)}. Students with summer jobs, people arriving in New Zealand mid-year and anyone taking unpaid leave are in this situation. The calculator assumes no other income in the tax year; if you had other income, add it to the salary to get a closer figure.</p>
+  <h2>Refunds for common part-year situations</h2>
+  <ContentTable headers={['Salary rate', 'Worked', 'Actual income', 'PAYE deducted', 'Tax due', 'Refund']} align={['r', 'l', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>The refund shrinks as the months worked increase, and disappears for a full year at the same rate. ACC levies are not refunded, since they are charged on actual earnings.</p>
+  <h2>How the square-up works</h2>
+  <p>Employers report every pay to Inland Revenue through payday filing, so Inland Revenue knows your income and the tax deducted. After 31 March it issues an automatic income tax assessment to most salary and wage earners. If you had other income, such as self-employment, rental income or overseas income, you file an IR3 instead. Refunds go to the bank account registered in myIR; if none is registered, they wait until you add one. If the assessment shows tax to pay, for example after using a secondary code that was too low, the bill is due by 7 February of the following year. The <a href={route('secondary', lang)}>secondary tax calculator</a> shows how to avoid a bill when you have two jobs.</p>
+</ToolPage>

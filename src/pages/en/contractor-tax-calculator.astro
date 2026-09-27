@@ -1,0 +1,29 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { contractor } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const c = contractor({ fees: 90000, expenses: 8000, rate: 0.2 });
+const rows = [40000, 60000, 90000, 120000, 160000].map((f) => { const x = contractor({ fees: f, expenses: f * 0.1, rate: 0.2 }); return [formatMoney(f), formatMoney(x.profit), formatMoney(x.tax + x.acc), formatMoney(x.withheld), formatMoney(x.balance), formatPercent(x.suggestedRate, 0)]; });
+const faqs = [
+  { q: 'What tax rate should a contractor choose in NZ?', a: `One that covers your income tax and ACC on the profit, divided by your fees. On ${formatMoney(90000)} of fees with ${formatMoney(8000)} of expenses, tax and ACC come to about ${formatMoney(c.tax + c.acc)}, which is ${formatPercent((c.tax + c.acc) / 90000)} of fees: a 20 % rate would leave ${formatMoney(c.balance)} to pay at year end. The minimum you can choose is 10 %, or 15 % on a temporary visa.` },
+  { q: 'What happens if I do not give my payer a tax rate?', a: 'If you do not complete the IR330C form, your payer must deduct tax at the no-notification rate of 45 %, which is far more than most contractors owe. The excess is refunded after the year ends, but the cash is tied up for months. Complete the form with a rate of your choice, or the standard rate for your type of work.' },
+  { q: 'Do contractors pay ACC in New Zealand?', a: 'Yes, but not through the withholding tax. ACC invoices self-employed people directly after the year, for the earners’ levy on liable earnings and a work levy that depends on the industry. This calculator includes the earners’ levy of 1.75 % in the amount to cover; budget for the work levy on top.' },
+];
+---
+<ToolPage id="contractor" title="Contractor Tax Calculator NZ 2026-27: Schedular Payments" h1="Contractor tax calculator: is your withholding rate enough?"
+  description="For New Zealand contractors on schedular payments in 2026-27: tax withheld at your chosen rate versus tax and ACC on your profit, and the rate that covers it."
+  intro="Contractors choose their own withholding rate, from 10 % upwards. Too low, and a bill arrives after 31 March; too high, and your cash waits for a refund."
+  mode="contractor" initialGross={90000} faqs={faqs} related={['selfEmployed', 'employeeVsContractor', 'incomeTax', 'acc', 'hourly', 'home']}
+  sources={[SRC.ird_schedular, SRC.ird_provisional, SRC.ird_rates]}>
+  <p>A contractor paid schedular payments has tax withheld by the client at a rate the contractor chooses on the IR330C form, at least {formatPercent(P.schedular.min_rate, 0)}, or {formatPercent(P.schedular.min_rate_non_resident_visa, 0)} for someone on a temporary visa. That withholding is only a prepayment. The real tax is worked out after the year on the profit: fees minus business expenses, taxed at the same 10.5 % to 39 % scale as salaries. On {formatMoney(90000)} of fees and {formatMoney(8000)} of expenses, the profit is {formatMoney(c.profit)}, income tax {formatMoney(c.tax)} and the ACC earners’ levy about {formatMoney(c.acc)}. A 20 % withholding rate takes {formatMoney(c.withheld)} during the year, so {formatMoney(c.balance)} remains to pay. A rate of about {formatPercent(c.suggestedRate, 0)} would have covered it. The calculator compares the two for your fees, expenses and chosen rate. It treats the contract as your only income; if you also have a salary, the contract profit sits on top of it and is taxed at your marginal rate.</p>
+  <h2>Withholding at 20 % against the real bill, expenses at 10 % of fees</h2>
+  <ContentTable headers={['Fees', 'Profit', 'Tax and ACC due', 'Withheld at 20 %', 'Balance to pay', 'Rate that covers it']} align={['r', 'r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>A positive balance is tax to pay after 31 March; a negative one is a refund. Above about {formatMoney(60000)} of fees, 20 % is rarely enough, and residual income tax above {formatMoney(P.provisional.rit_threshold)} also makes you liable for provisional tax the following year.</p>
+  <h2>GST, provisional tax and records</h2>
+  <p>GST registration becomes compulsory once your turnover exceeds {formatMoney(P.gst.threshold)} in 12 months; GST is then added to your invoices and returned to Inland Revenue, and is not part of your income. Provisional tax spreads next year’s expected bill over instalments. Keep invoices and receipts for seven years. The <a href={route('selfEmployed', lang)}>self-employed tax guide</a> explains provisional tax methods and ACC levies in detail.</p>
+</ToolPage>

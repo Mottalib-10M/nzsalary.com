@@ -1,0 +1,40 @@
+---
+import { LANG_TAGS as __LT } from '../data/site-config';
+import { displayDate } from '../lib/format';
+/** Page « par montant » (RECETTE §6.2) : angle propre en tête, données du moteur, voisins. */
+import PageLayout from '../layouts/PageLayout.astro';
+import NzCalculator from './calc/NzCalculator';
+import AdSlot from './AdSlot.astro';
+import ContentTable from './ContentTable.astro';
+import { route, type Locale } from '../i18n/routes';
+import { t } from '../i18n/ui';
+import { webApplicationSchema, webPageSchema, faqSchema, breadcrumbSchema } from '../lib/seo';
+import { LAST_UPDATED, AUTHOR_NAME } from '../data/site-config';
+import type { Angle } from '../lib/amount-angles';
+import { fitDescription, fitTitle } from '../lib/snippet';
+interface Props { id: string; crumb: string; angle: Angle; gross: number; hourly?: number; mode?: 'paye' | 'salary' | 'hourly'; table: { caption: string; headers: string[]; rows: string[][] }; neighbours: Array<{ href: string; name: string }>; sources: Array<{ name: string; url: string }> }
+const { id, crumb, angle: A, gross, hourly, mode = 'paye', table, neighbours, sources } = Astro.props;
+const lang: Locale = 'en'; const ui = t(lang); const path = route(id, lang);
+const title = fitTitle(A.title); const description = fitDescription(A.description);
+const jsonLd = [webApplicationSchema({ name: A.h1, description, path, lang }), webPageSchema({ name: A.h1, description, path, lang }), faqSchema(A.faqs, lang), breadcrumbSchema([{ name: ui.breadcrumbHome, path: route('home', lang) }, { name: crumb, path }])];
+---
+<PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} faqs={A.faqs} breadcrumbs={[{ label: crumb }]} related={neighbours.map((n) => ({ ...n, description: '' }))} sources={sources}>
+  <header class="mb-6">
+    <h1 class="text-3xl font-bold text-navy-900 md:text-4xl">{A.h1}</h1>
+    <p class="mt-2 text-sm text-navy-500">{ui.reviewedBy} <a href={route('about', lang)} class="text-accent-700 hover:underline">{AUTHOR_NAME}</a></p>
+  </header>
+  <section class="prose prose-slate max-w-none">
+    <h2>{A.h2}</h2>
+    <p>{A.p}</p>
+  </section>
+  <NzCalculator client:load mode={mode} initialGross={Math.round(gross)} initialHourly={hourly} methodHref={route('method', lang)} />
+  <AdSlot slot={`${id}-1`} />
+  <section class="prose prose-slate max-w-none">
+    <h2>{A.h2b}</h2>
+    <p>{A.p2}</p>
+    <h2>{table.caption}</h2>
+    <ContentTable headers={table.headers} align={table.headers.map((_, i) => (i === 0 ? 'l' : 'r'))} rows={table.rows} />
+    <p data-chrome>Figures computed with Inland Revenue’s 2026-27 tax rates, the ACC earners’ levy of 1.75 % and a main-job M tax code unless stated. Estimates only: your payslip and your end-of-year assessment prevail.</p>
+    <nav data-chrome aria-label="Nearby salaries"><p class="text-sm">Nearby: {neighbours.slice(0, 4).map((n, i) => <>{i > 0 && ' · '}<a href={n.href}>{n.name}</a></>)}</p></nav>
+  </section>
+</PageLayout>

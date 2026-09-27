@@ -1,0 +1,29 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { compute } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const k = compute({ gross: 70000, kiwisaver: 0.035 });
+const rates = [0.03, 0.035, 0.04, 0.06, 0.08, 0.1].map((r) => { const x = compute({ gross: 70000, kiwisaver: r }); return [formatPercent(r, 1), formatMoney(x.annual.kiwisaver), formatMoney(x.annual.employerKsNet), formatMoney(x.annual.govtContribution), formatMoney(x.annual.kiwisaver + x.annual.employerKsNet + x.annual.govtContribution), formatMoney(x.annual.takeHome)]; });
+const faqs = [
+  { q: 'How much does my employer contribute to KiwiSaver in 2026?', a: `At least 3.5 % of your gross pay from 1 April 2026, up from 3 %, if you contribute and are aged 16 or over and under the NZ Super age. On ${formatMoney(70000)} that is ${formatMoney(k.annual.employerKsGross)} a year, from which the employer deducts employer superannuation contribution tax at your ESCT rate, here ${formatPercent(k.annual.esct / k.annual.employerKsGross, 1)}, leaving ${formatMoney(k.annual.employerKsNet)} in your account.` },
+  { q: 'How do I get the full KiwiSaver government contribution?', a: `Contribute at least ${formatMoney(1042.86, 2)} between 1 July and 30 June, and be aged 16 to under 65 (16 and 17-year-olds qualify since 1 July 2025), living mainly in New Zealand, with taxable income of ${formatMoney(P.kiwisaver.govt_income_cap)} or less. The government then adds 25 cents per dollar, up to ${formatMoney(P.kiwisaver.govt_max, 2)}. Contributions from your salary count, and you can top up directly before 30 June.` },
+  { q: 'Can I keep contributing 3 % after April 2026?', a: 'Yes, through a temporary rate reduction: you apply to Inland Revenue to contribute 3 % for between three and twelve months, and can reapply as often as you like. Your employer may match 3 % while it applies. After it ends, the default 3.5 % resumes automatically.' },
+];
+---
+<ToolPage id="kiwisaver" title="KiwiSaver Calculator 2026-27: Employer, ESCT, Government" h1="KiwiSaver calculator: what goes into your fund each year"
+  description="KiwiSaver for 2026-27: your rate from 3 % to 10 %, the new 3.5 % employer minimum after ESCT, the government contribution and the effect on your take-home pay."
+  intro="Choose your contribution rate. The calculator adds your employer’s 3.5 % after employer superannuation contribution tax and the government’s 25 cents per dollar."
+  mode="kiwisaver" initialGross={70000} initialPeriod="annual" faqs={faqs} related={['ksChanges', 'home', 'employerCost', 'salary', 'taxRates', 'averageSalary']}
+  sources={[SRC.ird_kiwisaver, SRC.ird_esct, SRC.ird_rates]}>
+  <p>Three contributions reach a KiwiSaver account from a salary, and only one of them reduces your take-home pay. You contribute a percentage of gross pay, 3.5 % by default since 1 April 2026, or 4, 6, 8 or 10 % if you choose. Your employer adds at least 3.5 %, but pays employer superannuation contribution tax, ESCT, on it at a rate based on your salary plus the employer contribution. The government adds 25 cents for each dollar you contribute between 1 July and 30 June, up to {formatMoney(P.kiwisaver.govt_max, 2)} a year, provided your income is {formatMoney(P.kiwisaver.govt_income_cap)} or less. On a {formatMoney(70000)} salary at 3.5 %, you contribute {formatMoney(k.annual.kiwisaver)}, your employer’s {formatMoney(k.annual.employerKsGross)} becomes {formatMoney(k.annual.employerKsNet)} after ESCT, and the government adds {formatMoney(k.annual.govtContribution)}: {formatMoney(k.annual.kiwisaver + k.annual.employerKsNet + k.annual.govtContribution)} a year into your fund for a take-home cost of {formatMoney(k.annual.kiwisaver)}. The calculator shows these amounts for your salary and rate, and how the choice of rate changes your take-home pay.</p>
+  <h2>The effect of your rate on {formatMoney(70000)} a year</h2>
+  <ContentTable headers={['Your rate', 'You', 'Employer after ESCT', 'Government', 'Total into KiwiSaver', 'Your take-home']} align={['r', 'r', 'r', 'r', 'r', 'r']} rows={rates} />
+  <p>Your employer is only required to contribute 3.5 %, whatever rate you choose. Contributing more than 3.5 % raises your savings but not your employer’s share, unless your agreement says otherwise. The 3 % row is the temporary rate reduction, with the employer matching 3 %.</p>
+  <h2>ESCT in two sentences</h2>
+  <p>ESCT is the tax on employer contributions, deducted by the employer before the money reaches your fund, at 10.5 %, 17.5 %, 30 %, 33 % or 39 % depending on your salary plus employer contributions in the previous year. The thresholds, {formatMoney(18720)}, {formatMoney(64200)}, {formatMoney(93720)} and {formatMoney(216000)}, differ from the income tax thresholds because they include the contribution itself. See the <a href={route('ksChanges', lang)}>KiwiSaver changes guide</a> for the 2026 and 2028 steps.</p>
+</ToolPage>

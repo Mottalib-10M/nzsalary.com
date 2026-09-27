@@ -1,0 +1,27 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { ex, P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const e = ex(75000);
+const rows = [50000, 75000, 100000, 150000].map((g) => { const r = ex(g); return [formatMoney(g), formatMoney(r.annual.employerKsGross), formatMoney(r.annual.esct), formatMoney(r.annual.employerKsNet), formatMoney(r.annual.employerCost), formatPercent(r.annual.employerCost / g - 1, 1)]; });
+const faqs = [
+  { q: 'How much does an employee cost in New Zealand on top of salary?', a: `At least 3.5 % for the KiwiSaver employer contribution if the employee is a member, so ${formatMoney(e.annual.employerKsGross)} on ${formatMoney(75000)}, plus the employer’s ACC work levy, which depends on the industry classification, and holiday and leave costs already included in a salary. There is no payroll tax or employer social security contribution in New Zealand.` },
+  { q: 'Who pays ESCT, the employer or the employee?', a: 'The employer deducts ESCT from its own KiwiSaver contribution and pays it to Inland Revenue. It does not increase the employer’s cost, which stays at 3.5 % of gross pay, but it reduces what reaches the employee’s fund. Some employers and employees agree to include the contribution in a total remuneration package, which changes who bears it.' },
+  { q: 'Does the employer pay ACC for employees?', a: 'Yes, the ACC work levy, which covers work injuries and is invoiced to the employer based on payroll and the industry’s risk. It is separate from the ACC earners’ levy of 1.75 % that is deducted from the employee’s pay. Work levy rates range from well under 1 % for office work to several percent for high-risk industries.' },
+];
+---
+<ToolPage id="employerCost" title="Employer Cost Calculator NZ 2026-27: KiwiSaver and ESCT" h1="Employer cost calculator: what an employee costs in New Zealand"
+  description="The cost of an employee in New Zealand in 2026-27: salary plus the new 3.5 % KiwiSaver employer contribution, the ESCT deducted from it, and what is left out."
+  intro="New Zealand has no payroll tax. The main addition to salary is the employer’s KiwiSaver contribution, 3.5 % from 1 April 2026, from which ESCT is deducted."
+  mode="employerCost" initialGross={75000} initialPeriod="annual" faqs={faqs} related={['kiwisaver', 'ksChanges', 'home', 'salary', 'employeeVsContractor', 'holidayPay']}
+  sources={[SRC.ird_kiwisaver, SRC.ird_esct, SRC.acc_levy]}>
+  <p>Employing someone in New Zealand costs less on top of salary than in most OECD countries, because there is no payroll tax and no employer social security contribution. The main addition is KiwiSaver: for employees who are members, aged 16 or over and under the NZ Super age, the employer must contribute at least 3.5 % of gross pay from 1 April 2026, up from 3 %, and 4 % from 1 April 2028. On a {formatMoney(75000)} salary, the contribution is {formatMoney(e.annual.employerKsGross)} a year, bringing the cost to {formatMoney(e.annual.employerCost)}. The employer deducts employer superannuation contribution tax from that contribution, {formatMoney(e.annual.esct)} here at the {formatPercent(e.annual.esct / e.annual.employerKsGross, 1)} ESCT rate, and pays it to Inland Revenue, so the employee’s fund receives {formatMoney(e.annual.employerKsNet)}. ESCT does not add to the employer’s cost. The ACC work levy, invoiced to the employer according to its industry, comes on top and is not included, nor are holiday pay accruals, which are part of the salary cost already.</p>
+  <h2>Employer KiwiSaver and ESCT by salary</h2>
+  <ContentTable headers={['Salary', 'Employer KiwiSaver', 'ESCT deducted', 'Net to the fund', 'Cost to employer', 'Added to salary']} align={['r', 'r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <h2>Total remuneration packages</h2>
+  <p>Some employers quote a total remuneration figure that already includes the KiwiSaver contribution; the employee’s salary is then the total minus 3.5 %. The law allows this if agreed in the employment agreement, but not for the default contribution to be taken from the employee’s existing pay without agreement. When the default rate rises, as it did in April 2026, employees on total remuneration see their cash salary fall slightly unless the package is increased. The <a href={route('ksChanges', lang)}>KiwiSaver changes guide</a> covers the 2026 and 2028 steps for employers.</p>
+</ToolPage>

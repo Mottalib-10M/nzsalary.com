@@ -1,9 +1,21 @@
 {
-  "name": "takehomepay.nz",
-  "short_name": "takehomepay",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1e40af",
-  "icons": [{"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml"}]
+ "name": "Take Home Pay NZ",
+ "short_name": "Take Home Pay NZ",
+ "description": "New Zealand PAYE and take-home pay calculator 2026-27: income tax, ACC levy, KiwiSaver at 3.5 %, student loan and tax codes.",
+ "start_url": "/en/",
+ "display": "standalone",
+ "background_color": "#ffffff",
+ "theme_color": "#00247D",
+ "icons": [
+  {
+   "src": "/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ]
 }

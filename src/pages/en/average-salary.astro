@@ -1,0 +1,53 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { compute, hourlyToAnnual } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const S = P.stats;
+const medYear = S.median_weekly_wages_jun2026 * 52;
+const med = compute({ gross: medYear, kiwisaver: 0.035, period: 'weekly' });
+const growth = S.median_weekly_wages_jun2026 / S.median_weekly_wages_jun2025 - 1;
+const rows = [['Minimum wage, 40 h', hourlyToAnnual(P.min_wage.adult)], ['Median hourly wage × 40 h', hourlyToAnnual(S.median_hourly_jun2026)], ['Median weekly wages × 52', medYear], ['1.5 × median weekly', medYear * 1.5], ['2 × median weekly', medYear * 2]].map(([l, g]) => { const r = compute({ gross: g as number, kiwisaver: 0.035, period: 'weekly' }); return [l as string, formatMoney(g as number), formatMoney(r.perPeriod.takeHome), formatMoney(r.annual.takeHome)]; });
+const faqs = [
+  { q: 'What is the average salary in New Zealand in 2026?', a: `Stats NZ reports median weekly earnings from wages and salaries of ${formatMoney(S.median_weekly_wages_jun2026)} in the June 2026 quarter, about ${formatMoney(medYear)} a year, up ${formatPercent(growth)} on a year earlier. The median hourly wage was ${formatMoney(S.median_hourly_jun2026, 2)}. The median is the middle value; the average is higher because of high earners.` },
+  { q: 'Is $70,000 a good salary in NZ?', a: `It is slightly below the ${formatMoney(medYear)} implied by the median weekly wage for all wage and salary earners, which includes part-time workers, and close to the median for full-time employees. After tax, ACC and KiwiSaver at 3.5 %, it leaves about ${formatMoney(compute({ gross: 70000, kiwisaver: 0.035 }).annual.takeHome)} a year.` },
+  { q: 'Why does the median weekly wage look low compared with job ads?', a: 'Because it covers all people earning wages and salaries, including part-time workers, whose weekly earnings are lower. Job ads usually quote full-time salaries. The median hourly wage, which is not affected by hours worked, is a better guide to the pay rate of a typical job.' },
+];
+---
+<Guide id="averageSalary" title="Average Salary NZ 2026: Median Weekly Wage and Take-Home" h1="Average and median salary in New Zealand, and what it leaves you"
+  description="New Zealand's median weekly wage was $1,419 in the June 2026 quarter (Stats NZ), about $73,800 a year: what it leaves after tax, ACC and KiwiSaver."
+  intro="Stats NZ publishes median earnings every June quarter. This page turns them into annual salaries and take-home pay, with the caveats that matter for comparisons."
+  resume={`The typical New Zealand wage earner earned ${formatMoney(S.median_weekly_wages_jun2026)} a week from wages and salaries in the June 2026 quarter, according to Stats NZ’s income survey, ${formatMoney(S.median_weekly_wages_jun2026 - S.median_weekly_wages_jun2025)} or ${formatPercent(growth)} more than a year earlier. Multiplied by 52, that is about ${formatMoney(medYear)} a year. The median hourly wage was ${formatMoney(S.median_hourly_jun2026, 2)}, which for a 40-hour week corresponds to ${formatMoney(hourlyToAnnual(S.median_hourly_jun2026))} a year. After PAYE, the ACC earners’ levy and KiwiSaver at the 3.5 % default, a median weekly wage leaves ${formatMoney(med.perPeriod.takeHome)} a week, ${formatMoney(med.annual.takeHome)} a year. The median, the value in the middle, is lower than the average because a minority of high earners pulls the average up; the median weekly figure also includes part-time workers. For comparing a full-time salary, the median hourly wage is the more useful benchmark.`}
+  faqs={faqs} related={['salary', 'home', 'minimumWage', 'hourly', 'netToGross', 'y-70000']} sources={[SRC.stats_income, SRC.min_wage, SRC.ird_rates]}>
+  <h2>Reference incomes after deductions</h2>
+  <ContentTable headers={['Reference', 'Annual gross', 'Weekly take-home', 'Yearly take-home']} align={['l', 'r', 'r', 'r']} rows={rows} />
+  <p>Take-home figures use the M tax code and KiwiSaver at 3.5 %, without student loan. The median hourly wage times 40 hours and the median weekly wage times 52 differ because the weekly figure includes part-time workers.</p>
+
+  <h2>Where the figures come from</h2>
+  <p>Stats NZ’s income statistics come from the Household Labour Force Survey, which surveys households every quarter and collects detailed income information in the June quarter. The median weekly earnings from wages and salaries cover everyone who earns them, full-time and part-time, and exclude self-employment income, reported separately. Stats NZ also publishes average and median hourly earnings and the gender pay gap from the same survey. For the most detailed picture by occupation and region, the annual income tables in Aotearoa Data Explorer give medians by group.</p>
+
+  <h2>Median versus average</h2>
+  <p>Median earnings split the population in two: half earn more, half less. Average earnings, the total divided by the number of earners, are pulled upwards by a minority of high incomes. In New Zealand, as in most countries, the average weekly wage is noticeably higher than the median. When a job ad or a news story quotes “the average salary”, check which measure is meant: the difference can reach several thousand dollars a year.</p>
+
+  <h2>Growth and the cost of living</h2>
+  <p>Median weekly wages rose by {formatPercent(growth)} in the year to June 2026. Whether that is a real pay rise depends on inflation over the same period, measured by the consumers price index. Tax also affects it: because New Zealand’s tax thresholds are not indexed, a wage that rises with inflation gradually moves more income into higher bands, so take-home pay grows slightly more slowly than gross pay unless the thresholds are adjusted, as they were in July 2024.</p>
+
+  <h2>Comparing your own pay</h2>
+  <p>For a fair comparison, use a similar group: the same occupation, region, age and hours. Wages in Auckland and Wellington are higher than in other regions, and professional and managerial occupations earn well above the median. If you are paid hourly, compare your rate with the median hourly wage of {formatMoney(S.median_hourly_jun2026, 2)}; if you are salaried, divide your salary by 2,080 to get an hourly equivalent. The <a href={route('salary', lang)}>salary calculator</a> shows what any salary leaves after deductions.</p>
+
+  <h2>Beyond wages</h2>
+  <p>Median income from all sources, including benefits, NZ Super and investment income, was {formatMoney(962)} a week, much lower than wages because it covers the whole adult population, including retirees and students. Self-employment income had a median of {formatMoney(959)} a week. These are different measures from the wage median and should not be compared with a salary.</p>
+  <h2>The median by pay frequency</h2>
+  <ContentTable headers={['Frequency', 'Gross', 'Take-home, KiwiSaver 3.5 %', 'Take-home, no KiwiSaver']} align={['l', 'r', 'r', 'r']} rows={(['weekly', 'fortnightly', 'monthly', 'annual'] as const).map((p) => { const a = compute({ gross: medYear, kiwisaver: 0.035, period: p }); const b = compute({ gross: medYear, kiwisaver: 0, period: p }); return [p === 'annual' ? 'Yearly' : p.charAt(0).toUpperCase() + p.slice(1), formatMoney(a.perPeriod.gross, 2), formatMoney(a.perPeriod.takeHome, 2), formatMoney(b.perPeriod.takeHome, 2)]; })} />
+  <p>These figures treat the median weekly wage as if it were earned every week of the year, on an M tax code and without a student loan. They are a reference, not a typical payslip: the median is the middle of all wage earners, including part-time workers.</p>
+
+  <h2>Hourly median and full-time pay</h2>
+  <p>Stats NZ also reports a median hourly wage, {formatMoney(S.median_hourly_jun2026, 2)} in the June 2026 quarter. A full-time worker on that rate for 40 hours a week would earn {formatMoney(hourlyToAnnual(S.median_hourly_jun2026))} a year, more than the median weekly wage times 52, {formatMoney(medYear)}. The gap exists because many employees work fewer than 40 hours: the weekly median mixes full-time and part-time pay, while the hourly median compares rates regardless of hours. For comparing a full-time salary offer, the hourly figure converted to a year is usually the better benchmark; for comparing household budgets, the weekly figure reflects what people actually receive.</p>
+  <h2>Why your pay may sit far from the median</h2>
+  <p>Wages differ widely between industries, regions and ages. Pay in finance, mining, utilities and information technology tends to sit well above the national median, while hospitality and retail sit below it. Auckland and Wellington generally pay more than the rest of the country, though housing costs there absorb much of the difference. Pay also rises with age and experience until the mid-forties and then levels off. Stats NZ publishes these breakdowns in the same quarterly release, and they are a better comparison for a particular job than the national figure.</p>
+  <p>For a specific role, job advertisements and industry pay surveys give a closer comparison than any national median.</p>
+</Guide>

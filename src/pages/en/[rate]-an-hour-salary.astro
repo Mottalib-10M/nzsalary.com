@@ -1,0 +1,18 @@
+---
+import AmountPage from '../../components/AmountPage.astro';
+import { route, HOURLY } from '../../i18n/routes';
+import { hourlyLabel } from '../../i18n/nav';
+import { hourlyAngle } from '../../lib/amount-angles';
+import { hourlyToAnnual } from '../../lib/engine/nz';
+import { ex } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+export function getStaticPaths() { return HOURLY.map((a) => ({ params: { rate: String(a) } })); }
+const rate = Number(Astro.params.rate);
+const rows = [20, 30, 37.5, 40, 45].map((h) => { const g = hourlyToAnnual(rate, h); const w = ex(g, { period: 'weekly' }); return [`${h} hours a week`, formatMoney(g), formatMoney(w.perPeriod.gross, 2), formatMoney(w.perPeriod.paye + w.perPeriod.acc, 2), formatMoney(w.perPeriod.takeHome, 2)]; });
+const near = HOURLY.filter((h) => h !== rate);
+---
+<AmountPage id={`h-${rate}`} crumb={hourlyLabel(rate)} angle={hourlyAngle(rate)} gross={hourlyToAnnual(rate)} hourly={rate} mode="hourly"
+  table={{ caption: `${formatMoney(rate)} an hour by weekly hours`, headers: ['Hours', 'Per year', 'Gross per week', 'PAYE and ACC per week', 'Take-home per week'], rows }}
+  neighbours={[...near.map((n) => ({ href: route(`h-${n}`, 'en'), name: hourlyLabel(n) })), { href: route('hourly', 'en'), name: 'Hourly to salary calculator' }, { href: route('minimumWage', 'en'), name: 'Minimum wage 2026' }]}
+  sources={[SRC.min_wage, SRC.ird_rates, SRC.stats_income]} />

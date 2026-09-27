@@ -1,0 +1,60 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { compute, contractor, accLevy } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const sal = 90000; const emp = compute({ gross: sal, kiwisaver: 0.035 });
+const L = P.leave;
+const rate = 55; const hours = 1700; const fees = rate * hours; const exps = 6000;
+const ctr = contractor({ fees, expenses: exps, rate: 0.2 });
+const ctrKeep = fees - exps - ctr.tax - ctr.acc;
+const rows = [
+  ['Income', formatMoney(sal), formatMoney(fees)],
+  ['Employer KiwiSaver after ESCT', formatMoney(emp.annual.employerKsNet), 'none'],
+  ['Business expenses', 'none', formatMoney(exps)],
+  ['Income tax', formatMoney(emp.annual.paye), formatMoney(ctr.tax)],
+  ['ACC earners’ levy', formatMoney(emp.annual.acc), `${formatMoney(ctr.acc)} + work levy`],
+  ['Kept before KiwiSaver', formatMoney(sal - emp.annual.paye - emp.annual.acc), formatMoney(ctrKeep)],
+  ['Paid leave and public holidays', 'included', 'none'],
+];
+const faqs = [
+  { q: 'What hourly rate should a contractor charge compared with a salary in NZ?', a: `More than the salary divided by 2,080 hours. Contractors are not paid for holidays, sick days or gaps between contracts, and pay their own ACC and expenses. A contractor billing ${formatMoney(rate)} an hour for ${hours} hours keeps about ${formatMoney(ctrKeep)} after tax and ACC, close to an employee on ${formatMoney(sal)}, who also gets paid leave and employer KiwiSaver.` },
+  { q: 'Can my employer make me a contractor?', a: 'Not by changing a label. The Employment Relations Act looks at the real nature of the relationship: control over how and when you work, integration into the business, who provides tools and bears financial risk. If you are in substance an employee, you are entitled to the minimum wage, holidays and other protections whatever the contract calls you.' },
+  { q: 'Do contractors get KiwiSaver employer contributions?', a: 'No. Only employees receive compulsory employer contributions. A contractor can still contribute to KiwiSaver voluntarily and receive the government contribution of 25 cents per dollar, up to $260.72 a year, if their income is under $180,000. Some contractors build the missing employer share into their rate.' },
+];
+---
+<Guide id="employeeVsContractor" title="Employee vs Contractor NZ 2026-27: Tax, ACC, Leave, Rates" h1="Employee or contractor in New Zealand: comparing the real money"
+  description="Compare a salary with contracting in New Zealand for 2026-27: tax, ACC, KiwiSaver, leave and expenses, the rate that matches a salary, and the legal test."
+  intro="A contract rate always looks higher than the equivalent salary. The comparison only works once leave, KiwiSaver, ACC and gaps between contracts are counted."
+  resume={`The choice between employment and contracting in New Zealand turns less on tax rates, which are the same for both, than on what the employer provides and the contractor must fund. An employee on ${formatMoney(sal)} keeps ${formatMoney(sal - emp.annual.paye - emp.annual.acc)} after income tax and the ACC levy, receives ${formatMoney(emp.annual.employerKsNet)} of employer KiwiSaver after ESCT, and is paid for four weeks of annual holidays, public holidays and sick days. A contractor billing ${formatMoney(rate)} an hour for ${hours} hours a year, a realistic figure after leave and gaps, earns ${formatMoney(fees)}, pays ${formatMoney(exps)} of expenses, income tax of ${formatMoney(ctr.tax)} and ACC levies, and keeps about ${formatMoney(ctrKeep)} with no paid leave and no employer KiwiSaver. The contractor also handles GST above ${formatMoney(P.gst.threshold)} of turnover, provisional tax and their own insurance. Whether someone is legally an employee depends on the reality of the relationship, not the contract’s title.`}
+  faqs={faqs} related={['contractor', 'selfEmployed', 'employerCost', 'hourly', 'holidayPay', 'kiwisaver']} sources={[SRC.ird_schedular, SRC.ird_provisional, SRC.holidays]}>
+  <h2>A salary and a contract rate side by side</h2>
+  <ContentTable headers={['Item', `Employee on ${formatMoney(sal)}`, `Contractor at ${formatMoney(rate)} an hour`]} align={['l', 'r', 'r']} rows={rows} />
+  <p>The contractor’s hours, {hours} a year, allow for about six weeks without billing: holidays, public holidays, sick days and time between contracts. The ACC work levy for the contractor depends on the industry and is not included.</p>
+
+  <h2>Working out a break-even rate</h2>
+  <p>Start from the employee package: salary plus employer KiwiSaver, plus the value of leave. Divide by the hours you realistically expect to bill, not 2,080. Add your expenses, insurance and ACC work levy. In the example above, the contract rate is well above the salary’s hourly equivalent of {formatMoney(sal / 2080, 2)}, and still leaves the contractor only level with the employee; irregular work pushes the break-even rate higher again. The <a href={route('contractor', lang)}>contractor tax calculator</a> shows the tax and ACC on any mix of fees and expenses.</p>
+
+  <h2>The legal test</h2>
+  <p>Under section 6 of the Employment Relations Act 2000, the Employment Relations Authority and the courts decide whether someone is an employee by looking at the real nature of the relationship. The factors include the degree of control the business has over the work, whether the worker is integrated into the business, the economic reality, such as who bears the risk of profit and loss, and the intention of the parties. A contract that says “independent contractor” is only one factor. Misclassification can lead to claims for unpaid holiday pay, minimum wage arrears and KiwiSaver contributions.</p>
+
+  <h2>Tax and cash flow</h2>
+  <p>Employees have tax, ACC, KiwiSaver and student loan deducted from each pay, and rarely deal with Inland Revenue beyond the automatic assessment. Contractors on schedular payments have tax withheld at their chosen rate; other self-employed people receive the full fee and pay later, through terminal tax and possibly provisional tax. In both cases, setting aside a share of every payment avoids a difficult bill after the first year. ACC invoices arrive separately, once a year.</p>
+
+  <h2>Protections a contractor gives up</h2>
+  <p>A contractor has no right to the minimum wage, holidays, sick leave, parental leave from the employer, protection against unjustified dismissal or personal grievance procedures. Contract terms decide notice periods and payment. In exchange, contractors choose their clients, set their rates and can deduct business expenses. For some people the flexibility is worth the risk; the comparison above puts a number on it.</p>
+
+  <h2>Changing from one to the other</h2>
+  <p>When an employee becomes a contractor for the same organisation, Inland Revenue and ACC look closely at the change. If the work, hours and control stay the same, the relationship may still be employment. A genuine change usually involves several clients, the contractor’s own tools and the freedom to decide how the work is done.</p>
+  <h2>GST, KiwiSaver and ACC as a contractor</h2>
+  <p>A contractor whose turnover exceeds {formatMoney(P.gst.threshold)} in twelve months must register for GST and add 15 % to invoices; the GST is collected for Inland Revenue and is not income, so rates should always be compared excluding GST. KiwiSaver remains open to contractors, but there is no employer contribution: the 3.5 % an employer would add on a salary is part of what the contract rate has to cover. The government contribution still applies to your own contributions. ACC invoices a contractor directly, after the year, for the earners’ levy and a work levy set by industry, instead of deducting the earners’ levy from each pay.</p>
+
+  <h2>Leave the rate has to pay for</h2>
+  <p>An employee is paid for {L.annual_weeks} weeks of annual leave, public holidays that fall on working days and up to {L.sick_days} days of sick leave a year. A contractor is paid for none of them, so the hours actually billed in a year are well below 52 weeks of 40 hours. Adding unpaid gaps between contracts and time spent finding work, many contractors plan on 1,500 to 1,800 billable hours a year. At {formatMoney(rate)} an hour, each hundred hours less in the year is {formatMoney(rate * 100)} of fees less, which is why a rate that looks generous by the hour can still leave less than a salary.</p>
+  <p>The comparison in the table uses a rate of {formatMoney(rate)} an hour over {hours.toLocaleString('en-NZ')} hours, which is a mid-range assumption, not a rule.</p>
+  <p>Run your own figures in the calculators before signing either kind of agreement.</p>
+</Guide>

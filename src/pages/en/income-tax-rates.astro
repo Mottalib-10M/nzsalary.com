@@ -1,0 +1,50 @@
+---
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { incomeTax } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+let prev = 0;
+const bands = P.tax.brackets.map((b) => { const lo = prev; const hi = b.upto; prev = hi ?? prev; return [hi ? `${formatMoney(lo === 0 ? 0 : lo + 1)} to ${formatMoney(hi)}` : `Over ${formatMoney(lo)}`, formatPercent(b.rate, 1), hi ? formatMoney(incomeTax(hi)) : 'no ceiling']; });
+prev = 0;
+const blended = P.tax.brackets_2024_25_blended.map((b) => { const lo = prev; const hi = b.upto; prev = hi ?? prev; return [hi ? `${formatMoney(lo === 0 ? 0 : lo + 1)} to ${formatMoney(hi)}` : `Over ${formatMoney(lo)}`, formatPercent(b.rate, 2)]; });
+const gain = [30000, 50000, 70000, 100000].map((i) => [formatMoney(i), formatMoney(incomeTax(i, P.tax.brackets_2024_25_blended)), formatMoney(incomeTax(i)), formatMoney(incomeTax(i, P.tax.brackets_2024_25_blended) - incomeTax(i))]);
+const faqs = [
+  { q: 'What are the NZ income tax brackets for 2026-27?', a: '10.5 % on income up to $15,600, 17.5 % from $15,601 to $53,500, 30 % from $53,501 to $78,100, 33 % from $78,101 to $180,000 and 39 % over $180,000. These thresholds have applied since 1 April 2025, after the change announced in Budget 2024, and are the same for the 2026-27 tax year.' },
+  { q: 'Why did the 2024-25 tax year have rates like 12.82 %?', a: 'The new thresholds took effect on 31 July 2024, part-way through the tax year. For annual calculations, Inland Revenue used composite rates for 2024-25 that blended four months of the old thresholds with eight months of the new ones, such as 12.82 % between $14,001 and $15,600 and 30.99 % between $70,001 and $78,100.' },
+  { q: 'When did the 39 % tax rate start in New Zealand?', a: 'On 1 April 2021, for income over $180,000. Before that the top rate was 33 %, from $70,000. The 39 % threshold was not changed by the 2024 adjustments, so it still applies from $180,001, and the government KiwiSaver contribution also stops above that income since July 2025.' },
+];
+---
+<Guide id="taxRates" title="Income Tax Rates NZ 2026-27: Brackets, History, Blended Year" h1="New Zealand income tax rates for 2026-27, and how they got here"
+  description="New Zealand income tax brackets for 2026-27 from 10.5 % to 39 %, with the tax at each threshold, the blended rates of 2024-25 and what the change gave."
+  intro="The scale in full with the cumulative tax at each threshold, the transitional rates of the 2024-25 year and the effect of the change on common incomes."
+  resume={`New Zealand has five income tax rates for 2026-27: 10.5 % on the first ${formatMoney(15600)} of income, 17.5 % up to ${formatMoney(53500)}, 30 % up to ${formatMoney(78100)}, 33 % up to ${formatMoney(180000)} and 39 % on everything above. The thresholds were raised on 31 July 2024, the first increase in the lower thresholds since 2010, and have applied in full since 1 April 2025. The tax due at each threshold is ${formatMoney(incomeTax(15600))} at ${formatMoney(15600)}, ${formatMoney(incomeTax(53500))} at ${formatMoney(53500)}, ${formatMoney(incomeTax(78100))} at ${formatMoney(78100)} and ${formatMoney(incomeTax(180000))} at ${formatMoney(180000)}. There is no tax-free threshold: the 10.5 % rate starts on the first dollar, and lower earners are supported through tax credits instead. The rates apply to total taxable income from all sources, and the ACC earners’ levy of 1.75 % is charged separately on earnings. The same rates apply to salaries, self-employed profit, rental profit and interest.`}
+  faqs={faqs} related={['incomeTax', 'payeRates', 'home', 'ietcGuide', 'taxCodes', 'salary']} sources={[SRC.ird_rates, SRC.ird_ietc, SRC.ird_provisional]}>
+  <h2>The scale for 2026-27</h2>
+  <ContentTable headers={['Taxable income', 'Rate', 'Tax at top of band']} align={['l', 'r', 'r']} rows={bands} />
+  <p>To find the tax on any income, take the tax at the top of the band below it and add the rate times the rest. On {formatMoney(95000)}, that is {formatMoney(incomeTax(78100))} plus 33 % of {formatMoney(16900)}, or {formatMoney(incomeTax(95000))}. The <a href={route('incomeTax', lang)}>income tax calculator</a> does it for any figure.</p>
+
+  <h2>The 2024 change and the blended year</h2>
+  <p>Budget 2024 raised the thresholds of the four lower bands to compensate for inflation since 2010, the last time they moved. Because the change took effect on 31 July 2024, the 2024-25 tax year, from 1 April 2024 to 31 March 2025, used composite rates for annual calculations, blending four months of the old thresholds and eight of the new.</p>
+  <ContentTable headers={['Income, 2024-25 composite scale', 'Rate']} align={['l', 'r']} rows={blended} />
+  <p>From 2025-26 the new thresholds applied for the whole year. Compared with the blended year, the tax on common incomes fell as follows:</p>
+  <ContentTable headers={['Income', 'Tax 2024-25 (blended)', 'Tax 2026-27', 'Difference']} align={['r', 'r', 'r', 'r']} rows={gain} />
+
+  <h2>Average versus marginal rate</h2>
+  <p>Only the slice of income within each band is taxed at that band’s rate, so moving into a higher band never reduces the income you keep. On {formatMoney(60000)}, the marginal rate is 30 %, but the average rate is {formatPercent(incomeTax(60000) / 60000)}: most of the income is taxed at 10.5 % and 17.5 %. The average rate is {formatPercent(incomeTax(80000) / 80000)} at {formatMoney(80000)} and still only {formatPercent(incomeTax(250000) / 250000)} at {formatMoney(250000)}. For decisions about extra work or a raise, the marginal rate matters; for budgeting, the average.</p>
+
+  <h2>What the rates apply to</h2>
+  <p>Income tax is charged on total taxable income: salary and wages, self-employed profit, rental profit after expenses, interest, dividends, trust distributions taxed to you, overseas income for New Zealand residents, and some benefits and pensions. Interest and dividends usually have resident withholding tax or imputation credits already attached, which count towards the tax due. Tax credits then reduce the bill: the independent earner tax credit, donations tax credits and, for families, Working for Families, paid separately.</p>
+
+  <h2>Rates that are not income tax</h2>
+  <p>Some deductions look like tax but are not part of the scale. The ACC earners’ levy funds injury cover. KiwiSaver contributions are savings. Student loan repayments reduce a debt. Employer superannuation contribution tax applies to employer KiwiSaver contributions at its own thresholds. GST, at 15 %, is a tax on spending. The <a href={route('home', lang)}>PAYE calculator</a> shows each of them on a payslip.</p>
+
+  <h2>Will the thresholds change again?</h2>
+  <p>Thresholds are not indexed to inflation in New Zealand; they change only when a Budget decides so. Between 2010 and 2024 they stayed fixed while wages rose, so more income slipped into the 30 % and 33 % bands every year, an effect called fiscal drag. The same will happen from 2025 onwards unless future Budgets adjust them. This site updates the calculators when new thresholds are legislated.</p>
+  <h2>Rates for other types of income</h2>
+  <p>The individual scale is not the only income tax rate in New Zealand. Companies pay a flat 28 %. Trustees pay 39 % on trustee income since the 2024-25 year, with a lower rate for small trusts. Investments in portfolio investment entities, including KiwiSaver funds, are taxed at a prescribed investor rate of 10.5 %, 17.5 % or 28 %, chosen from your income in the two previous years, and that tax is final for most people. Interest is taxed at source through resident withholding tax at a rate you choose from 10.5 % to 39 %, which should match your marginal rate; the no-IRD-number rate is 45 %. Rental profit and other income without tax deducted at source is added to your income and taxed on the scale above through your return.</p>
+  <p>For most employees none of this changes the calculation: salary is taxed on the individual scale through PAYE, and KiwiSaver fund returns are taxed inside the fund at your prescribed investor rate. It matters if you have savings, a rental property or a family trust, because each type of income has its own rate and some of it has to be declared.</p>
+</Guide>

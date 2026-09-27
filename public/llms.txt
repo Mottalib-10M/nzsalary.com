@@ -1,25 +1,18 @@
-# takehomepay.nz
+# Take Home Pay NZ
 
-> New Zealand salary calculator — compute your take-home pay after PAYE, KiwiSaver, ACC, and student loan.
+> Free New Zealand take-home pay, PAYE, KiwiSaver and ACC calculators for the 2026-27 tax year, published by Radif Partners. Every rate is read from Inland Revenue, ACC and MBIE, with the source and date on each page. Calculations run in the browser.
 
-## Overview
+## Calculators
+- [Take-home pay calculator](https://takehomepay.nz/en/): PAYE, ACC, KiwiSaver at 3.5 % or more, student loan, IETC, weekly, fortnightly, monthly and yearly.
+- [Salary calculator](https://takehomepay.nz/en/salary-calculator/), [income tax calculator](https://takehomepay.nz/en/income-tax-calculator/), [IRD refund estimate](https://takehomepay.nz/en/ird-tax-calculator/).
+- [Secondary tax calculator](https://takehomepay.nz/en/secondary-tax-calculator/), [contractor tax calculator](https://takehomepay.nz/en/contractor-tax-calculator/).
+- [KiwiSaver calculator](https://takehomepay.nz/en/kiwisaver-calculator/), [student loan repayments](https://takehomepay.nz/en/student-loan-repayment-calculator/), [employer cost](https://takehomepay.nz/en/employer-cost-calculator/).
+- [Net to gross](https://takehomepay.nz/en/net-to-gross-salary/), [hourly to salary](https://takehomepay.nz/en/hourly-to-salary-calculator/).
 
-takehomepay.nz is a free online salary calculator for New Zealand. It calculates net take-home pay from gross salary by deducting PAYE income tax, ACC earners' levy, KiwiSaver employee contributions, and student loan repayments. The calculator supports annual, monthly, fortnightly, weekly, and hourly pay periods, and accounts for the latest IRD tax rates and thresholds.
+## Data
+- Income tax rates and PAYE for 2026-27: https://takehomepay.nz/en/income-tax-rates/
+- Tax codes M, ME, SB to SA, SL, ND: https://takehomepay.nz/en/tax-codes/
+- KiwiSaver changes from 1 April 2026: https://takehomepay.nz/en/kiwisaver-changes-2026/
 
-## Main features
-
-- Gross-to-net salary calculator for New Zealand
-- PAYE income tax calculation across all tax brackets
-- KiwiSaver employee contribution (3%, 4%, 6%, 8%, or 10%)
-- ACC earners' levy deduction
-- Student loan repayment calculation (12% above threshold)
-- Secondary income / secondary tax code support
-- Multiple pay period views (annual, monthly, fortnightly, weekly, hourly)
-
-## Data sources
-
-- Inland Revenue (IRD): ird.govt.nz
-- PAYE tax rates and thresholds: ird.govt.nz/income-tax
-- KiwiSaver contribution rates: ird.govt.nz/kiwisaver
-- ACC earners' levy rate: acc.co.nz
-- Student loan repayment thresholds: ird.govt.nz/student-loans
+## Method
+- https://takehomepay.nz/en/methodology/

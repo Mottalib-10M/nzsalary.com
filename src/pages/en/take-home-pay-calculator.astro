@@ -1,0 +1,28 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { ex, P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const w = ex(58000, { period: 'weekly' });
+const rows = [40000, 50000, 58000, 70000, 90000].map((g) => { const a = ex(g, { period: 'weekly' }); const b = ex(g, { period: 'fortnightly' }); const c = ex(g, { period: 'monthly' }); return [formatMoney(g), formatMoney(a.perPeriod.takeHome), formatMoney(b.perPeriod.takeHome), formatMoney(c.perPeriod.takeHome)]; });
+const faqs = [
+  { q: 'What is my weekly take-home pay on $58,000 in NZ?', a: `${formatMoney(w.perPeriod.takeHome)} a week with an M tax code and KiwiSaver at 3.5 %: ${formatMoney(w.perPeriod.gross)} gross minus ${formatMoney(w.perPeriod.paye)} of PAYE, ${formatMoney(w.perPeriod.acc)} of ACC and ${formatMoney(w.perPeriod.kiwisaver)} of KiwiSaver. Without KiwiSaver it would be ${formatMoney(ex(58000, { ks: 0, period: 'weekly' }).perPeriod.takeHome)}. Paid fortnightly, the figures double, and the annual total stays the same.` },
+  { q: 'Why is my pay lower in a week with overtime than I expected?', a: 'Because PAYE on regular pay is calculated as if that week’s pay repeated all year. A week with overtime looks like a higher annual salary and can reach a higher bracket for that week. Over the year the tax evens out; if too much was taken, Inland Revenue refunds it after 31 March.' },
+  { q: 'Do fortnightly and monthly pays give the same take-home over a year?', a: 'Yes, within a few cents. The annual tax, ACC and KiwiSaver are the same whatever the frequency; only the size of each pay changes. A fortnightly salary gives 26 pays a year, so two months a year contain three pays, which some households use to build savings.' },
+];
+---
+<ToolPage id="takeHome" title="Take-Home Pay Calculator NZ 2026-27: Weekly and Fortnightly" h1="Take-home pay calculator: what lands in your account each pay"
+  description="Weekly, fortnightly or monthly take-home pay in New Zealand for 2026-27 after PAYE, ACC, KiwiSaver and student loan, with the exact deduction on each line."
+  intro="Choose how often you are paid. The calculator shows each deduction for one pay, the way it appears on your payslip, and the total for the year."
+  mode="paye" initialGross={58000} initialPeriod="weekly" faqs={faqs} related={['home', 'hourly', 'salary', 'studentLoan', 'kiwisaver', 'holidayPay']}
+  sources={[SRC.ird_rates, SRC.acc_levy, SRC.ird_student_loan]}>
+  <p>Most New Zealand workers budget by the pay, not by the year, and the pay is what this calculator shows first. On {formatMoney(58000)} a year paid weekly, each pay is {formatMoney(w.perPeriod.gross)} gross. Your employer deducts {formatMoney(w.perPeriod.paye)} of PAYE, worked out by treating the week’s pay as if it repeated 52 times, {formatMoney(w.perPeriod.acc)} of ACC earners’ levy at 1.75 %, and {formatMoney(w.perPeriod.kiwisaver)} of KiwiSaver at the 3.5 % default rate. You receive {formatMoney(w.perPeriod.takeHome)}. If you have a student loan and an SL code, another 12 % of your pay above {formatMoney(P.student_loan.threshold_weekly)} a week is deducted, which at this salary would be {formatMoney(ex(58000, { sl: true, period: 'weekly' }).perPeriod.studentLoan)}. Casual workers and anyone paid by the hour can enter their annual equivalent here, or use the hourly calculator, which converts the rate first. The calculator keeps the pay constant across the year; weeks with overtime, holiday pay or a bonus will show different deductions on the payslip.</p>
+  <h2>Take-home per pay, M code, KiwiSaver 3.5 %</h2>
+  <ContentTable headers={['Salary', 'Weekly', 'Fortnightly', 'Monthly']} align={['r', 'r', 'r', 'r']} rows={rows} />
+  <p>Pay frequency is set in your employment agreement, and weekly and fortnightly pays are the most common. The frequency does not change what you earn in a year; it changes the rhythm of your budget and the size of each deduction.</p>
+  <h2>Reading the deductions on your payslip</h2>
+  <p>A New Zealand payslip usually shows gross earnings, PAYE, which by convention includes the ACC earners’ levy, KiwiSaver employee contributions, any student loan deduction and other agreed deductions. Employer KiwiSaver contributions and ESCT are shown for information. Holiday pay may be paid as it is earned, at 8 % of gross pay for casual workers, or when leave is taken; the <a href={route('holidayPay', lang)}>holiday pay guide</a> explains both. For a bonus or back pay, PAYE uses the extra pay method, which taxes the lump sum at the rate that applies to your annual income including it.</p>
+</ToolPage>

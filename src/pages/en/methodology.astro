@@ -9,7 +9,7 @@ import { SRC } from '../../lib/sources';
 import { formatMoney, formatPercent } from '../../lib/format';
 const lang = 'en';
 const title = 'PAYE and KiwiSaver Calculation Method: Sources and Tests';
-const description = 'How takehomepay.nz computes PAYE, ACC, KiwiSaver, ESCT, student loan and the IETC for 2026-27: official sources, rounding, test cases and known limits.';
+const description = 'How nzsalary.com computes PAYE, ACC, KiwiSaver, ESCT, student loan and the IETC for 2026-27: official sources, rounding rules, test cases and known limits.';
 const checks = [
   ['Tax on $15,600', formatMoney(incomeTax(15600), 2), '10.5 % × $15,600 = $1,638'],
   ['Tax on $53,500', formatMoney(incomeTax(53500), 2), '$1,638 + 17.5 % × $37,900'],

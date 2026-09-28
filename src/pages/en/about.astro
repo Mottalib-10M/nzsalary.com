@@ -5,14 +5,14 @@ import { breadcrumbSchema, profilePageSchema, organizationSchema } from '../../l
 import { CONTACT_EMAIL, SITE_FOUNDED } from '../../data/site-config';
 import { P } from '../../lib/tables';
 const lang = 'en';
-const title = 'Take Home Pay NZ: Who Publishes It and How It Is Funded';
-const description = 'Take Home Pay NZ is published by Radif Partners: why we built a PAYE, KiwiSaver and ACC calculator for New Zealand, how it is funded and how to report an error.';
+const title = 'Who Publishes NZ Salary, How It Is Funded and Checked';
+const description = 'NZ Salary is published by Radif Partners: why we built a PAYE, KiwiSaver and ACC calculator for New Zealand, how it is funded and how to report an error.';
 const jsonLd = [profilePageSchema({ path: route('about', lang), lang }), organizationSchema(lang), breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'About', path: route('about', lang) }])];
 ---
 <PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} breadcrumbs={[{ label: 'About' }]} showAuthor={false}>
   <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">About this site</h1></header>
   <div class="prose prose-slate max-w-none" data-author="Radif Partners">
-    <p>Take Home Pay NZ is published by <strong>Radif Partners</strong>, an independent publisher of free payroll and tax calculators for several countries. The site was started in {SITE_FOUNDED} to give New Zealand employees, contractors and employers a pay calculator that follows Inland Revenue’s rules for the 2026-27 tax year line by line, including the parts most calculators skip: the new 3.5 % KiwiSaver default, ESCT on employer contributions, the independent earner tax credit and its abatement, secondary tax codes and the ACC levy ceiling.</p>
+    <p>NZ Salary is published by <strong>Radif Partners</strong>, an independent publisher of free payroll and tax calculators for several countries. The site was started in {SITE_FOUNDED} to give New Zealand employees, contractors and employers a pay calculator that follows Inland Revenue’s rules for the 2026-27 tax year line by line, including the parts most calculators skip: the new 3.5 % KiwiSaver default, ESCT on employer contributions, the independent earner tax credit and its abatement, secondary tax codes and the ACC levy ceiling.</p>
     <h2>Why this calculator exists</h2>
     <p>Three things changed in New Zealand pay in less than two years: the tax thresholds moved on 31 July 2024, the government KiwiSaver contribution was halved in July 2025, and the default KiwiSaver rate rose to 3.5 % in April 2026. Many calculators still mix old and new rules. We rebuilt the calculation from Inland Revenue’s rates, checked each parameter against the official page, and show the source and date next to every figure.</p>
     <h2>How we work</h2>

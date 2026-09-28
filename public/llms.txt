@@ -1,18 +1,18 @@
-# Take Home Pay NZ
+# NZ Salary
 
 > Free New Zealand take-home pay, PAYE, KiwiSaver and ACC calculators for the 2026-27 tax year, published by Radif Partners. Every rate is read from Inland Revenue, ACC and MBIE, with the source and date on each page. Calculations run in the browser.
 
 ## Calculators
-- [Take-home pay calculator](https://takehomepay.nz/en/): PAYE, ACC, KiwiSaver at 3.5 % or more, student loan, IETC, weekly, fortnightly, monthly and yearly.
-- [Salary calculator](https://takehomepay.nz/en/salary-calculator/), [income tax calculator](https://takehomepay.nz/en/income-tax-calculator/), [IRD refund estimate](https://takehomepay.nz/en/ird-tax-calculator/).
-- [Secondary tax calculator](https://takehomepay.nz/en/secondary-tax-calculator/), [contractor tax calculator](https://takehomepay.nz/en/contractor-tax-calculator/).
-- [KiwiSaver calculator](https://takehomepay.nz/en/kiwisaver-calculator/), [student loan repayments](https://takehomepay.nz/en/student-loan-repayment-calculator/), [employer cost](https://takehomepay.nz/en/employer-cost-calculator/).
-- [Net to gross](https://takehomepay.nz/en/net-to-gross-salary/), [hourly to salary](https://takehomepay.nz/en/hourly-to-salary-calculator/).
+- [Take-home pay calculator](https://nzsalary.com/en/): PAYE, ACC, KiwiSaver at 3.5 % or more, student loan, IETC, weekly, fortnightly, monthly and yearly.
+- [Salary calculator](https://nzsalary.com/en/salary-calculator/), [income tax calculator](https://nzsalary.com/en/income-tax-calculator/), [IRD refund estimate](https://nzsalary.com/en/ird-tax-calculator/).
+- [Secondary tax calculator](https://nzsalary.com/en/secondary-tax-calculator/), [contractor tax calculator](https://nzsalary.com/en/contractor-tax-calculator/).
+- [KiwiSaver calculator](https://nzsalary.com/en/kiwisaver-calculator/), [student loan repayments](https://nzsalary.com/en/student-loan-repayment-calculator/), [employer cost](https://nzsalary.com/en/employer-cost-calculator/).
+- [Net to gross](https://nzsalary.com/en/net-to-gross-salary/), [hourly to salary](https://nzsalary.com/en/hourly-to-salary-calculator/).
 
 ## Data
-- Income tax rates and PAYE for 2026-27: https://takehomepay.nz/en/income-tax-rates/
-- Tax codes M, ME, SB to SA, SL, ND: https://takehomepay.nz/en/tax-codes/
-- KiwiSaver changes from 1 April 2026: https://takehomepay.nz/en/kiwisaver-changes-2026/
+- Income tax rates and PAYE for 2026-27: https://nzsalary.com/en/income-tax-rates/
+- Tax codes M, ME, SB to SA, SL, ND: https://nzsalary.com/en/tax-codes/
+- KiwiSaver changes from 1 April 2026: https://nzsalary.com/en/kiwisaver-changes-2026/
 
 ## Method
-- https://takehomepay.nz/en/methodology/
+- https://nzsalary.com/en/methodology/

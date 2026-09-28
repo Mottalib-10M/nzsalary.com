@@ -4,8 +4,8 @@ import { route } from '../../i18n/routes';
 import { breadcrumbSchema, webPageSchema } from '../../lib/seo';
 import { REVIEW_CYCLE_MONTHS } from '../../data/site-config';
 const lang = 'en';
-const title = 'Editorial Policy of Take Home Pay NZ: Sources, Corrections';
-const description = 'How Take Home Pay NZ chooses its sources, checks every PAYE, KiwiSaver and ACC parameter, dates its updates and corrects errors, and its review cycle.';
+const title = 'Editorial Policy of NZ Salary: Sources, Corrections';
+const description = 'How NZ Salary chooses its sources, checks every PAYE, KiwiSaver and ACC parameter, dates each update, corrects errors quickly and runs a full yearly review.';
 const jsonLd = [webPageSchema({ name: title, description, path: route('editorial', lang), lang }), breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Editorial policy', path: route('editorial', lang) }])];
 ---
 <PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} breadcrumbs={[{ label: 'Editorial policy' }]}>

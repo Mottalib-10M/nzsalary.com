@@ -5,8 +5,8 @@ import { route } from '../../i18n/routes';
 import { breadcrumbSchema, contactPageSchema } from '../../lib/seo';
 import { CONTACT_EMAIL } from '../../data/site-config';
 const lang = 'en';
-const title = 'Contact Take Home Pay NZ: Report an Error or Ask a Question';
-const description = 'Write to the publisher of Take Home Pay NZ to report an error in a PAYE, KiwiSaver or ACC figure, ask about the method or get the free calculator widget.';
+const title = 'Contact NZ Salary: Report an Error or Ask a Question';
+const description = 'Write to the publisher of NZ Salary to report an error in a PAYE, KiwiSaver or ACC figure, ask about the method or request the free calculator widget.';
 const jsonLd = [contactPageSchema({ name: title, description, path: route('contact', lang), lang }), breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Contact', path: route('contact', lang) }])];
 ---
 <PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} breadcrumbs={[{ label: 'Contact' }]}>

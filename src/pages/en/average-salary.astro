@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -23,6 +24,7 @@ const faqs = [
   intro="Stats NZ publishes median earnings every June quarter. This page turns them into annual salaries and take-home pay, with the caveats that matter for comparisons."
   resume={`The typical New Zealand wage earner earned ${formatMoney(S.median_weekly_wages_jun2026)} a week from wages and salaries in the June 2026 quarter, according to Stats NZ’s income survey, ${formatMoney(S.median_weekly_wages_jun2026 - S.median_weekly_wages_jun2025)} or ${formatPercent(growth)} more than a year earlier. Multiplied by 52, that is about ${formatMoney(medYear)} a year. The median hourly wage was ${formatMoney(S.median_hourly_jun2026, 2)}, which for a 40-hour week corresponds to ${formatMoney(hourlyToAnnual(S.median_hourly_jun2026))} a year. After PAYE, the ACC earners’ levy and KiwiSaver at the 3.5 % default, a median weekly wage leaves ${formatMoney(med.perPeriod.takeHome)} a week, ${formatMoney(med.annual.takeHome)} a year. The median, the value in the middle, is lower than the average because a minority of high earners pulls the average up; the median weekly figure also includes part-time workers. For comparing a full-time salary, the median hourly wage is the more useful benchmark.`}
   faqs={faqs} related={['salary', 'home', 'minimumWage', 'hourly', 'netToGross', 'y-70000']} sources={[SRC.stats_income, SRC.min_wage, SRC.ird_rates]}>
+  <MiniSim client:visible kind="average" lang={lang} href={route('takeHome', lang)} />
   <h2>Reference incomes after deductions</h2>
   <ContentTable headers={['Reference', 'Annual gross', 'Weekly take-home', 'Yearly take-home']} align={['l', 'r', 'r', 'r']} rows={rows} />
   <p>Take-home figures use the M tax code and KiwiSaver at 3.5 %, without student loan. The median hourly wage times 40 hours and the median weekly wage times 52 differ because the weekly figure includes part-time workers.</p>

@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -20,6 +21,7 @@ const faqs = [
   intro="Working for yourself means paying the same income tax as an employee, but on profit, at different times, and with ACC and GST to handle yourself."
   resume={`A self-employed person in New Zealand pays income tax at the same rates as employees, 10.5 % to 39 % for 2026-27, but on business profit rather than wages, and without PAYE deducting it along the way. Profit is income minus deductible business expenses. On top of income tax, ACC invoices the earners’ levy of 1.75 % and a work levy that depends on the industry, after the year. GST registration is compulsory once turnover exceeds ${formatMoney(P.gst.threshold)} in 12 months. If the tax left to pay after any withholding, the residual income tax, exceeds ${formatMoney(P.provisional.rit_threshold)} for a year, provisional tax becomes due for the next year, paid in instalments. Contractors paid schedular payments have tax withheld by the client at a rate of their choice, at least 10 %. On a profit of ${formatMoney(75000)}, income tax is ${formatMoney(incomeTax(75000))} and the earners’ levy about ${formatMoney(accLevy(75000))}, together ${formatPercent((incomeTax(75000) + accLevy(75000)) / 75000)} of profit. The main difference from employment is timing: the bills arrive after the income, sometimes more than a year later.`}
   faqs={faqs} related={['contractor', 'employeeVsContractor', 'acc', 'incomeTax', 'taxRates', 'kiwisaver']} sources={[SRC.ird_provisional, SRC.ird_schedular, SRC.acc_levy]}>
+  <MiniSim client:visible kind="selfemp" lang={lang} href={route('contractor', lang)} />
   <h2>Tax and ACC on business profit</h2>
   <ContentTable headers={['Profit', 'Income tax', 'ACC earners’ levy', 'Total', 'Share of profit']} align={['r', 'r', 'r', 'r', 'r']} rows={rows} />
   <p>The table leaves out the ACC work levy, which depends on your industry classification and can range from a fraction of a percent for office work to several percent for construction or forestry. It also leaves out the independent earner tax credit, which self-employed people can claim if their income is between {formatMoney(P.ietc.min_income)} and {formatMoney(P.ietc.max_income)}.</p>

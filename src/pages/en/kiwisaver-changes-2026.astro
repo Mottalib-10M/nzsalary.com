@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -19,6 +20,7 @@ const faqs = [
   intro="The biggest change to KiwiSaver contributions since 2009, in three steps: the government contribution in 2025, the 3.5 % default in 2026 and 4 % in 2028."
   resume={`KiwiSaver contribution rules changed on 1 April 2026. The default rate for employees rose from 3 % to 3.5 % of gross pay, and the minimum employer contribution rose from 3 % to 3.5 %, for every pay day from that date. Employees who prefer to keep 3 % can apply for a temporary rate reduction lasting three to twelve months, renewable, and employers may match it. Employees aged 16 and 17 now receive the employer contribution as well. A second step, to 4 % for both employee and employer, is scheduled for 1 April 2028. The changes follow Budget 2025, which also halved the government contribution from 1 July 2025, to 25 cents per dollar contributed and a maximum of ${formatMoney(P.kiwisaver.govt_max, 2)} a year, and removed it for members earning more than ${formatMoney(P.kiwisaver.govt_income_cap)}. For a member on ${formatMoney(60000)}, the 2026 step costs about ${formatMoney(compute({ gross: 60000, kiwisaver: 0.03, employerKs: 0.03 }).annual.takeHome - compute({ gross: 60000, kiwisaver: 0.035 }).annual.takeHome)} a year of take-home pay and adds more than that to the fund, because the employer’s share rises too.`}
   faqs={faqs} related={['kiwisaver', 'employerCost', 'home', 'salary', 'taxRates', 'averageSalary']} sources={[SRC.ird_kiwisaver, SRC.ird_esct, SRC.ird_rates]}>
+  <MiniSim client:visible kind="ks" lang={lang} href={route('kiwisaver', lang)} />
   <h2>The timeline</h2>
   <ContentTable headers={['Date', 'Change']} align={['l', 'l']} rows={[
     ['1 July 2025', 'Government contribution becomes 25 c per $1, maximum $260.72; none above $180,000 of income; 16 and 17-year-olds eligible'],

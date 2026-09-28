@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -20,6 +21,7 @@ const faqs = [
   intro="Every pay has an ACC line. It is not income tax: it pays for New Zealand’s no-fault accident cover for injuries that happen away from work."
   resume={`The ACC earners’ levy is a charge on your earnings that funds the Accident Compensation Corporation’s cover for injuries outside work, such as sport, home and road accidents that are not motor vehicle claims. For the 2026-27 tax year it is 1.75 % of liable earnings, or $1.75 per $100, up from 1.67 % in 2025-26, on earnings up to ${formatMoney(A.max_liable)} a year. The maximum levy is therefore ${formatMoney(A.max_liable * A.rate, 2)}. Employees pay it through PAYE, often shown together with income tax on the payslip. Self-employed people pay it on an invoice from ACC after the year, together with a work levy for their industry. Employers pay a separate work levy for their employees’ workplace injuries. On a salary of ${formatMoney(60000)}, the earners’ levy costs ${formatMoney(accLevy(60000))} a year, ${formatMoney(accLevy(60000) / 52, 2)} a week. The levy rates are set by the government every three years after public consultation, and the current settings run to 2027-28.`}
   faqs={faqs} related={['home', 'payeRates', 'selfEmployed', 'employerCost', 'contractor', 'taxRates']} sources={[SRC.acc_levy, SRC.ird_rates, SRC.ird_provisional]}>
+  <MiniSim client:visible kind="acc" lang={lang} href={route('home', lang)} />
   <h2>What the levy costs by income</h2>
   <ContentTable headers={['Earnings', 'Levy 2025-26', 'Levy 2026-27', 'Increase', 'Per week 2026-27']} align={['r', 'r', 'r', 'r', 'r']} rows={rows} />
   <p>The levy is proportional up to the ceiling, then flat: an income of {formatMoney(200000)} pays the same as {formatMoney(A.max_liable)}. The 2026-27 increase adds between a few dollars and about {formatMoney(accLevy(A.max_liable) - A.max_liable_2025_26 * A.rate_2025_26)} a year.</p>

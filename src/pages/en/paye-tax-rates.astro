@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -22,6 +23,7 @@ const faqs = [
   intro="PAYE is the tax your employer takes from every pay. It follows the income tax scale, but applies it to each pay as if it were your pay for the whole year."
   resume={`PAYE in New Zealand is not a flat rate. For the 2026-27 tax year, your employer takes each pay, treats it as if it repeated for the whole year, applies the income tax scale of 10.5 % up to ${formatMoney(15600)}, 17.5 % up to ${formatMoney(53500)}, 30 % up to ${formatMoney(78100)}, 33 % up to ${formatMoney(180000)} and 39 % above, divides the result back to the pay period and adds the ACC earners’ levy of 1.75 %. On a weekly pay of $1,200, that gives ${formatMoney(normal.perPeriod.paye)} of tax and ${formatMoney(normal.perPeriod.acc)} of ACC. Tax codes adjust the calculation: ME for the independent earner tax credit, secondary codes for a second job, SL for a student loan. Bonuses and other one-off payments follow the extra pay rules, and are taxed at the marginal rate reached when they are added to your normal income. At the end of the year Inland Revenue compares the PAYE deducted with the tax actually due and refunds or bills the difference.`}
   faqs={faqs} related={['home', 'taxRates', 'taxCodes', 'takeHome', 'refund', 'acc']} sources={[SRC.ird_rates, SRC.acc_levy, SRC.ird_ietc]}>
+  <MiniSim client:visible kind="paye" lang={lang} href={route('takeHome', lang)} />
   <h2>PAYE on weekly pay, M code</h2>
   <p>The table gives the tax and ACC deducted from a weekly pay with a standard M code and no KiwiSaver or student loan. It is computed with the annual method: weekly pay times 52, tax on the result, divided by 52.</p>
   <ContentTable headers={['Weekly pay', 'Tax', 'ACC', 'Total PAYE', 'Share of pay']} align={['r', 'r', 'r', 'r', 'r']} rows={wk} />

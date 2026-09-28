@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -20,6 +21,7 @@ const faqs = [
   intro="A tax credit for workers on low and middle incomes who do not receive family or benefit support. It is worth $10 a week, and many people who qualify never claim it."
   resume={`The independent earner tax credit, IETC, reduces the income tax of New Zealand residents who earn between ${formatMoney(I.min_income)} and ${formatMoney(I.max_income)} a year and do not receive Working for Families, NZ Super, a veteran’s pension, a main benefit or a student allowance. The full credit is ${formatMoney(I.amount)} a year for income from ${formatMoney(I.min_income)} to ${formatMoney(I.abate_from)}. Above ${formatMoney(I.abate_from)}, it is reduced by 13 cents for each dollar of income, so it is worth ${formatMoney(ietc(68000))} at ${formatMoney(68000)} and disappears at ${formatMoney(I.max_income)}. The credit can be paid with each pay, at $10 a week, if you use the ME tax code on your main job, or in your end-of-year assessment otherwise. The income range was widened on 31 July 2024, when the upper limits moved from $44,000 and $48,000 to ${formatMoney(I.abate_from)} and ${formatMoney(I.max_income)}. Income here means net income for the year, from all sources.`}
   faqs={faqs} related={['taxCodes', 'home', 'incomeTax', 'taxRates', 'refund', 'minimumWage']} sources={[SRC.ird_ietc, SRC.ird_rates, SRC.min_wage]}>
+  <MiniSim client:visible kind="ietc" lang={lang} href={route('home', lang)} />
   <h2>The credit by income</h2>
   <ContentTable headers={['Annual income', 'IETC per year', 'Per week', 'Extra take-home with ME']} align={['r', 'r', 'r', 'r']} rows={rows} />
   <p>Below {formatMoney(I.min_income)} there is no credit; a full-time job at the minimum wage, about {formatMoney(P.min_wage.adult * 40 * 52)} a year, qualifies for the full {formatMoney(I.amount)}. In the abatement zone the credit falls quickly, which means the effective marginal rate on income between {formatMoney(I.abate_from)} and {formatMoney(I.max_income)} is 30 % of tax plus 13 % of lost credit.</p>

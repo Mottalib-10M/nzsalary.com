@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -32,6 +33,7 @@ const faqs = [
   intro="A contract rate always looks higher than the equivalent salary. The comparison only works once leave, KiwiSaver, ACC and gaps between contracts are counted."
   resume={`The choice between employment and contracting in New Zealand turns less on tax rates, which are the same for both, than on what the employer provides and the contractor must fund. An employee on ${formatMoney(sal)} keeps ${formatMoney(sal - emp.annual.paye - emp.annual.acc)} after income tax and the ACC levy, receives ${formatMoney(emp.annual.employerKsNet)} of employer KiwiSaver after ESCT, and is paid for four weeks of annual holidays, public holidays and sick days. A contractor billing ${formatMoney(rate)} an hour for ${hours} hours a year, a realistic figure after leave and gaps, earns ${formatMoney(fees)}, pays ${formatMoney(exps)} of expenses, income tax of ${formatMoney(ctr.tax)} and ACC levies, and keeps about ${formatMoney(ctrKeep)} with no paid leave and no employer KiwiSaver. The contractor also handles GST above ${formatMoney(P.gst.threshold)} of turnover, provisional tax and their own insurance. Whether someone is legally an employee depends on the reality of the relationship, not the contract’s title.`}
   faqs={faqs} related={['contractor', 'selfEmployed', 'employerCost', 'hourly', 'holidayPay', 'kiwisaver']} sources={[SRC.ird_schedular, SRC.ird_provisional, SRC.holidays]}>
+  <MiniSim client:visible kind="contractorVs" lang={lang} href={route('contractor', lang)} />
   <h2>A salary and a contract rate side by side</h2>
   <ContentTable headers={['Item', `Employee on ${formatMoney(sal)}`, `Contractor at ${formatMoney(rate)} an hour`]} align={['l', 'r', 'r']} rows={rows} />
   <p>The contractor’s hours, {hours} a year, allow for about six weeks without billing: holidays, public holidays, sick days and time between contracts. The ACC work levy for the contractor depends on the industry and is not included.</p>

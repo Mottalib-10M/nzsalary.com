@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -34,6 +35,7 @@ const faqs = [
   intro="The tax code on your IR330 tells your employer how to deduct PAYE. The wrong one does not change the tax you owe, but it changes when you pay it."
   resume={`A tax code is the instruction you give an employer, on the IR330 form, for deducting PAYE from your pay. For a main job, the code is M, or ME if your income is between ${formatMoney(P.ietc.min_income)} and ${formatMoney(P.ietc.max_income)} and you are eligible for the independent earner tax credit, which adds $10 a week. For a second job, you choose a secondary code according to your total annual income from all jobs: SB up to ${formatMoney(15600)}, S up to ${formatMoney(53500)}, SH up to ${formatMoney(78100)}, ST up to ${formatMoney(180000)} and SA above; each applies a single flat rate to the second job’s pay. Any code takes the suffix SL if you have a student loan. Special situations have their own codes, such as CAE for casual agricultural workers, and ND applies 45 % when no code is given. The tax you owe for the year does not depend on the code; the code decides how close PAYE comes to it, and so whether you get a refund or a bill after 31 March.`}
   faqs={faqs} related={['secondary', 'home', 'refund', 'studentLoan', 'ietcGuide', 'payeRates']} sources={[SRC.ird_rates, SRC.ird_ietc, SRC.ird_student_loan]}>
+  <MiniSim client:visible kind="secondary" lang={lang} href={route('secondary', lang)} />
   <h2>All the codes</h2>
   <ContentTable headers={['Code', 'Who uses it', 'What is deducted, before ACC']} align={['l', 'l', 'l']} rows={codes} />
   <p>The ACC earners’ levy of 1.75 % is deducted in addition to the rate in the last column for every code. Secondary rates match the tax rates of the brackets: the logic is that your main job already uses the bands below.</p>

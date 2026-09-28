@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -23,6 +24,7 @@ const faqs = [
   intro="The scale in full with the cumulative tax at each threshold, the transitional rates of the 2024-25 year and the effect of the change on common incomes."
   resume={`New Zealand has five income tax rates for 2026-27: 10.5 % on the first ${formatMoney(15600)} of income, 17.5 % up to ${formatMoney(53500)}, 30 % up to ${formatMoney(78100)}, 33 % up to ${formatMoney(180000)} and 39 % on everything above. The thresholds were raised on 31 July 2024, the first increase in the lower thresholds since 2010, and have applied in full since 1 April 2025. The tax due at each threshold is ${formatMoney(incomeTax(15600))} at ${formatMoney(15600)}, ${formatMoney(incomeTax(53500))} at ${formatMoney(53500)}, ${formatMoney(incomeTax(78100))} at ${formatMoney(78100)} and ${formatMoney(incomeTax(180000))} at ${formatMoney(180000)}. There is no tax-free threshold: the 10.5 % rate starts on the first dollar, and lower earners are supported through tax credits instead. The rates apply to total taxable income from all sources, and the ACC earners’ levy of 1.75 % is charged separately on earnings. The same rates apply to salaries, self-employed profit, rental profit and interest.`}
   faqs={faqs} related={['incomeTax', 'payeRates', 'home', 'ietcGuide', 'taxCodes', 'salary']} sources={[SRC.ird_rates, SRC.ird_ietc, SRC.ird_provisional]}>
+  <MiniSim client:visible kind="tax" lang={lang} href={route('incomeTax', lang)} />
   <h2>The scale for 2026-27</h2>
   <ContentTable headers={['Taxable income', 'Rate', 'Tax at top of band']} align={['l', 'r', 'r']} rows={bands} />
   <p>To find the tax on any income, take the tax at the top of the band below it and add the rate times the rest. On {formatMoney(95000)}, that is {formatMoney(incomeTax(78100))} plus 33 % of {formatMoney(16900)}, or {formatMoney(incomeTax(95000))}. The <a href={route('incomeTax', lang)}>income tax calculator</a> does it for any figure.</p>

@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -21,6 +22,7 @@ const faqs = [
   intro="Three minimum wage rates, set each year by the government and reviewed by MBIE. Here are the 2026 rates and what they leave after deductions."
   resume={`The adult minimum wage in New Zealand is ${formatMoney(M.adult, 2)} an hour from 1 April 2026, an increase of ${formatMoney(M.adult - M.previous_adult, 2)} on the previous ${formatMoney(M.previous_adult, 2)}. The starting-out minimum wage, for young workers in their first months of work, and the training minimum wage, for adults in recognised training, are both ${formatMoney(M.starting_out, 2)} an hour, 80 % of the adult rate. For a 40-hour week, the adult rate gives ${formatMoney(M.adult * 40, 2)} before tax and about ${formatMoney(hourlyToAnnual(M.adult))} a year. After PAYE with the ME code, the ACC levy and KiwiSaver at 3.5 %, a full-time worker takes home about ${formatMoney(full.perPeriod.takeHome, 2)} a week. The minimum wage applies to all employees aged 16 or over, whether full-time, part-time, casual or on a fixed term, and whether paid by the hour, by salary or by piece rates. Employers must also pay holiday pay, public holidays and sick leave on top.`}
   faqs={faqs} related={['hourly', 'ietcGuide', 'holidayPay', 'averageSalary', 'takeHome', 'h-25']} sources={[SRC.min_wage, SRC.ird_rates, SRC.holidays]}>
+  <MiniSim client:visible kind="minwage" lang={lang} href={route('hourly', lang)} />
   <h2>Weekly pay at the minimum wage rates</h2>
   <ContentTable headers={['Rate and hours', 'Weekly gross', 'Yearly gross', 'Weekly take-home (ME, KiwiSaver 3.5 %)']} align={['l', 'r', 'r', 'r']} rows={rows} />
   <p>Take-home pay is higher with the ME code for incomes above {formatMoney(P.ietc.min_income)}, because the independent earner tax credit adds $10 a week. At 20 hours a week the income is below that threshold and the credit does not apply.</p>

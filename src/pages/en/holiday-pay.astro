@@ -1,4 +1,5 @@
 ---
+import MiniSim from '../../components/calc/MiniSim';
 import Guide from '../../components/Guide.astro';
 import ContentTable from '../../components/ContentTable.astro';
 import { route } from '../../i18n/routes';
@@ -21,6 +22,7 @@ const faqs = [
   intro="The Holidays Act 2003 sets the rules until the Employment Leave Act replaces it in 2028. Here is how leave is earned, how it is paid and how it is taxed."
   resume={`Employees in New Zealand are entitled to at least four weeks of paid annual holidays after each 12 months of continuous employment with the same employer, under the Holidays Act 2003. When leave is taken, it must be paid at the greater of ordinary weekly pay or average weekly earnings over the previous 12 months, which protects people whose pay varies. Fixed-term employees on contracts of less than 12 months, and employees whose work is too irregular to give four weeks off, can instead receive 8 % of gross earnings with each pay as holiday pay, a method called pay-as-you-go. On top of annual leave, employees receive paid public holidays that fall on an otherwise working day, time and a half plus an alternative holiday if they work on one, and 10 days of paid sick leave a year after six months. Holiday pay is taxed through PAYE like wages. The Employment Leave Act 2026 will replace these rules from August 2028.`}
   faqs={faqs} related={['holidayCalc', 'takeHome', 'hourly', 'minimumWage', 'payeRates', 'employeeVsContractor', 'home']} sources={[SRC.holidays, SRC.min_wage, SRC.ird_rates]}>
+  <MiniSim client:visible kind="holiday" lang={lang} href={route('holidayCalc', lang)} />
   <h2>8 % pay-as-you-go holiday pay</h2>
   <ContentTable headers={['Hourly rate', 'Hours', 'Weekly pay', 'Holiday pay at 8 %', 'Weekly pay with holiday pay']} align={['r', 'l', 'r', 'r', 'r']} rows={payg} />
   <p>The 8 % corresponds roughly to four weeks of pay for every 48 weeks worked. Because it is paid with each pay, there is no paid time off; if the job continues beyond 12 months or becomes regular, the employer must switch to annual leave.</p>

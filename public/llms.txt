@@ -7,7 +7,7 @@
 - [Salary calculator](https://nzsalary.com/en/salary-calculator/), [income tax calculator](https://nzsalary.com/en/income-tax-calculator/), [IRD refund estimate](https://nzsalary.com/en/ird-tax-calculator/).
 - [Secondary tax calculator](https://nzsalary.com/en/secondary-tax-calculator/), [contractor tax calculator](https://nzsalary.com/en/contractor-tax-calculator/).
 - [KiwiSaver calculator](https://nzsalary.com/en/kiwisaver-calculator/), [student loan repayments](https://nzsalary.com/en/student-loan-repayment-calculator/), [employer cost](https://nzsalary.com/en/employer-cost-calculator/).
-- [Net to gross](https://nzsalary.com/en/net-to-gross-salary/), [hourly to salary](https://nzsalary.com/en/hourly-to-salary-calculator/).
+- [Net to gross](https://nzsalary.com/en/net-to-gross-salary/), [hourly to salary](https://nzsalary.com/en/hourly-to-salary-calculator/), [holiday pay calculator](https://nzsalary.com/en/holiday-pay-calculator/) (8 % taxed as an extra pay).
 
 ## Data
 - Income tax rates and PAYE for 2026-27: https://nzsalary.com/en/income-tax-rates/

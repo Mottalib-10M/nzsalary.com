@@ -106,3 +106,19 @@ export function contractor(o: { fees: number; expenses: number; rate: number; ot
 }
 
 export const hourlyToAnnual = (h: number, hoursPerWeek = 40) => h * hoursPerWeek * 52;
+
+/** Taux PAYE d'un paiement exceptionnel (extra pay, IRD) : revenu des 4 dernières semaines × 13 + le paiement, taux marginal + ACC sous le plafond. */
+export function extraPayRate(annualised: number, amount: number): number {
+  const t = Math.max(0, annualised) + Math.max(0, amount);
+  return marginalRate(t) + (t <= P.acc.max_liable ? P.acc.rate : 0);
+}
+
+/** Indemnité de congés « pay-as-you-go » de 8 % versée en une fois, imposée comme extra pay. */
+export function holidayPay(o: { earnings: number; annualPay: number; kiwisaver?: number; studentLoan?: boolean }) {
+  const pay = r2(Math.max(0, o.earnings) * P.leave.payg_rate);
+  const rate = extraPayRate(o.annualPay, pay);
+  const paye = r2(pay * rate);
+  const kiwisaver = r2(pay * (o.kiwisaver ?? 0));
+  const studentLoan = o.studentLoan && o.annualPay + pay > P.student_loan.threshold_annual ? r2(pay * P.student_loan.rate) : 0;
+  return { pay, rate, paye, kiwisaver, studentLoan, net: r2(pay - paye - kiwisaver - studentLoan) };
+}

@@ -13,6 +13,7 @@ export const ROUTES: RouteDef<Locale>[] = [
   { id: 'refund', paths: { en: '/en/ird-tax-calculator/' } },
   { id: 'contractor', paths: { en: '/en/contractor-tax-calculator/' } },
   { id: 'hourly', paths: { en: '/en/hourly-to-salary-calculator/' } },
+  { id: 'holidayCalc', paths: { en: '/en/holiday-pay-calculator/' } },
   { id: 'kiwisaver', paths: { en: '/en/kiwisaver-calculator/' } },
   { id: 'studentLoan', paths: { en: '/en/student-loan-repayment-calculator/' } },
   { id: 'employerCost', paths: { en: '/en/employer-cost-calculator/' } },

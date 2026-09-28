@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { incomeTax, accLevy, ietc, studentLoanAnnual, compute, secondaryCode, esctRate, grossForNet, partYearRefund, contractor } from './nz';
+import { incomeTax, accLevy, ietc, studentLoanAnnual, compute, secondaryCode, esctRate, grossForNet, partYearRefund, contractor, extraPayRate, holidayPay } from './nz';
 
 describe('Barème IRD depuis le 1er avril 2025', () => {
   it.each([[15600, 1638], [53500, 8270.5], [78100, 15650.5], [180000, 49277.5], [200000, 57077.5]])('revenu %i → %i', (i, t) => expect(incomeTax(i)).toBeCloseTo(t, 2));
@@ -48,3 +48,23 @@ describe('Année incomplète et indépendants', () => {
   });
   it('schedular : retenue minimale 10 %', () => expect(contractor({ fees: 50000, expenses: 5000, rate: 0.05 }).withheld).toBe(5000));
 });
+
+describe('extra pay et indemnité de congés 8 %', () => {
+  // Barème IRD « Calculate PAYE for a lump sum payment », 2026-27 (en vigueur au 18 mai 2026).
+  it('applique les taux IRD, ACC comprise sous le plafond', () => {
+    expect(extraPayRate(10000, 500)).toBeCloseTo(0.1225, 6);
+    expect(extraPayRate(40000, 3000)).toBeCloseTo(0.1925, 6);
+    expect(extraPayRate(60000, 4800)).toBeCloseTo(0.3175, 6);
+    expect(extraPayRate(100000, 8000)).toBeCloseTo(0.3475, 6);
+    expect(extraPayRate(160000, 5000)).toBeCloseTo(0.33, 6);
+    expect(extraPayRate(200000, 5000)).toBeCloseTo(0.39, 6);
+  });
+  it('calcule 8 % des gains puis la PAYE au taux extra pay', () => {
+    const h = holidayPay({ earnings: 30000, annualPay: 52000 });
+    expect(h.pay).toBe(2400);
+    expect(h.rate).toBeCloseTo(0.3175, 6); // 52 000 + 2 400 = 54 400 > 53 500
+    expect(h.paye).toBe(762);
+    expect(h.net).toBe(1638);
+  });
+});
+

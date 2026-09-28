@@ -3,11 +3,11 @@ import NumberField from '../ui/NumberField';
 import SelectField from '../ui/SelectField';
 import Toggle from '../ui/Toggle';
 import StackedBar from '../ui/StackedBar';
-import { compute, grossForNet, hourlyToAnnual, secondaryCode, partYearRefund, contractor, type Code, type Period } from '../../lib/engine/nz';
+import { compute, grossForNet, hourlyToAnnual, secondaryCode, partYearRefund, contractor, holidayPay, type Code, type Period } from '../../lib/engine/nz';
 import { formatMoney, formatPercent } from '../../lib/format';
 import { readParams, num, str, updateURL } from '../../lib/url-state';
 
-export type Mode = 'paye' | 'salary' | 'takeHome' | 'incomeTax' | 'refund' | 'contractor' | 'hourly' | 'kiwisaver' | 'studentLoan' | 'employerCost' | 'secondary' | 'netToGross';
+export type Mode = 'paye' | 'salary' | 'takeHome' | 'incomeTax' | 'refund' | 'contractor' | 'hourly' | 'kiwisaver' | 'studentLoan' | 'employerCost' | 'secondary' | 'netToGross' | 'holidayPay';
 interface Props { mode?: Mode; initialGross?: number; initialHourly?: number; initialPeriod?: Period; methodHref?: string }
 const PERIOD_OPTS = [{ value: 'weekly', label: 'Weekly' }, { value: 'fortnightly', label: 'Fortnightly' }, { value: 'monthly', label: 'Monthly' }, { value: 'annual', label: 'Yearly' }];
 const KS_OPTS = [{ value: '0', label: 'Not a member' }, { value: '0.03', label: '3 % (temporary reduction)' }, { value: '0.035', label: '3.5 % (default from April 2026)' }, { value: '0.04', label: '4 %' }, { value: '0.06', label: '6 %' }, { value: '0.08', label: '8 %' }, { value: '0.1', label: '10 %' }];
@@ -28,12 +28,13 @@ export default function NzCalculator({ mode = 'paye', initialGross = 65000, init
   const [months, setMonths] = useState(num(sp, 'mo', 4));
   const [expenses, setExpenses] = useState(num(sp, 'ex', 5000));
   const [wt, setWt] = useState(num(sp, 'wt', 20));
+  const [earn, setEarn] = useState(num(sp, 'e', 20000));
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     const u = readParams(window.location.search);
     setGross(num(u, 'g', initialGross)); setNet(num(u, 'n', 50000)); setHourly(num(u, 'h', initialHourly)); setHours(num(u, 'hw', 40));
     setPeriod(str(u, 'p', initialPeriod) as Period); setCode(str(u, 'c', 'M') as Code); setKs(str(u, 'ks', '0.035')); setSl(str(u, 'sl', '0'));
-    setMain(num(u, 'main', 60000)); setMonths(num(u, 'mo', 4)); setExpenses(num(u, 'ex', 5000)); setWt(num(u, 'wt', 20));
+    setMain(num(u, 'main', 60000)); setMonths(num(u, 'mo', 4)); setExpenses(num(u, 'ex', 5000)); setWt(num(u, 'wt', 20)); setEarn(num(u, 'e', 20000));
   }, []);
   const ksRate = Number(ks); const student = sl === '1';
   const secCode = secondaryCode(main + gross);
@@ -41,14 +42,16 @@ export default function NzCalculator({ mode = 'paye', initialGross = 65000, init
   const effGross = mode === 'netToGross' ? grossForNet(net, { kiwisaver: ksRate, studentLoan: student, code }) : mode === 'hourly' ? hourlyToAnnual(hourly, hours) : gross;
   const r = useMemo(() => compute({ gross: effGross, code: effCode, kiwisaver: ksRate, studentLoan: student, period }), [effGross, effCode, ksRate, student, period]);
   const refund = useMemo(() => partYearRefund({ monthly: gross / 12, months: Math.max(1, Math.min(12, months)), code }), [gross, months, code]);
+  const hp = useMemo(() => holidayPay({ earnings: earn, annualPay: gross, kiwisaver: Number(ks), studentLoan: sl === '1' }), [earn, gross, ks, sl]);
   const ctr = useMemo(() => contractor({ fees: gross, expenses, rate: wt / 100 }), [gross, expenses, wt]);
-  useEffect(() => { updateURL({ g: ['netToGross', 'hourly'].includes(mode) ? undefined : gross, n: mode === 'netToGross' ? net : undefined, h: mode === 'hourly' ? hourly : undefined, hw: mode === 'hourly' && hours !== 40 ? hours : undefined, p: period === initialPeriod ? undefined : period, c: code === 'M' ? undefined : code, ks: ks === '0.035' ? undefined : ks, sl: sl === '1' ? 1 : undefined, main: mode === 'secondary' ? main : undefined, mo: mode === 'refund' ? months : undefined, ex: mode === 'contractor' ? expenses : undefined, wt: mode === 'contractor' ? wt : undefined }); }, [gross, net, hourly, hours, period, code, ks, sl, main, months, expenses, wt, mode]);
+  useEffect(() => { updateURL({ g: ['netToGross', 'hourly'].includes(mode) ? undefined : gross, n: mode === 'netToGross' ? net : undefined, h: mode === 'hourly' ? hourly : undefined, hw: mode === 'hourly' && hours !== 40 ? hours : undefined, p: period === initialPeriod ? undefined : period, c: code === 'M' ? undefined : code, ks: ks === '0.035' ? undefined : ks, sl: sl === '1' ? 1 : undefined, main: mode === 'secondary' ? main : undefined, mo: mode === 'refund' ? months : undefined, ex: mode === 'contractor' ? expenses : undefined, wt: mode === 'contractor' ? wt : undefined, e: mode === 'holidayPay' ? earn : undefined }); }, [gross, net, hourly, hours, period, code, ks, sl, main, months, expenses, wt, earn, mode]);
 
   const A = r.annual; const pp = r.perPeriod; const per = PER_LABEL[period];
   const head = (() => {
     switch (mode) {
       case 'incomeTax': return { l: 'Income tax for 2026-27', v: formatMoney(A.paye), s: `effective ${formatPercent(A.paye / Math.max(1, A.gross))} · marginal ${formatPercent(A.marginal, 1)}${A.ietc ? ` · IETC ${formatMoney(A.ietc)} applied` : ''}` };
       case 'refund': return { l: refund.refund >= 0 ? 'Likely refund at year end' : 'Likely tax to pay at year end', v: formatMoney(Math.abs(refund.refund)), s: `${formatMoney(refund.deducted)} PAYE deducted over ${months} months · ${formatMoney(refund.actual)} tax actually due` };
+      case 'holidayPay': return { l: 'Holiday pay after tax', v: formatMoney(hp.net), s: `8 % of ${formatMoney(earn)} = ${formatMoney(hp.pay)} gross · PAYE at the extra-pay rate of ${formatPercent(hp.rate, 2)}` };
       case 'contractor': return { l: ctr.balance > 0 ? 'Tax still to pay after withholding' : 'Likely refund after withholding', v: formatMoney(Math.abs(ctr.balance)), s: `${formatMoney(ctr.withheld)} withheld at ${wt} % · rate that would cover it: about ${formatPercent(ctr.suggestedRate, 0)}` };
       case 'kiwisaver': return { l: 'Into your KiwiSaver each year', v: formatMoney(A.kiwisaver + A.employerKsNet + A.govtContribution), s: `you ${formatMoney(A.kiwisaver)} · employer ${formatMoney(A.employerKsNet)} after ESCT · government ${formatMoney(A.govtContribution)}` };
       case 'studentLoan': return { l: `Student loan repayment ${per}`, v: formatMoney(student ? pp.studentLoan : compute({ gross: effGross, code: effCode, studentLoan: true, period }).perPeriod.studentLoan), s: 'deducted by your employer with an SL tax code: 12 % above the repayment threshold' };
@@ -61,7 +64,7 @@ export default function NzCalculator({ mode = 'paye', initialGross = 65000, init
     }
   })();
   const copy = async () => { try { await navigator.clipboard.writeText(`${head.l}: ${head.v}\n${window.location.href}`); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* indisponible */ } };
-  const incomeLabel = mode === 'contractor' ? 'Contract income for the year (before expenses)' : mode === 'secondary' ? 'Income from the second job, per year' : mode === 'refund' ? 'Salary, per year equivalent' : 'Salary or wages per year, before tax';
+  const incomeLabel = mode === 'contractor' ? 'Contract income for the year (before expenses)' : mode === 'secondary' ? 'Income from the second job, per year' : mode === 'refund' ? 'Salary, per year equivalent' : mode === 'holidayPay' ? 'Your usual pay, per year equivalent' : 'Salary or wages per year, before tax';
 
   return (
     <div data-chrome className="rechner rounded-xl border border-navy-200 bg-navy-50 p-4 sm:p-6">
@@ -73,14 +76,15 @@ export default function NzCalculator({ mode = 'paye', initialGross = 65000, init
                 <NumberField id="h" label="Hourly rate" value={hourly} onChange={setHourly} unit="$" max={1000} decimals={2} help="Before tax" />
                 <NumberField id="hw" label="Hours a week" value={hours} onChange={setHours} unit="h" max={80} />
               </div>)
-            : <NumberField id="g" label={incomeLabel} value={gross} onChange={setGross} unit="$" max={5000000} help={mode === 'refund' ? 'The salary you were paid while working, expressed per year' : undefined} />}
+            : <NumberField id="g" label={incomeLabel} value={gross} onChange={setGross} unit="$" max={5000000} help={mode === 'refund' ? 'The salary you were paid while working, expressed per year' : mode === 'holidayPay' ? 'Your last 4 weeks of pay × 13: it sets the tax rate' : undefined} />}
+          {mode === 'holidayPay' && <NumberField id="e" label="Gross earnings the 8 % is paid on" value={earn} onChange={setEarn} unit="$" max={5000000} help="All gross pay since your last holiday pay, or since you started" />}
           {mode === 'secondary' && <NumberField id="main" label="Income from your main job, per year" value={main} onChange={setMain} unit="$" max={5000000} help="Used to pick the secondary tax code" />}
           {mode === 'refund' && <NumberField id="mo" label="Months worked in the tax year" value={months} onChange={setMonths} unit="months" min={1} max={12} help="From 1 April to 31 March; no other income assumed" />}
           {mode === 'contractor' && <div className="grid grid-cols-2 gap-3">
             <NumberField id="ex" label="Business expenses" value={expenses} onChange={setExpenses} unit="$" max={5000000} />
             <NumberField id="wt" label="Withholding rate you chose" value={wt} onChange={setWt} unit="%" min={10} max={100} help="At least 10 % on schedular payments" />
           </div>}
-          {!['contractor', 'refund'].includes(mode) && <div className="grid grid-cols-2 gap-3">
+          {!['contractor', 'refund', 'holidayPay'].includes(mode) && <div className="grid grid-cols-2 gap-3">
             <SelectField id="p" label="Pay frequency" value={period} onChange={(v) => setPeriod(v as Period)} options={PERIOD_OPTS} />
             {mode === 'secondary'
               ? <SelectField id="ks" label="KiwiSaver" value={ks} onChange={setKs} options={KS_OPTS} />
@@ -103,6 +107,16 @@ export default function NzCalculator({ mode = 'paye', initialGross = 65000, init
                 <Row l="PAYE deducted (as if the salary lasted all year)" v={formatMoney(refund.deducted)} />
                 <Row l="Tax actually due on that income" v={formatMoney(refund.actual)} />
                 <Row l={refund.refund >= 0 ? 'Refund issued by Inland Revenue' : 'Tax to pay'} v={formatMoney(Math.abs(refund.refund))} bold accent />
+              </tbody></table>
+            ) : mode === 'holidayPay' ? (
+              <table className="mt-2 w-full text-sm"><tbody className="divide-y divide-navy-100">
+                <Row l="Gross earnings" v={formatMoney(earn)} />
+                <Row l="Holiday pay at 8 %" v={formatMoney(hp.pay)} bold />
+                <Row l={`PAYE and ACC at the extra-pay rate (${formatPercent(hp.rate, 2)})`} v={`− ${formatMoney(hp.paye)}`} />
+                {hp.kiwisaver > 0 && <Row l={`KiwiSaver (${formatPercent(Number(ks), 1)})`} v={`− ${formatMoney(hp.kiwisaver)}`} />}
+                {hp.studentLoan > 0 && <Row l="Student loan (12 %)" v={`− ${formatMoney(hp.studentLoan)}`} />}
+                <Row l="Holiday pay after tax" v={formatMoney(hp.net)} bold accent />
+                <Row l="Kept per $1 of holiday pay" v={formatMoney(hp.pay ? hp.net / hp.pay : 0, 2)} />
               </tbody></table>
             ) : mode === 'contractor' ? (
               <table className="mt-2 w-full text-sm"><tbody className="divide-y divide-navy-100">

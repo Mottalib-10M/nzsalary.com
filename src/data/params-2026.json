@@ -16,6 +16,7 @@
     "acc_levy": { "url": "https://www.mbie.govt.nz/business-and-employment/employment-and-skills/employment-legislation-reviews/setting-the-average-acc-levy-rates-for-2025-26-2026-27-and-2027-28", "label": { "en": "MBIE: ACC levy rates for 2025-26 to 2027-28" } },
     "min_wage": { "url": "https://www.employment.govt.nz/pay-and-hours/pay-and-wages/minimum-wage/minimum-wage-rates-and-types", "label": { "en": "Employment New Zealand: Minimum wage rates" } },
     "holidays": { "url": "https://www.employment.govt.nz/leave-and-holidays", "label": { "en": "Employment New Zealand: Leave and holidays" } },
+    "ird_lump_sum": { "url": "https://www.ird.govt.nz/employing-staff/payday-filing/non-standard-filing-of-employment-information/lump-sum-payments/calculate-paye-for-a-lump-sum-payment", "label": { "en": "Inland Revenue: calculate PAYE for a lump sum payment (extra pay rates 2026-27)" } },
     "stats_income": { "url": "https://www.stats.govt.nz/information-releases/labour-market-statistics-income-june-2026-quarter/", "label": { "en": "Stats NZ: Labour market statistics (income), June 2026 quarter" } }
   },
   "tax": {

@@ -1,0 +1,41 @@
+---
+import ToolPage from '../../components/ToolPage.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { holidayPay, extraPayRate } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const ex = holidayPay({ earnings: 20000, annualPay: 52000, kiwisaver: 0.035 });
+const cases: Array<[string, number, number]> = [['Casual, a few shifts', 8000, 26000], ['Casual, part time', 20000, 40000], ['Fixed term, full time', 30000, 52000], ['Fixed term, full time', 40000, 70000], ['Leaving a salaried job', 12000, 90000]];
+const rows = cases.map(([l, e, a]) => { const h = holidayPay({ earnings: e, annualPay: a }); return [l, formatMoney(e), formatMoney(a), formatMoney(h.pay), formatPercent(h.rate, 2), formatMoney(h.net)]; });
+const bands = [15600, 53500, 78100, P.acc.max_liable, 180000].map((top, i, arr) => { const from = i === 0 ? 0 : arr[i - 1] + 1; return [`${formatMoney(from)} to ${formatMoney(top)}`, formatPercent(extraPayRate(top - 1, 0), 2)]; }).concat([[`Over ${formatMoney(180000)}`, formatPercent(extraPayRate(200000, 0), 2)]]);
+const faqs = [
+  { q: 'How is 8 % holiday pay taxed in NZ?', a: `When it is paid separately, as a lump sum, it is an extra pay. Your employer adds up your last four weeks of pay, multiplies it by 13, adds the holiday pay and applies the rate for that total: ${formatPercent(extraPayRate(40000, 3000), 2)} between ${formatMoney(15601)} and ${formatMoney(53500)}, ${formatPercent(extraPayRate(60000, 3000), 2)} up to ${formatMoney(78100)}, ACC included. Added to each pay, it is taxed with that pay.` },
+  { q: 'How much holiday pay do I get on $20,000 of earnings?', a: `${formatMoney(ex.pay)} gross, which is 8 % of ${formatMoney(20000)}. On a usual pay of ${formatMoney(52000)} a year, PAYE at the extra-pay rate of ${formatPercent(ex.rate, 2)} and KiwiSaver at 3.5 % leave ${formatMoney(ex.net)}. Without KiwiSaver you would keep ${formatMoney(holidayPay({ earnings: 20000, annualPay: 52000 }).net)}. The rate would be lower on a smaller usual pay.` },
+  { q: 'Which earnings does the 8 % apply to?', a: 'All gross earnings for the period: ordinary pay, overtime, commission and taxable allowances, and any holiday pay already paid for public holidays or sick leave. It does not apply to reimbursements such as mileage or tools, which are not earnings. Check that your payslip shows the 8 % as a separate line.' },
+  { q: 'Is a big holiday pay-out taxed at 39 %?', a: `Only if your usual pay plus the pay-out goes above ${formatMoney(180000)} a year. The rate depends on your last four weeks of pay multiplied by 13, plus the payment itself. That is why a pay-out rarely changes bracket for a regular wage earner, and why any over-deduction comes back in your end-of-year tax assessment.` },
+];
+---
+<ToolPage id="holidayCalc" title="Holiday Pay Calculator NZ 2026-27: 8 % Holiday Pay After Tax" h1="Holiday pay calculator: your 8 % holiday pay after tax"
+  description="Work out 8 % pay-as-you-go holiday pay in New Zealand and what is left after PAYE at the IRD extra-pay rate, ACC, KiwiSaver and student loan for 2026-27."
+  intro="Enter the gross earnings your 8 % is paid on and your usual pay. The calculator applies Inland Revenue’s extra-pay method to show the holiday pay you keep."
+  mode="holidayPay" initialGross={52000} faqs={faqs} related={['holidayPay', 'hourly', 'takeHome', 'payeRates', 'minimumWage', 'home']}
+  sources={[SRC.holidays, SRC.ird_lump_sum, SRC.acc_levy]}>
+  <p>In New Zealand, casual workers, employees on fixed-term contracts of less than twelve months and anyone leaving a job are entitled to holiday pay of at least 8 % of their gross earnings, under the Holidays Act 2003. When that 8 % is paid out as a lump sum, Inland Revenue treats it as an extra pay: your employer adds up your last four weeks of pay, multiplies it by 13 to get an annual figure, adds the holiday pay and taxes the whole payment at the rate for that total, ACC earners’ levy included. For example, 8 % of {formatMoney(20000)} of earnings is {formatMoney(ex.pay)}; on a usual pay of {formatMoney(52000)} a year the extra-pay rate is {formatPercent(ex.rate, 2)}, and after KiwiSaver at 3.5 % you keep {formatMoney(ex.net)}. When the 8 % is added to every pay instead, it is simply taxed with that pay, as the <a href={route('takeHome', lang)}>take-home pay calculator</a> shows.</p>
+
+  <h2>Holiday pay examples</h2>
+  <ContentTable headers={['Situation', 'Gross earnings', 'Usual pay a year', 'Holiday pay 8 %', 'Extra-pay rate', 'After PAYE and ACC']} align={['l', 'r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>The rate depends on the usual pay, not on the size of the holiday pay alone. The last row shows why: someone leaving a {formatMoney(90000)} job pays {formatPercent(extraPayRate(90000, 960), 2)} on the pay-out, while a casual worker on {formatMoney(26000)} a year pays {formatPercent(extraPayRate(26000, 640), 2)}.</p>
+
+  <h2>Extra-pay rates for 2026-27</h2>
+  <p>Inland Revenue publishes one rate per band of annual income, counting the last four weeks of pay multiplied by 13 plus the extra pay. The ACC earners’ levy of 1.75 % is included up to the maximum liable earnings of {formatMoney(P.acc.max_liable)}; above that point no levy is due, which is why the rate dips before the top band.</p>
+  <ContentTable headers={['Annualised pay plus holiday pay', 'PAYE rate with ACC']} align={['l', 'r']} rows={bands} />
+
+  <h2>When the 8 % applies, and when it does not</h2>
+  <p>Pay-as-you-go holiday pay is allowed for fixed-term employees on contracts of less than twelve months and for employees whose work is so intermittent or irregular that annual leave is impractical. It must be agreed in writing and shown separately on the payslip. Permanent employees take four weeks of paid annual leave instead, paid at the greater of their ordinary weekly pay and their average weekly earnings, and when they leave they receive their untaken leave plus 8 % of the gross earnings since their last anniversary. The <a href={route('holidayPay', lang)}>holiday pay guide</a> covers annual leave, public holidays and alternative days.</p>
+
+  <h2>Checking your payslip</h2>
+  <p>Multiply your gross earnings for the pay period by 0.08: the holiday pay line should be at least that amount. If your employer pays it as a lump sum, the PAYE on that line should match the extra-pay rate above for your usual pay. If too much tax is deducted, the difference is refunded in your end-of-year income tax assessment, which you can estimate with the <a href={route('refund', lang)}>IRD tax refund calculator</a>.</p>
+</ToolPage>

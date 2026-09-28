@@ -1,4 +1,4 @@
-# NZ Salary
+# NZSalary.com
 
 > Free New Zealand take-home pay, PAYE, KiwiSaver and ACC calculators for the 2026-27 tax year, published by Radif Partners. Every rate is read from Inland Revenue, ACC and MBIE, with the source and date on each page. Calculations run in the browser.
 

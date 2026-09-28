@@ -1,6 +1,6 @@
 {
- "name": "NZ Salary",
- "short_name": "NZ Salary",
+ "name": "NZSalary.com",
+ "short_name": "NZSalary",
  "description": "New Zealand PAYE and take-home pay calculator 2026-27: income tax, ACC levy, KiwiSaver at 3.5 %, student loan and tax codes.",
  "start_url": "/en/",
  "display": "standalone",

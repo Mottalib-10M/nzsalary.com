@@ -1,6 +1,6 @@
 /** Configuration centrale du site (générée par new-site.py). */
 export const SITE_URL = "https://nzsalary.com";
-export const SITE_NAMES: Record<string, string> = {"en": "NZ Salary"};
+export const SITE_NAMES: Record<string, string> = {"en": "NZSalary.com"};
 export const LANG_TAGS: Record<string, string> = {"en": "en-NZ"};
 export const OG_LOCALES: Record<string, string> = {"en": "en_NZ"};
 export const LOCALE_TAG = 'en-NZ';

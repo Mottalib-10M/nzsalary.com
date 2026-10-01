@@ -1,0 +1,48 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const L = P.leave;
+const rows = [P.min_wage.adult, 27, 30, 35.96, 45].map((h) => [formatMoney(h, 2), formatMoney(h * 8, 2), formatMoney(h * 8 * L.sick_days), formatMoney(h * 8 * L.sick_max_balance)]);
+const balance = [1, 2, 3, 4].map((y) => [`After year ${y}`, `${Math.min(L.sick_max_balance, L.sick_days * y)} days`, y >= 2 ? `${L.sick_max_balance}-day ceiling reached` : 'Full carry-over']);
+const faqs = [
+  { q: 'How many sick days do you get in NZ?', a: `At least ${L.sick_days} days a year once you have worked for your employer for ${L.sick_after_months} months, and another ${L.sick_days} on each 12-month anniversary of that date. Unused days carry over up to a total of ${L.sick_max_balance}. The number is the same for full-time and part-time employees: someone working three days a week gets ${L.sick_days} sick days, each paid for the hours of that day.` },
+  { q: 'How much is a sick day paid?', a: `What you would have earned had you worked: relevant daily pay, including regular overtime and allowances for that day. On ${formatMoney(30)} an hour for eight hours it is ${formatMoney(240)} before tax. If daily pay cannot be determined because your hours vary too much, average daily pay over the last 52 weeks is used.` },
+  { q: 'Do I need a medical certificate for sick leave?', a: 'Your employer can ask for proof once you have been sick for three consecutive calendar days, whether or not they were all working days, and you pay for the certificate. They can ask earlier, within the first three days, but must then tell you promptly and cover the cost. The proof need only say you are unfit for work; it does not have to give the reason.' },
+  { q: 'Can I use sick leave to look after my child?', a: 'Yes. Sick leave covers your own illness or injury, that of your spouse or partner, and that of a person who depends on you for care, such as a child or an elderly parent. It comes out of the same balance. It does not cover routine appointments unless your agreement extends it to them.' },
+];
+---
+<Guide id="sickLeave" title="Sick Leave NZ 2026: 10 Days a Year, Pay and Entitlement" h1="Sick leave in New Zealand: entitlement and pay"
+  description="Sick leave in New Zealand in 2026: 10 paid days a year after six months, carry-over to 20 days, how a sick day is paid, proof of illness and part-time rules."
+  intro="Ten paid sick days a year are the legal minimum after six months in a job. Here is who qualifies, what a sick day pays and how the balance builds."
+  resume={`Employees in New Zealand are entitled to at least ${L.sick_days} days of paid sick leave a year under the Holidays Act 2003, a minimum doubled from five days in July 2021. The entitlement starts after ${L.sick_after_months} months of continuous employment and renews every twelve months from that date. Unused days carry over, up to a balance of ${L.sick_max_balance} days. A sick day is paid at relevant daily pay, the amount the employee would have earned by working that day: ${formatMoney(240)} for eight hours at ${formatMoney(30)} an hour. Sick leave can be used for the employee’s own illness or injury, or to care for a spouse, partner or dependant. The entitlement is counted in days and is the same for part-time and full-time staff. Unused sick leave is not paid out when a job ends unless the agreement says so.`}
+  faqs={faqs} related={['holidayPay', 'publicHoliday', 'finalPay', 'acc', 'minimumWage', 'takeHome']} sources={[SRC.enz_sick_leave, SRC.holidays, SRC.min_wage]}>
+  <MiniSim client:visible kind="sick" lang={lang} href={route('takeHome', lang)} />
+  <h2>What sick leave is worth at different rates</h2>
+  <ContentTable headers={['Hourly rate', 'One 8-hour sick day', `${L.sick_days} days a year`, `Full balance of ${L.sick_max_balance} days`]} align={['r', 'r', 'r', 'r']} rows={rows} />
+  <p>Sick pay is ordinary wages: it goes through PAYE, counts for KiwiSaver and for the 8 % holiday pay. A week containing a paid sick day should look the same on the payslip as a week fully worked.</p>
+
+  <h2>Who qualifies, and from when</h2>
+  <p>The standard route is six months of current continuous employment with the same employer. Employees whose work is not continuous qualify by an hours test instead: over a period of six months, they must have worked an average of at least ten hours a week, and at least one hour in every week or forty hours in every month. A casual worker who meets that test gets the same {L.sick_days} days. The entitlement lasts twelve months, after which the test is applied again.</p>
+  <p>Before the six months are up there is no legal right to paid sick leave. Employers can agree to give sick leave in advance and deduct it from the entitlement when it arises, and many agreements provide some from the first day.</p>
+
+  <h2>How the balance builds and where it stops</h2>
+  <ContentTable headers={['Without taking any', 'Balance', 'Carry-over']} align={['l', 'r', 'l']} rows={balance} />
+  <p>Each entitlement date adds {L.sick_days} days, and the law lets the balance carry to {L.sick_max_balance} days. Beyond that, extra days are lost unless the agreement allows a higher ceiling. An employee who takes four days in a year starts the next with six carried over plus ten new ones.</p>
+
+  <h2>A sick day when your hours vary</h2>
+  <p>The payment is for the day you would have worked. A ten-hour rostered shift is paid as ten hours; a four-hour shift as four. If the roster had not been set, the same question as for public holidays applies: would the day otherwise have been a working day, judged from the agreement and the recent pattern of work. Where the amount cannot be worked out, average daily pay is used: gross earnings over the past 52 weeks divided by the number of days worked or on paid leave in that time.</p>
+  <p>Half days are a matter for agreement. The Act counts in whole days, so strictly a morning off uses a full day of entitlement; in practice many employers deduct hours, which benefits the employee.</p>
+
+  <h2>Sick leave, ACC and long illness</h2>
+  <p>An injury, at work or elsewhere, is covered by ACC rather than by sick leave. ACC pays weekly compensation of 80 % of earnings from the second week. The first week after a work injury is paid by the employer at 80 %; after a non-work injury, the first week can be taken as sick leave. During ACC compensation an employee may agree with the employer to top the 80 % up to full pay using one day of sick leave for every five days. The <a href={route('acc', lang)}>ACC earners’ levy guide</a> explains what funds the scheme.</p>
+  <p>Once sick leave runs out, further absence is unpaid unless the employer agrees otherwise or annual leave is used by agreement. A dismissal for long-term illness requires a fair process, medical information and a real look at alternatives.</p>
+
+  <h2>Sick during annual leave or on a public holiday</h2>
+  <p>If you fall sick before a period of annual leave begins, the days of illness can be taken as sick leave instead. If you fall sick during the leave, the employer may agree to convert the days but does not have to. On a public holiday that you were due to work, illness does not use a sick day: you are paid for the public holiday at relevant daily pay, without time and a half and without an alternative holiday.</p>
+</Guide>

@@ -1,0 +1,47 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { finalPay } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const ex = finalPay({ weeklyPay: 1300, leaveWeeks: 2, earningsSinceAnniversary: 30000 });
+const rows = ([[1000, 0, 20000], [1000, 1, 40000], [1300, 2, 30000], [1300, 4, 10000], [1800, 3, 60000], [2500, 5, 45000]] as const).map(([w, l, e]) => { const x = finalPay({ weeklyPay: w, leaveWeeks: l, earningsSinceAnniversary: e }); return [formatMoney(w), `${l}`, formatMoney(e), formatMoney(x.total), formatPercent(x.rate, 2), formatMoney(x.net)]; });
+const short = finalPay({ weeklyPay: 1000, leaveWeeks: 0, earningsSinceAnniversary: 26000 });
+const faqs = [
+  { q: 'How is annual leave paid out when I resign in NZ?', a: `In two parts. Leave you were already entitled to at your last anniversary and have not taken is paid at the greater of your ordinary weekly pay and your average weekly earnings over the last 12 months. On top of that you receive 8 % of your gross earnings since that anniversary. With ${formatMoney(1300)} a week, two weeks untaken and ${formatMoney(30000)} earned since, that is ${formatMoney(ex.untaken)} plus ${formatMoney(ex.accrued)}.` },
+  { q: 'What if I leave before working 12 months?', a: `You have no entitled leave yet, so the whole pay-out is 8 % of your gross earnings in the job, less any leave taken in advance or holiday pay already paid. After six months on ${formatMoney(1000)} a week that is 8 % of ${formatMoney(26000)}: ${formatMoney(short.total)} before tax and ${formatMoney(short.net)} after.` },
+  { q: 'How is a final pay taxed?', a: `Your last regular wages go through PAYE as usual. The leave pay-out is an extra pay, taxed at one flat rate based on your last four weeks of pay multiplied by 13 plus the pay-out, ACC levy included: ${formatPercent(ex.rate, 2)} in the example above. KiwiSaver and student loan deductions apply to it.` },
+  { q: 'When must my final pay be paid?', a: 'On the date your employment agreement sets. If it is silent, the final pay is due on the next regular payday after your last day, although many employers pay on the last day itself. It must include wages to the last hour worked, all holiday pay, any alternative holidays owing and agreed payments such as notice in lieu.' },
+];
+---
+<Guide id="finalPay" title="Final Pay Calculator NZ 2026-27: Annual Leave Payout" h1="Final pay calculator: annual leave paid out when you leave"
+  description="Work out the annual leave payout in a New Zealand final pay for 2026-27: untaken entitled leave, 8 % of earnings since your anniversary, and the tax on both."
+  intro="When a job ends, untaken leave is paid in money. Enter your weekly pay, your leave balance and your earnings since your last work anniversary."
+  resume={`A final pay in New Zealand must include all annual holiday pay owing, calculated in two parts under the Holidays Act 2003. Entitled leave, the balance you held at your last work anniversary and have not taken, is paid at the greater of ordinary weekly pay and average weekly earnings over the previous twelve months. Leave accrued since that anniversary is paid as 8 % of gross earnings in that period, less anything taken in advance. For ${formatMoney(1300)} a week, two weeks of entitled leave and ${formatMoney(30000)} earned since the anniversary, the pay-out is ${formatMoney(ex.total)} before tax. It is taxed as an extra pay, here at ${formatPercent(ex.rate, 2)} with the ACC earners’ levy, leaving ${formatMoney(ex.net)} before KiwiSaver. Public holidays and alternative holidays owing are added separately.`}
+  faqs={faqs} related={['holidayCalc', 'redundancy', 'holidayPay', 'publicHoliday', 'refund', 'bonusTax']} sources={[SRC.enz_final_pay, SRC.enz_annual, SRC.ird_lump_sum, SRC.holidays]}>
+  <MiniSim client:visible kind="finalpay" lang={lang} href={route('holidayCalc', lang)} />
+  <h2>Leave pay-outs: worked examples</h2>
+  <ContentTable headers={['Weekly pay', 'Entitled weeks untaken', 'Earnings since anniversary', 'Pay-out before tax', 'Extra-pay rate', 'After PAYE and ACC']} align={['r', 'r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>The first row is someone in their first year: no entitled leave, only the 8 %. The fourth is someone who left shortly after an anniversary with a full four weeks untaken. Both are common, and they are taxed by the same method.</p>
+
+  <h2>Entitled leave and accrued leave are not the same thing</h2>
+  <p>Annual holidays become an entitlement in one block: four weeks on each anniversary of your start date. Between anniversaries nothing is “entitled”, however many months have passed, even though payslips often show a running balance. That balance is an accrual, a bookkeeping figure. The distinction matters when you leave, because the two are valued differently: entitled weeks at a weekly rate, the current year at 8 % of what you actually earned.</p>
+  <p>The 8 % applies to gross earnings since the anniversary, and those earnings include the value of the entitled leave being paid out. Payroll therefore works out the entitled leave first, adds it to the earnings, then takes 8 %. For a simple estimate the difference is small; on four weeks of leave at {formatMoney(1300)} it adds {formatMoney(1300 * 4 * P.leave.payg_rate)}.</p>
+
+  <h2>Which weekly rate applies</h2>
+  <p>Ordinary weekly pay is what you receive for a normal week under your agreement: wages, regular allowances, regular overtime and productivity payments. Average weekly earnings are gross earnings for the twelve months before the end of the last pay period, divided by 52. Someone whose hours or pay rose recently is better served by the first; someone who worked a lot of irregular overtime or earned commission, by the second. The employer must use whichever is higher, for each pay-out.</p>
+
+  <h2>The rest of a final pay</h2>
+  <p>Besides wages to the last day and the two leave components, a final pay includes any alternative holidays earned by working public holidays and not yet taken, paid at relevant daily pay. It includes pay for public holidays that fall within the period your untaken entitled leave would have covered had you stayed and taken it from your last day: leave with two weeks owing on 20 December brings Christmas Day, Boxing Day and New Year’s Day into the calculation. Notice paid in lieu, a bonus that has become due, and redundancy compensation are added where they apply; the <a href={route('redundancy', lang)}>redundancy pay calculator</a> covers that last item, which is taxed without ACC or KiwiSaver.</p>
+  <p>Unused sick leave is not paid out unless your agreement provides for it. Deductions from a final pay need your written consent, even for an overpayment or untaken notice.</p>
+
+  <h2>Why the tax looks high, and what happens next</h2>
+  <p>The extra-pay rate is flat and set by your annualised pay plus the pay-out, so a large balance can tip into the next band. Someone leaving mid-year without another job has usually paid too much PAYE over the year, since each pay was taxed as though it would repeat for twelve months. Inland Revenue’s assessment after 31 March returns the difference, as the <a href={route('refund', lang)}>IRD tax refund calculator</a> estimates. If you start a new job straight away, nothing changes: the new employer uses your tax code from the first pay.</p>
+
+  <h2>Checking the figures</h2>
+  <p>Ask for the leave record: employers must keep holiday and leave records for six years and provide them on request. Check your anniversary date, the entitled balance at that date, the leave taken since and the gross earnings figure. Then compare with the calculation above. Errors in final pays most often come from using base pay where average weekly earnings were higher.</p>
+</Guide>

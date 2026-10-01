@@ -1,5 +1,5 @@
 /** Mini-simulateurs des guides (RECETTE §9.3) : un par sujet, calculés par le moteur néo-zélandais. */
-import { compute, accLevy, ietc, incomeTax, marginalRate, contractor, secondaryCode, holidayPay } from './engine/nz';
+import { compute, accLevy, ietc, incomeTax, marginalRate, contractor, secondaryCode, holidayPay, bonus, redundancy, gstAdd, gstRemove, payRise, publicHolidayPay, overtime, finalPay, rwt, provisional, superAfterTax, hourlyToAnnual } from './engine/nz';
 import P from '../data/params-2026.json';
 import { formatMoney as $, formatPercent as pct } from './format';
 import type { MiniSpec } from './mini-types';
@@ -44,6 +44,43 @@ const SPECS: Record<string, MiniSpec> = {
   secondary: { title: 'Which tax code for a second job?', cta: 'Secondary tax calculator', inputs: [{ id: 'm', label: 'Main job, per year', def: 50000, unit: '$', max: 5000000 }, { id: 'x', label: 'Second job, per year', def: 15000, unit: '$', max: 5000000 }], run: ({ m, x }) => {
     const code = secondaryCode(m + x); const r = compute({ gross: x, code }).annual;
     return { head: ['Tax code for the second job', code], rows: [['Total income', $(m + x)], ['PAYE on the second job', $(r.paye)], ['Take-home from the second job', $(r.takeHome)]] };
+  } },
+  bonus: { title: 'Your bonus after tax', cta: 'Take-home pay calculator', inputs: [{ id: 'b', label: 'Bonus before tax', def: 5000, unit: '$', max: 5000000 }, salary(70000)], run: ({ b, s }) => {
+    const x = bonus({ amount: b, annualPay: s, kiwisaver: 0.035 }); return { head: ['Bonus in your bank account', $(x.net)], rows: [['Extra-pay rate with ACC', pct(x.rate, 2)], ['PAYE and ACC', $(x.paye)], ['KiwiSaver at 3.5 %', $(x.kiwisaver)]] };
+  } },
+  redundancy: { title: 'Your redundancy pay after tax', cta: 'Take-home pay calculator', inputs: [{ id: 'r', label: 'Redundancy payment before tax', def: 20000, unit: '$', max: 5000000 }, salary(70000)], run: ({ r, s }) => {
+    const x = redundancy({ amount: r, annualPay: s }); return { head: ['Redundancy pay you keep', $(x.net)], rows: [['PAYE rate on the payment', pct(x.rate, 1)], ['PAYE deducted', $(x.paye)], ['ACC levy and KiwiSaver', $(0)]] };
+  } },
+  gst: { title: 'Add or remove 15 % GST', cta: 'Contractor tax calculator', inputs: [{ id: 'a', label: 'Amount', def: 1000, unit: '$', max: 100000000, decimals: 2 }, { id: 'm', label: 'The amount is', def: 0, options: [{ value: '0', label: 'GST exclusive (add GST)' }, { value: '1', label: 'GST inclusive (remove GST)' }] }], run: ({ a, m }) => {
+    const x = m === 1 ? gstRemove(a) : gstAdd(a); return { head: [m === 1 ? 'Price excluding GST' : 'Price including GST', $(m === 1 ? x.excl : x.incl, 2)], rows: [['GST at 15 %', $(x.gst, 2)], ['GST exclusive', $(x.excl, 2)], ['GST inclusive', $(x.incl, 2)]] };
+  } },
+  payrise: { title: 'What your pay rise leaves after tax', cta: 'Take-home pay calculator', inputs: [salary(), { id: 'p', label: 'Pay rise', def: 4, unit: '%', max: 200, decimals: 1 }], run: ({ s, p }) => {
+    const x = payRise({ gross: s, percent: p / 100, kiwisaver: 0.035 }); return { head: ['Extra take-home per week', $(x.extraNet / 52, 2)], rows: [['New salary', $(x.newGross)], ['Extra before tax per year', $(x.extraGross)], ['Extra take-home per year', $(x.extraNet)], ['Share of the rise you keep', pct(x.kept, 0)]] };
+  } },
+  pubhol: { title: 'Pay for working a public holiday', cta: 'Hourly to salary calculator', inputs: [{ id: 'h', label: 'Hourly rate', def: 30, unit: '$', max: 2000, decimals: 2 }, { id: 'n', label: 'Hours worked that day', def: 8, unit: 'h', max: 24, decimals: 1 }], run: ({ h, n }) => {
+    const x = publicHolidayPay({ hourly: h, hours: n }); return { head: ['Pay for the day at time and a half', $(x.pay, 2)], rows: [['Ordinary pay for those hours', $(x.ordinary, 2)], ['Premium for the public holiday', $(x.premium, 2)], ['Value of the alternative holiday', $(x.alternativeDay, 2)]], note: 'The alternative holiday applies only if the day would otherwise be a working day for you.' };
+  } },
+  overtime: { title: 'Overtime pay after tax', cta: 'Hourly to salary calculator', inputs: [{ id: 'h', label: 'Hourly rate', def: 30, unit: '$', max: 2000, decimals: 2 }, { id: 'o', label: 'Overtime hours a week', def: 5, unit: 'h', max: 60, decimals: 1 }, { id: 'm', label: 'Overtime rate in your agreement', def: 1.5, options: [{ value: '1', label: 'Ordinary rate (T1)' }, { value: '1.5', label: 'Time and a half (T1.5)' }, { value: '2', label: 'Double time (T2)' }] }], run: ({ h, o, m }) => {
+    const x = overtime({ hourly: h, hoursPerWeek: 40, overtimeHours: o, multiplier: m }); return { head: ['Overtime in hand per week', $(x.netWeek, 2)], rows: [['Overtime before tax', $(x.extraWeek, 2)], ['Tax rate on the extra hours', pct(x.marginal, 1)], ['Base week', '40 hours, code M']] };
+  } },
+  finalpay: { title: 'Annual leave paid out in your final pay', cta: 'Holiday pay calculator', inputs: [{ id: 'w', label: 'Ordinary weekly pay', def: 1300, unit: '$', max: 100000 }, { id: 'l', label: 'Untaken leave you are entitled to (weeks)', def: 2, unit: 'wk', max: 30, decimals: 1 }, { id: 'e', label: 'Gross earnings since your last anniversary', def: 30000, unit: '$', max: 5000000 }], run: ({ w, l, e }) => {
+    const x = finalPay({ weeklyPay: w, leaveWeeks: l, earningsSinceAnniversary: e }); return { head: ['Leave pay-out after PAYE and ACC', $(x.net)], rows: [['Untaken entitled leave', $(x.untaken)], ['8 % since the anniversary', $(x.accrued)], ['Extra-pay rate with ACC', pct(x.rate, 2)]] };
+  } },
+  sick: { title: 'What a sick day pays', cta: 'Take-home pay calculator', inputs: [{ id: 'h', label: 'Hourly rate', def: 30, unit: '$', max: 2000, decimals: 2 }, { id: 'n', label: 'Hours you would have worked that day', def: 8, unit: 'h', max: 24, decimals: 1 }], run: ({ h, n }) => {
+    const d = h * n; return { head: ['Sick pay for the day, before tax', $(d, 2)], rows: [['Minimum entitlement per year', `${P.leave.sick_days} days`], ['Value of a full year’s entitlement', $(d * P.leave.sick_days)], ['Most you can hold', `${P.leave.sick_max_balance} days`]] };
+  } },
+  living: { title: 'Living Wage take-home pay', cta: 'Hourly to salary calculator', inputs: [{ id: 'h', label: 'Hours a week', def: 40, unit: 'h', max: 80 }], run: ({ h }) => {
+    const g = hourlyToAnnual(P.living_wage.hourly, h); const a = A(g, { code: g >= P.ietc.min_income && g <= P.ietc.max_income ? 'ME' : 'M' }); const m = A(hourlyToAnnual(P.min_wage.adult, h), { code: 'M' });
+    return { head: ['Take-home per week on the Living Wage', $(a.takeHome / 52)], rows: [['Living Wage per hour', $(P.living_wage.hourly, 2)], ['Gross per year', $(g)], ['More than the minimum wage, per week in hand', $((a.takeHome - m.takeHome) / 52)]] };
+  } },
+  rwt: { title: 'Tax on your savings interest', cta: 'Income tax calculator', inputs: [{ id: 'i', label: 'Interest earned in the year', def: 2000, unit: '$', max: 5000000 }, { id: 's', label: 'Other income (salary, wages, pension)', def: 65000, unit: '$', max: 5000000 }], run: ({ i, s }) => {
+    const x = rwt({ interest: i, otherIncome: s }); return { head: ['RWT rate to give your bank', pct(x.rate, 1)], rows: [['RWT deducted', $(x.withheld)], ['Interest you keep', $(x.net)], ['Left to pay or refund at year end', $(x.balance)]] };
+  } },
+  provisional: { title: 'Your provisional tax instalments', cta: 'Contractor tax calculator', inputs: [{ id: 'r', label: 'Residual income tax last year', def: 12000, unit: '$', max: 5000000 }], run: ({ r }) => {
+    const x = provisional({ residual: r }); return { head: [x.due ? 'Each of the three instalments' : 'Provisional tax due', x.due ? $(x.instalment) : $(0)], rows: [['Standard option, last year plus 5 %', $(x.total)], ['Threshold', $(P.provisional.rit_threshold)], ['Due dates', P.provisional_tax.instalments.join(', ')]] };
+  } },
+  super: { title: 'NZ Super after tax, with your other income', cta: 'Income tax calculator', inputs: [{ id: 'k', label: 'Your situation', def: P.super.fortnight_gross.single_alone, options: [{ value: String(P.super.fortnight_gross.single_alone), label: 'Single, living alone' }, { value: String(P.super.fortnight_gross.single_sharing), label: 'Single, sharing' }, { value: String(P.super.fortnight_gross.couple_each), label: 'Couple, both qualify (each)' }] }, { id: 'o', label: 'Other income per year', def: 0, unit: '$', max: 5000000 }], run: ({ k, o }) => {
+    const x = superAfterTax({ fortnightGross: k, otherIncome: o }); return { head: ['NZ Super per fortnight after tax', $(x.netFortnight, 2)], rows: [['Before tax per fortnight', $(k, 2)], ['Tax on the pension per year', $(x.tax)], ['Rate on your next dollar', pct(x.marginal, 1)]] };
   } },
 };
 

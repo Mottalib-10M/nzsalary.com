@@ -1,0 +1,47 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { overtime, hourlyToAnnual, compute } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const ex = overtime({ hourly: 30, hoursPerWeek: 40, overtimeHours: 5, multiplier: 1.5 });
+const rows = ([[P.min_wage.adult, 5, 1], [P.min_wage.adult, 5, 1.5], [30, 5, 1.5], [30, 10, 1.5], [38, 5, 1.5], [38, 8, 2]] as const).map(([h, o, m]) => { const x = overtime({ hourly: h, hoursPerWeek: 40, overtimeHours: o, multiplier: m }); return [formatMoney(h, 2), `${o} h`, m === 1 ? 'Ordinary' : m === 1.5 ? 'Time and a half' : 'Double time', formatMoney(x.extraWeek, 2), formatMoney(x.netWeek, 2)]; });
+const salaried = 60000; const realRate = (h: number) => salaried / 52 / h;
+const faqs = [
+  { q: 'Is overtime paid at time and a half in New Zealand?', a: 'Only if your employment agreement says so. The law sets no overtime premium: extra hours can be paid at the ordinary rate, at time and a half, at double time or covered by a salary, as agreed. The single legal exception is work on a public holiday, which must be paid at time and a half at least.' },
+  { q: 'Is overtime taxed at a higher rate?', a: `Not specially. Overtime is added to that pay period’s wages and PAYE is worked out on the total, so the extra hours are taxed at your marginal rate: 30 % plus ACC on ${formatMoney(hourlyToAnnual(30))} a year. Five hours a week at time and a half on ${formatMoney(30)} an hour add ${formatMoney(ex.extraWeek, 2)} before tax and about ${formatMoney(ex.netWeek, 2)} in hand.` },
+  { q: 'Can my employer make me work overtime?', a: 'Only where the employment agreement provides for it. Since 2016 an agreement that requires an employee to be available beyond their guaranteed hours must contain an availability provision that pays reasonable compensation for being available. Without one, you may refuse extra hours and cannot be treated badly for refusing.' },
+  { q: 'Can a salary cover all my overtime?', a: `Yes, within a limit: your total pay divided by all the hours you actually work must not fall below the minimum wage of ${formatMoney(P.min_wage.adult, 2)} in any pay period. A ${formatMoney(salaried)} salary covers up to ${Math.floor(salaried / 52 / P.min_wage.adult)} hours a week before that floor is breached.` },
+];
+---
+<Guide id="overtime" title="Overtime Pay Calculator NZ 2026-27: Overtime After Tax" h1="Overtime pay calculator: your extra hours after tax"
+  description="Work out overtime pay in New Zealand for 2026-27 at ordinary time, time and a half or double time, and what the extra hours leave after PAYE and the ACC levy."
+  intro="Overtime rates come from your agreement, not from the law. Enter your rate, hours and multiplier to see the extra pay in hand."
+  resume={`New Zealand law does not set an overtime rate. Hours beyond the ordinary week are paid as the employment agreement provides: at the ordinary rate, at time and a half, at double time, or within a salary. Two rules always apply. Every hour worked must be paid at no less than the minimum wage, ${formatMoney(P.min_wage.adult, 2)} an hour from 1 April 2026, and work on a public holiday must be paid at time and a half. Overtime is taxed with the rest of the pay period at the marginal rate. On ${formatMoney(30)} an hour for a 40-hour week, five hours of overtime at time and a half add ${formatMoney(ex.extraWeek, 2)} a week before tax and about ${formatMoney(ex.netWeek, 2)} after PAYE and the ACC earners’ levy, at a marginal rate of ${formatPercent(ex.marginal, 0)}.`}
+  faqs={faqs} related={['publicHoliday', 'hourly', 'takeHome', 'minimumWage', 'holidayPay', 'payRise']} sources={[SRC.enz_hours, SRC.min_wage, SRC.ird_rates, SRC.enz_public_holidays]}>
+  <MiniSim client:visible kind="overtime" lang={lang} href={route('hourly', lang)} />
+  <h2>Weekly overtime before and after tax</h2>
+  <ContentTable headers={['Hourly rate', 'Overtime a week', 'Rate', 'Extra before tax', 'Extra in hand']} align={['r', 'r', 'l', 'r', 'r']} rows={rows} />
+  <p>Each row assumes a base week of 40 hours on the M tax code, with the overtime repeated every week of the year. One-off overtime in a single week is taxed slightly differently by the PAYE tables, which treat each pay period as if it repeated all year; the end-of-year assessment evens it out.</p>
+
+  <h2>What the law does say about hours</h2>
+  <p>The Minimum Wage Act sets the ordinary working week at no more than 40 hours, excluding overtime, unless employer and employee agree otherwise. The Employment Relations Act requires agreed hours to be written into the employment agreement: the number of guaranteed hours, the days and the start and finish times, or how they will vary. Rest and meal breaks are compulsory: a ten-minute paid break for a work period of two to four hours, and for an eight-hour day two paid breaks and one unpaid half-hour meal break.</p>
+  <p>An employer who wants the right to require extra hours needs an availability provision in the agreement, with a genuine reason and reasonable compensation. Salaried employees can agree that their salary includes that compensation.</p>
+
+  <h2>Salaried staff: checking the real hourly rate</h2>
+  <p>Divide the salary for the pay period by every hour worked in it. On {formatMoney(salaried)} a year, a 40-hour week is {formatMoney(realRate(40), 2)} an hour, 50 hours is {formatMoney(realRate(50), 2)}, and at {Math.ceil(salaried / 52 / P.min_wage.adult)} hours the rate drops under the minimum wage, at which point the employer must top up the pay. The check is done per pay period, not averaged over the year, so a quiet month does not excuse an 80-hour fortnight.</p>
+  <p>Time off in lieu is the usual alternative to paid overtime for salaried staff. It has no legal framework of its own: the ratio, hour for hour or better, and the deadline for taking it should be in writing. Keep your own record of the hours; employers must keep wage and time records, and those records are what a Labour Inspector looks at first.</p>
+
+  <h2>How overtime changes your other entitlements</h2>
+  <p>Regular overtime raises more than the week’s pay. Annual leave is paid at the greater of ordinary weekly pay and average weekly earnings over the last twelve months, and overtime counts in the average. The 8 % holiday pay due at the end of a job is calculated on gross earnings, overtime included. KiwiSaver contributions, yours and your employer’s {formatPercent(P.kiwisaver.employer_min, 1)}, apply to overtime, and so does the student loan deduction of 12 %. Sick days and public holidays not worked are paid at relevant daily pay, which includes overtime you would have worked that day.</p>
+
+  <h2>Why a week with overtime looks heavily taxed</h2>
+  <p>PAYE tables annualise each pay. A normal week of {formatMoney(1200)} is taxed as part of a {formatMoney(62400)} year; a week of {formatMoney(1500)} with overtime is taxed as part of a {formatMoney(78000)} year, so more of it falls in the 30 % band. Over the year the tax is the same as if the overtime had been spread evenly: {formatMoney(compute({ gross: 62400 + 300 * 10 }).annual.paye - compute({ gross: 62400 }).annual.paye)} on ten such weeks. Nothing is lost, and if the tables over-deduct, Inland Revenue refunds it after 31 March.</p>
+
+  <h2>Overtime or a second job</h2>
+  <p>Extra hours with your main employer are taxed through your main code. The same hours in a second job go through a secondary code, a flat rate chosen from your total income, with no IETC and no tax-free thresholds, though the yearly tax ends up the same. Overtime is simpler: one payslip, one KiwiSaver account, and leave entitlements that grow with it. The <a href={route('secondary', lang)}>secondary tax calculator</a> shows the second-job route.</p>
+</Guide>

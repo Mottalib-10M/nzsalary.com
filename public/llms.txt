@@ -8,6 +8,9 @@
 - [Secondary tax calculator](https://nzsalary.com/en/secondary-tax-calculator/), [contractor tax calculator](https://nzsalary.com/en/contractor-tax-calculator/).
 - [KiwiSaver calculator](https://nzsalary.com/en/kiwisaver-calculator/), [student loan repayments](https://nzsalary.com/en/student-loan-repayment-calculator/), [employer cost](https://nzsalary.com/en/employer-cost-calculator/).
 - [Net to gross](https://nzsalary.com/en/net-to-gross-salary/), [hourly to salary](https://nzsalary.com/en/hourly-to-salary-calculator/), [holiday pay calculator](https://nzsalary.com/en/holiday-pay-calculator/) (8 % taxed as an extra pay).
+- [Bonus tax calculator](https://nzsalary.com/en/bonus-tax-calculator/), [redundancy pay calculator](https://nzsalary.com/en/redundancy-pay-calculator/), [final pay calculator](https://nzsalary.com/en/final-pay-calculator/), [pay rise calculator](https://nzsalary.com/en/pay-rise-calculator/).
+- [Public holiday pay calculator](https://nzsalary.com/en/public-holiday-pay-calculator/), [overtime pay calculator](https://nzsalary.com/en/overtime-pay-calculator/), [GST calculator](https://nzsalary.com/en/gst-calculator/), [RWT calculator](https://nzsalary.com/en/rwt-calculator/), [provisional tax calculator](https://nzsalary.com/en/provisional-tax-calculator/).
+- [NZ Super rates after tax](https://nzsalary.com/en/nz-super-rates/), [Living Wage](https://nzsalary.com/en/living-wage/), [sick leave](https://nzsalary.com/en/sick-leave/).
 
 ## Data
 - Income tax rates and PAYE for 2026-27: https://nzsalary.com/en/income-tax-rates/

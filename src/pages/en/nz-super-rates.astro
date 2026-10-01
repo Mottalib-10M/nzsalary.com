@@ -1,0 +1,51 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { superAfterTax, secondaryCode } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const S = P.super; const G = S.fortnight_gross; const N = S.fortnight_net_m;
+const kinds: Array<[string, number, number]> = [['Single, living alone', G.single_alone, N.single_alone], ['Single, sharing accommodation', G.single_sharing, N.single_sharing], ['Couple, both qualify (each person)', G.couple_each, N.couple_each]];
+const rates = kinds.map(([l, g, n]) => [l, formatMoney(g, 2), formatMoney(n, 2), formatMoney(g * 26), formatMoney(n * 26)]);
+const alone = superAfterTax({ fortnightGross: G.single_alone });
+const withJob = [10000, 20000, 40000, 60000].map((o) => { const x = superAfterTax({ fortnightGross: G.single_alone, otherIncome: o }); return [formatMoney(o), secondaryCode(x.pension + o), formatMoney(x.tax), formatMoney(x.netFortnight, 2)]; });
+const j = superAfterTax({ fortnightGross: G.single_alone, otherIncome: 40000 });
+const faqs = [
+  { q: 'How much is NZ Super in 2026?', a: `From 1 April 2026, a single person living alone receives ${formatMoney(G.single_alone, 2)} a fortnight before tax and ${formatMoney(N.single_alone, 2)} after tax at the M code. A single person sharing receives ${formatMoney(N.single_sharing, 2)} after tax, and each partner of a couple who both qualify ${formatMoney(N.couple_each, 2)}.` },
+  { q: 'Is NZ Super taxed?', a: `Yes. It is taxable income, taxed through a tax code like wages. As your only income, the single living-alone rate of ${formatMoney(alone.pension)} a year bears ${formatMoney(alone.tax)} of income tax. No ACC earners’ levy is charged on it. Other income is taxed on top, at the rate your combined income reaches.` },
+  { q: 'Can I work and still get NZ Super?', a: `Yes, with no reduction. NZ Super is neither income-tested nor asset-tested, so wages, a business or investments do not cut the payment. They change the tax: with ${formatMoney(40000)} of wages, the tax attributable to the living-alone pension rises from ${formatMoney(alone.tax)} to ${formatMoney(j.tax)} a year, because the pension sits in a higher bracket.` },
+  { q: 'When is NZ Super paid?', a: `Every second Tuesday, for the fortnight just ended. Payment starts from your 65th birthday if you applied in time; applications can be made up to twelve weeks before. Rates are adjusted on 1 April each year in line with prices and the average wage.` },
+];
+---
+<Guide id="nzSuper" title="NZ Super Rates 2026: Fortnightly Payments After Tax" h1="NZ Super rates from 1 April 2026, before and after tax"
+  description="NZ Superannuation rates from 1 April 2026: fortnightly payments before and after tax for single people and couples, and how other income changes the tax."
+  intro="New Zealand Superannuation is paid fortnightly from age 65 and taxed like other income. Here are the 2026 rates and what tax leaves."
+  resume={`New Zealand Superannuation is paid from age ${S.age} to people who meet the residence test, whatever their income or assets. From 1 April 2026 the rates before tax are ${formatMoney(G.single_alone, 2)} a fortnight for a single person living alone, ${formatMoney(G.single_sharing, 2)} for a single person sharing accommodation and ${formatMoney(G.couple_each, 2)} for each partner of a couple who both qualify. After income tax at the M code, those payments are ${formatMoney(N.single_alone, 2)}, ${formatMoney(N.single_sharing, 2)} and ${formatMoney(N.couple_each, 2)} a fortnight, about ${formatMoney(N.single_alone * 26)} a year for a person living alone. NZ Super is taxable but carries no ACC earners’ levy. Someone who keeps working or has other income receives the same gross amount and pays more tax on it, because the pension is added to the rest of their income.`}
+  faqs={faqs} related={['incomeTax', 'taxCodes', 'secondary', 'rwt', 'kiwisaver', 'taxRates']} sources={[SRC.msd_super, SRC.msd_super_about, SRC.ird_rates]}>
+  <MiniSim client:visible kind="super" lang={lang} href={route('incomeTax', lang)} />
+  <h2>NZ Super rates from 1 April 2026</h2>
+  <ContentTable headers={['Situation', 'Fortnight before tax', 'Fortnight after tax (M)', 'Year before tax', 'Year after tax']} align={['l', 'r', 'r', 'r', 'r']} rows={rates} />
+  <p>The fortnightly figures are those published by Work and Income. The after-tax amounts assume NZ Super is your main income and you have no student loan. Running the before-tax rates through the 2026-27 income tax scale gives the same results to within a few cents, the difference coming from the rounding of fortnightly tax tables.</p>
+
+  <h2>Who qualifies</h2>
+  <p>You must be {S.age} or over, a New Zealand citizen, permanent resident or holder of a residence class visa, and ordinarily resident in New Zealand, the Cook Islands, Niue or Tokelau when you apply. You must also have lived in New Zealand for a minimum period since the age of 20, including five years since the age of 50. That minimum was ten years for a long time and is being raised in steps to twenty years for people born from 1 July 1959 onwards; time spent in countries with a social security agreement, among them Australia, the United Kingdom and Canada, can count. Work and Income confirms the exact requirement for a given date of birth.</p>
+  <p>There is no retirement test. You do not have to stop working, and you do not have to have paid any particular contributions.</p>
+
+  <h2>Living alone, sharing, or as a couple</h2>
+  <p>The living-alone rate is for a single person who lives alone or only with a dependent child, and who is not in a rest home. A single person with a flatmate, boarder or adult family member in the house gets the sharing rate, {formatMoney(N.single_alone - N.single_sharing, 2)} less a fortnight after tax. Visitors may stay up to thirteen weeks in a year without affecting the rate. Each partner of a couple is paid separately at the couple rate; together two qualifying partners receive {formatMoney(N.couple_each * 2, 2)} a fortnight after tax, {formatPercent(N.couple_each * 2 / N.single_alone - 1, 0)} more than one person living alone.</p>
+  <p>Where only one partner is old enough, that partner receives the couple rate for one person. The option of including a younger, non-qualifying partner in the payment closed to new applicants in November 2020.</p>
+
+  <h2>Working while receiving NZ Super</h2>
+  <ContentTable headers={['Other income a year', 'Tax code for NZ Super', 'Tax on the pension a year', 'Living-alone pension per fortnight after tax']} align={['r', 'l', 'r', 'r']} rows={withJob} />
+  <p>The gross pension never changes; its tax does. If your wages are the larger income, they keep the M code and NZ Super takes a secondary code chosen from your total income, which taxes the pension at a flat rate. The table shows that code and the pension that reaches your account. Tell Work and Income your code; with the wrong one you may face a bill after 31 March. The <a href={route('secondary', lang)}>secondary tax calculator</a> explains the codes.</p>
+
+  <h2>Overseas pensions and time abroad</h2>
+  <p>A state pension from another country, such as the UK State Pension or Australia’s Age Pension, is generally deducted dollar for dollar from NZ Super under the direct deduction rule; private and occupational pensions are not. You must tell Work and Income about any overseas pension you may be entitled to. Travel of up to 26 weeks leaves payments unchanged provided you return within 30 weeks. For longer absences or a move abroad, payment may continue at a rate based on your years of New Zealand residence between 20 and 65, if you apply before leaving.</p>
+
+  <h2>NZ Super and KiwiSaver at 65</h2>
+  <p>Reaching 65 unlocks your KiwiSaver savings, which can be withdrawn in part, in full or left invested. Withdrawals are not taxable income and do not affect NZ Super. If you keep working, you can keep contributing; the government contribution and compulsory employer contributions stop at 65, though some employers continue voluntarily. Interest and investment income earned on money you take out is taxable in the normal way, as the <a href={route('rwt', lang)}>RWT calculator</a> shows, and adds to the income that sets the tax code on your pension.</p>
+</Guide>

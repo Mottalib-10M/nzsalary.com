@@ -1,0 +1,49 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { provisional, contractor } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const T = P.provisional_tax;
+const ex = provisional({ residual: 12000 });
+const rows = [4000, 6000, 12000, 20000, 40000, 70000].map((r) => { const x = provisional({ residual: r }); return [formatMoney(r), x.due ? formatMoney(x.total) : 'None', x.due ? formatMoney(x.instalment) : 'None', r >= T.safe_harbour ? 'Interest from each instalment date' : x.due ? 'No interest if paid on time' : 'Not a provisional taxpayer']; });
+const c = contractor({ fees: 90000, expenses: 8000, rate: 0.10 });
+const dates = T.instalments.map((d, i) => [`Instalment ${i + 1}`, d, formatMoney(ex.instalment)]);
+const faqs = [
+  { q: 'Who has to pay provisional tax in NZ?', a: `Anyone whose residual income tax for the last tax year was more than ${formatMoney(P.provisional.rit_threshold)}. Residual income tax is the tax on all your income minus PAYE, RWT and other tax already deducted. It mostly concerns the self-employed, contractors whose withholding rate was too low, landlords and investors.` },
+  { q: 'When is provisional tax due?', a: `For the usual 31 March balance date, in three instalments: ${T.instalments[0]}, ${T.instalments[1]} and ${T.instalments[2]}. People who file GST six-monthly pay in two instalments, on 28 October and 7 May. Any remaining tax for the year, called terminal tax, is due the following 7 February, or 7 April with a tax agent.` },
+  { q: 'How is provisional tax calculated?', a: `Under the standard option it is last year’s residual income tax plus ${formatPercent(T.uplift_last_year - 1, 0)}, split into three equal payments. With ${formatMoney(12000)} last year, the total is ${formatMoney(ex.total)} and each instalment ${formatMoney(ex.instalment)}. If last year’s return has not been filed yet, the year before is used with ${formatPercent(T.uplift_two_years - 1, 0)} added.` },
+  { q: 'Do I pay provisional tax in my first year of business?', a: `No instalments are required in the first year, because there is no earlier residual income tax to base them on. The whole tax for that year is due as terminal tax the following 7 February. Interest can still apply if that first-year tax reaches ${formatMoney(T.safe_harbour)}, and the second year then brings both the first year’s bill and the first instalments, so setting money aside from the first invoice is prudent.` },
+];
+---
+<Guide id="provisionalTax" title="Provisional Tax Calculator NZ 2026-27: Instalments and Dates" h1="Provisional tax calculator: instalments and due dates"
+  description="Work out provisional tax in New Zealand for 2026-27 with the standard option: last year’s residual income tax plus 5 %, three instalments and due dates."
+  intro="Provisional tax spreads next year’s income tax over three payments. Enter last year’s residual income tax to see your instalments."
+  resume={`Provisional tax is how people with untaxed income pay income tax during the year instead of in one sum afterwards. You pay it in 2026-27 if your residual income tax for the previous year, the tax left after PAYE and other deductions at source, was more than ${formatMoney(P.provisional.rit_threshold)}. Under the standard option, used by most taxpayers, the amount is last year’s residual income tax plus ${formatPercent(T.uplift_last_year - 1, 0)}, paid in three equal instalments on ${T.instalments[0]}, ${T.instalments[1]} and ${T.instalments[2]} for a 31 March balance date. A residual income tax of ${formatMoney(12000)} gives ${formatMoney(ex.total)} of provisional tax, ${formatMoney(ex.instalment)} per instalment. When the tax for the year turns out below ${formatMoney(T.safe_harbour)} and the standard instalments were paid in full and on time, no interest is charged on any shortfall.`}
+  faqs={faqs} related={['contractor', 'selfEmployed', 'gst', 'employeeVsContractor', 'rwt', 'incomeTax']} sources={[SRC.ird_provisional, SRC.ird_schedular, SRC.ird_rates, SRC.ird_gst]}>
+  <MiniSim client:visible kind="provisional" lang={lang} href={route('contractor', lang)} />
+  <h2>Standard-option instalments by last year’s tax</h2>
+  <ContentTable headers={['Residual income tax last year', 'Provisional tax this year', 'Each instalment', 'Interest on a shortfall']} align={['r', 'r', 'r', 'l']} rows={rows} />
+  <p>The last column is the rule that matters most in practice. Below {formatMoney(T.safe_harbour)} of residual income tax, paying the standard instalments protects you from use-of-money interest until the terminal tax date, even if your income grew sharply. From {formatMoney(T.safe_harbour)}, the first two instalments are still safe at the standard amount, but the third is expected to bring the total up to the real tax for the year.</p>
+
+  <h2>The three dates, with a {formatMoney(12000)} example</h2>
+  <ContentTable headers={['Payment', 'Due', 'Amount']} align={['l', 'l', 'r']} rows={dates} />
+  <p>The dates apply to a balance date of 31 March. They fall in the fifth, ninth and thirteenth months after the previous year ended, so the last payment for the 2026-27 year is due after that year has closed. A due date on a weekend or public holiday moves to the next working day.</p>
+
+  <h2>What residual income tax is</h2>
+  <p>Take the income tax on everything you earned in the year, then subtract the tax credits you are entitled to and all tax deducted at source: PAYE on wages, tax withheld from schedular payments, RWT on interest. What remains is residual income tax. An employee with no other income has none. A contractor who invoices {formatMoney(90000)} with {formatMoney(8000)} of expenses and has 10 % withheld owes {formatMoney(c.tax)} of income tax, has paid {formatMoney(c.withheld)}, and is left with {formatMoney(c.tax - c.withheld)}: above {formatMoney(P.provisional.rit_threshold)}, so provisional tax follows. Raising the withholding rate to the figure suggested by the <a href={route('contractor', lang)}>contractor tax calculator</a> brings the residual under the threshold and removes the instalments altogether.</p>
+  <p>The ACC earners’ levy of the self-employed is invoiced separately by ACC and is not part of residual income tax.</p>
+
+  <h2>The other three options</h2>
+  <p>The estimation option lets you pay on your own forecast, useful when income will clearly fall; you may re-estimate until the last instalment, but interest runs on any underpayment from each instalment date, so an optimistic estimate is costly. The ratio option, for GST-registered businesses with residual income tax between {formatMoney(P.provisional.rit_threshold)} and {formatMoney(150000)}, charges a percentage of each two-monthly GST turnover, which suits seasonal income. The accounting income method, AIM, calculates the tax from approved accounting software at each GST period and refunds overpayments during the year. Each option must be chosen before the first instalment. Switching from the standard option to an estimate later in the year is allowed, and it removes the interest protection described above for the whole year.</p>
+
+  <h2>Interest, penalties and tax pooling</h2>
+  <p>Use-of-money interest is charged on underpaid tax and paid on overpaid tax, at rates Inland Revenue resets several times a year. A late instalment also draws a late payment penalty of 1 % the day after the due date and a further 4 % if it remains unpaid a week later. Tax pooling intermediaries, approved by Inland Revenue, let taxpayers buy tax that was deposited on the original date, at an interest cost below the official rate; it is the usual way of repairing a missed or short instalment.</p>
+
+  <h2>Keeping the money aside</h2>
+  <p>The simplest discipline is a separate account that receives a fixed share of every payment you are paid: the effective tax rate on your expected profit, plus 15 % if you are registered for GST. On {formatMoney(82000)} of profit the income tax is {formatMoney(c.tax)}, about {formatPercent(c.tax / 82000, 0)}, to which the ACC levy is added. The <a href={route('selfEmployed', lang)}>self-employed tax guide</a> walks through the first two years, when the first tax bill and the first instalments arrive close together.</p>
+</Guide>

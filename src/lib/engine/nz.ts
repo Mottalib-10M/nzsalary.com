@@ -122,3 +122,80 @@ export function holidayPay(o: { earnings: number; annualPay: number; kiwisaver?:
   const studentLoan = o.studentLoan && o.annualPay + pay > P.student_loan.threshold_annual ? r2(pay * P.student_loan.rate) : 0;
   return { pay, rate, paye, kiwisaver, studentLoan, net: r2(pay - paye - kiwisaver - studentLoan) };
 }
+
+/** Paiement exceptionnel (prime, bonus) : PAYE au taux « extra pay » ACC comprise, KiwiSaver et prêt étudiant. */
+export function bonus(o: { amount: number; annualPay: number; kiwisaver?: number; studentLoan?: boolean }) {
+  const amount = Math.max(0, o.amount); const rate = extraPayRate(o.annualPay, amount);
+  const paye = r2(amount * rate); const kiwisaver = r2(amount * (o.kiwisaver ?? 0));
+  const studentLoan = o.studentLoan && o.annualPay + amount > P.student_loan.threshold_annual ? r2(amount * P.student_loan.rate) : 0;
+  return { amount, rate, paye, kiwisaver, studentLoan, net: r2(amount - paye - kiwisaver - studentLoan) };
+}
+
+/** Indemnité de licenciement économique : extra pay, mais ni cotisation ACC ni KiwiSaver (IRD). */
+export function redundancy(o: { amount: number; annualPay: number; studentLoan?: boolean }) {
+  const amount = Math.max(0, o.amount); const rate = marginalRate(Math.max(0, o.annualPay) + amount);
+  const paye = r2(amount * rate);
+  const studentLoan = o.studentLoan && o.annualPay + amount > P.student_loan.threshold_annual ? r2(amount * P.student_loan.rate) : 0;
+  return { amount, rate, paye, studentLoan, net: r2(amount - paye - studentLoan) };
+}
+
+/** GST à 15 % : ajouter la taxe à un prix hors taxe, ou l'extraire d'un prix taxe comprise (3/23). */
+export const gstAdd = (excl: number) => { const gst = r2(Math.max(0, excl) * P.gst.rate); return { excl: r2(Math.max(0, excl)), gst, incl: r2(Math.max(0, excl) + gst) }; };
+export const gstRemove = (incl: number) => { const i = Math.max(0, incl); const gst = r2(i * P.gst.rate / (1 + P.gst.rate)); return { incl: r2(i), gst, excl: r2(i - gst) }; };
+
+/** Augmentation : ce qu'elle laisse après PAYE, ACC et KiwiSaver. */
+export function payRise(o: { gross: number; percent: number; kiwisaver?: number; code?: Code }) {
+  const before = compute({ gross: o.gross, kiwisaver: o.kiwisaver, code: o.code }).annual;
+  const newGross = r2(Math.max(0, o.gross) * (1 + o.percent));
+  const after = compute({ gross: newGross, kiwisaver: o.kiwisaver, code: o.code }).annual;
+  const extraGross = r2(newGross - before.gross); const extraNet = r2(after.takeHome - before.takeHome);
+  return { newGross, extraGross, extraNet, kept: extraGross > 0 ? extraNet / extraGross : 0, before, after };
+}
+
+/** Jour férié travaillé : au moins une fois et demie le taux, plus un jour de repos payé si c'est un jour habituellement travaillé. */
+export function publicHolidayPay(o: { hourly: number; hours: number; otherwiseWorking?: boolean }) {
+  const ordinary = r2(Math.max(0, o.hourly) * Math.max(0, o.hours));
+  const pay = r2(ordinary * P.public_holidays.premium);
+  return { ordinary, pay, premium: r2(pay - ordinary), alternativeDay: (o.otherwiseWorking ?? true) ? ordinary : 0 };
+}
+
+/** Heures supplémentaires à un taux majoré convenu (aucune majoration légale hors jours fériés) et ce qu'elles laissent. */
+export function overtime(o: { hourly: number; hoursPerWeek: number; overtimeHours: number; multiplier: number }) {
+  const base = hourlyToAnnual(o.hourly, o.hoursPerWeek);
+  const extraWeek = r2(Math.max(0, o.hourly) * Math.max(0, o.overtimeHours) * Math.max(1, o.multiplier));
+  const a = compute({ gross: base }).annual; const b = compute({ gross: base + extraWeek * 52 }).annual;
+  return { extraWeek, netWeek: r2((b.takeHome - a.takeHome) / 52), marginal: b.marginal };
+}
+
+/** Solde de tout compte : congés acquis non pris au taux hebdomadaire, plus 8 % des gains depuis le dernier anniversaire, imposés en extra pay. */
+export function finalPay(o: { weeklyPay: number; leaveWeeks: number; earningsSinceAnniversary: number; kiwisaver?: number }) {
+  const untaken = r2(Math.max(0, o.weeklyPay) * Math.max(0, o.leaveWeeks));
+  const accrued = r2(Math.max(0, o.earningsSinceAnniversary) * P.leave.payg_rate);
+  const total = r2(untaken + accrued); const rate = extraPayRate(o.weeklyPay * 52, total);
+  const paye = r2(total * rate); const kiwisaver = r2(total * (o.kiwisaver ?? 0));
+  return { untaken, accrued, total, rate, paye, kiwisaver, net: r2(total - paye - kiwisaver) };
+}
+
+/** RWT sur les intérêts : taux à choisir d'après le revenu annuel total, intérêts compris. */
+export function rwt(o: { interest: number; otherIncome: number }) {
+  const interest = Math.max(0, o.interest); const rate = marginalRate(Math.max(0, o.otherIncome) + interest);
+  const tax = r2(incomeTax(o.otherIncome + interest) - incomeTax(o.otherIncome));
+  const withheld = r2(interest * rate);
+  return { rate, withheld, net: r2(interest - withheld), tax, balance: r2(tax - withheld) };
+}
+
+/** Impôt provisionnel, option standard : impôt résiduel de l'an dernier majoré de 5 %, en trois versements. */
+export function provisional(o: { residual: number; twoYearsAgo?: boolean }) {
+  const rit = Math.max(0, o.residual);
+  const due = rit > P.provisional.rit_threshold;
+  const uplift = o.twoYearsAgo ? P.provisional_tax.uplift_two_years : P.provisional_tax.uplift_last_year;
+  const total = due ? r2(rit * uplift) : 0;
+  return { due, total, instalment: r2(total / 3), uplift };
+}
+
+/** NZ Super : pension brute par quinzaine, imposée avec les autres revenus (aucune cotisation ACC sur la pension). */
+export function superAfterTax(o: { fortnightGross: number; otherIncome?: number }) {
+  const pension = r2(Math.max(0, o.fortnightGross) * 26); const other = Math.max(0, o.otherIncome ?? 0);
+  const tax = r2(incomeTax(pension + other) - incomeTax(other));
+  return { pension, tax, netYear: r2(pension - tax), netFortnight: r2((pension - tax) / 26), marginal: marginalRate(pension + other) };
+}

@@ -1,0 +1,48 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { bonus, extraPayRate } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const ex = bonus({ amount: 5000, annualPay: 70000, kiwisaver: 0.035 });
+const rows = ([[2000, 45000], [5000, 60000], [5000, 70000], [10000, 76000], [10000, 95000], [25000, 170000]] as const).map(([b, s]) => { const x = bonus({ amount: b, annualPay: s, kiwisaver: 0.035 }); return [formatMoney(b), formatMoney(s), formatPercent(x.rate, 2), formatMoney(x.paye), formatMoney(x.kiwisaver), formatMoney(x.net)]; });
+const jump = bonus({ amount: 10000, annualPay: 76000 });
+const faqs = [
+  { q: 'How much tax do I pay on a bonus in NZ?', a: `It depends on your usual pay. Your employer annualises your last four weeks of pay, adds the bonus and applies one flat rate to the whole bonus: ${formatPercent(extraPayRate(40000, 2000), 2)} if that total is between ${formatMoney(15601)} and ${formatMoney(53500)}, ${formatPercent(extraPayRate(70000, 2000), 2)} up to ${formatMoney(78100)}, ${formatPercent(extraPayRate(100000, 2000), 2)} up to the ACC cap. The ACC earners’ levy of ${formatPercent(P.acc.rate, 2)} is inside those rates.` },
+  { q: 'Why was my bonus taxed more than my normal pay?', a: `Your normal pay is spread across every bracket, so part of it is taxed at 10.5 % and 17.5 %. A bonus sits on top of that pay, so all of it is taxed at your highest rate. On ${formatMoney(70000)} a year, a ${formatMoney(5000)} bonus loses ${formatPercent(ex.rate, 2)} to PAYE and ACC, while your salary as a whole loses far less. Nothing extra is owed at year end if the rate was right.` },
+  { q: 'Is KiwiSaver deducted from a bonus?', a: `Yes. A bonus is part of your gross salary or wages, so your KiwiSaver rate applies to it and your employer adds their ${formatPercent(P.kiwisaver.employer_min, 1)} on top. On a ${formatMoney(5000)} bonus at 3.5 %, ${formatMoney(ex.kiwisaver)} goes to your fund. A student loan takes a further 12 % of the bonus if your pay is above the repayment threshold.` },
+  { q: 'Can a bonus push my whole salary into a higher tax bracket?', a: `No. New Zealand taxes each slice of income at its own rate. A bonus that takes you past ${formatMoney(78100)} means only the dollars above that line are taxed at 33 % in the end-of-year calculation. The extra-pay method can over-deduct in that case, because it applies the higher rate to the whole bonus; Inland Revenue refunds the difference automatically.` },
+];
+---
+<Guide id="bonusTax" title="Bonus Tax Calculator NZ 2026-27: Bonus After Tax" h1="Bonus tax calculator: what your bonus leaves after PAYE"
+  description="Work out the tax on a bonus in New Zealand for 2026-27: the IRD extra-pay rate with ACC, KiwiSaver and student loan, and the amount paid into your account."
+  intro="A bonus is taxed as an extra pay, at one flat rate set by your usual pay. Enter both figures to see what reaches your bank account."
+  resume={`In New Zealand a bonus is an extra pay, taxed at a flat PAYE rate rather than through the normal tables. Your employer takes your pay for the last four weeks, multiplies it by 13, adds the bonus and reads the rate for that total: ${formatPercent(extraPayRate(40000, 0), 2)} up to ${formatMoney(53500)}, ${formatPercent(extraPayRate(70000, 0), 2)} up to ${formatMoney(78100)}, ${formatPercent(extraPayRate(100000, 0), 2)} up to the ACC maximum of ${formatMoney(P.acc.max_liable)}, then 33 % and 39 % above ${formatMoney(180000)}, with the ACC earners’ levy included below the cap. A ${formatMoney(5000)} bonus on a ${formatMoney(70000)} salary is taxed at ${formatPercent(ex.rate, 2)}, which is ${formatMoney(ex.paye)}; with KiwiSaver at 3.5 % you receive ${formatMoney(ex.net)}. The bonus also counts for KiwiSaver and for student loan repayments. If the flat rate took too much, Inland Revenue refunds the difference automatically in the end-of-year assessment.`}
+  faqs={faqs} related={['takeHome', 'payRise', 'holidayCalc', 'redundancy', 'payeRates', 'refund']} sources={[SRC.ird_lump_sum, SRC.ird_rates, SRC.acc_levy, SRC.ird_kiwisaver]}>
+  <MiniSim client:visible kind="bonus" lang={lang} href={route('takeHome', lang)} />
+  <h2>Bonus after tax at different salaries</h2>
+  <ContentTable headers={['Bonus', 'Usual pay a year', 'Extra-pay rate', 'PAYE and ACC', 'KiwiSaver 3.5 %', 'Paid to you']} align={['r', 'r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>The same bonus leaves different amounts because the rate follows the salary. A {formatMoney(5000)} bonus on {formatMoney(60000)} and on {formatMoney(70000)} is taxed identically, since both totals stay inside the 30 % bracket. The fourth row is the one to watch: {formatMoney(10000)} on top of {formatMoney(76000)} crosses {formatMoney(78100)}, so the employer must use {formatPercent(jump.rate, 2)} on the whole bonus even though only part of it belongs in the 33 % bracket.</p>
+
+  <h2>The extra-pay method, step by step</h2>
+  <p>Inland Revenue calls any payment that is not a regular part of your wages an extra pay: annual or one-off bonuses, back pay, retiring allowances, and holiday pay paid as a lump sum. Three steps set the tax. First, the gross pay of the four weeks ending on the date of the bonus is added up and multiplied by 13, which turns it into a yearly figure. Second, the bonus itself is added. Third, the employer reads the rate for the band that total falls in and applies it to the bonus alone. Your regular pay for that period goes through the ordinary PAYE tables as usual.</p>
+  <p>The four-week window matters. If you worked overtime in the month before the bonus, your annualised figure is higher than your contract salary and the rate may step up. If you were on unpaid leave, it is lower. Employers cannot pick another period; the rule is the same for everyone.</p>
+
+  <h2>When the rate is too high, and how you get it back</h2>
+  <p>The method is a withholding rule, not the final tax. After 31 March, Inland Revenue adds up everything you earned in the year, works out the tax on the real total and compares it with what was deducted. If a bonus was taxed at 33 % but your income for the year ended at {formatMoney(79000)}, only {formatMoney(900)} of it actually belongs to that bracket and the rest is refunded. The <a href={route('refund', lang)}>IRD tax refund calculator</a> estimates that assessment.</p>
+  <p>You can also ask your employer to use a higher rate than the method gives. People who expect a large bonus late in the tax year, or who have a second income taxed at a low secondary code, sometimes do this to avoid a bill in the assessment.</p>
+
+  <h2>What else comes off a bonus</h2>
+  <p>KiwiSaver contributions are deducted at your chosen rate because a bonus counts as gross salary or wages. Your employer’s contribution, {formatPercent(P.kiwisaver.employer_min, 1)} since 1 April 2026, applies to the bonus too, less employer superannuation contribution tax. Student loan repayments take 12 % of the bonus when your annualised pay plus the bonus is over {formatMoney(P.student_loan.threshold_annual)}. Child support and other deductions follow their own orders. The ACC earners’ levy stops once your earnings for the year pass {formatMoney(P.acc.max_liable)}, which is why the rate between that figure and {formatMoney(180000)} is a plain 33 %.</p>
+
+  <h2>Bonus, commission and back pay are not all treated alike</h2>
+  <p>A commission paid every month with your wages is regular pay and goes through the normal PAYE tables. A commission paid quarterly or yearly, on top of a salary, is an extra pay. Back pay for a wage increase that should have applied earlier is an extra pay when it is paid in one amount. A sign-on payment is an extra pay as well. Redundancy pay follows the same rate bands but without the ACC levy and without KiwiSaver, as the <a href={route('redundancy', lang)}>redundancy pay calculator</a> explains.</p>
+
+  <h2>Planning around a bonus</h2>
+  <p>Because the rate comes from the total of salary and bonus, the timing of a bonus does not change the tax you finally owe for the year: the assessment looks at the full twelve months. What timing changes is cash flow. A bonus paid in March may be over-taxed and refunded a few months later; the same bonus paid in April starts a new tax year. If you sit just under {formatMoney(P.ietc.max_income)}, remember that a bonus can also end the independent earner tax credit for the year, a loss of up to {formatMoney(P.ietc.amount)}.</p>
+  <p>Raising your KiwiSaver rate for the pay period of the bonus is allowed and moves part of it into your fund, but it does not reduce PAYE: contributions come out of pay after tax in New Zealand.</p>
+</Guide>

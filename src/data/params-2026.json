@@ -2,7 +2,7 @@
   "_lisezmoi": "Every legal parameter lives here, never hard-coded (RECETTE-SITE.md §4). Tax year 2026-27 runs from 1 April 2026 to 31 March 2027. Each value was read on the source cited, on retrieved_at.",
   "year": 2026,
   "tax_year": "2026-27",
-  "retrieved_at": "2026-09-27",
+  "retrieved_at": "2026-10-01",
   "valid_from": "2026-04-01",
   "valid_to": "2027-03-31",
   "sources": {
@@ -17,6 +17,18 @@
     "min_wage": { "url": "https://www.employment.govt.nz/pay-and-hours/pay-and-wages/minimum-wage/minimum-wage-rates-and-types", "label": { "en": "Employment New Zealand: Minimum wage rates" } },
     "holidays": { "url": "https://www.employment.govt.nz/leave-and-holidays", "label": { "en": "Employment New Zealand: Leave and holidays" } },
     "ird_lump_sum": { "url": "https://www.ird.govt.nz/employing-staff/payday-filing/non-standard-filing-of-employment-information/lump-sum-payments/calculate-paye-for-a-lump-sum-payment", "label": { "en": "Inland Revenue: calculate PAYE for a lump sum payment (extra pay rates 2026-27)" } },
+    "ird_gst": { "url": "https://www.ird.govt.nz/gst", "label": { "en": "Inland Revenue: GST (goods and services tax)" } },
+    "ird_rwt": { "url": "https://www.ird.govt.nz/income-tax/withholding-taxes/resident-withholding-tax-rwt", "label": { "en": "Inland Revenue: Resident withholding tax (RWT) on interest" } },
+    "ird_redundancy": { "url": "https://www.ird.govt.nz/employing-staff/payday-filing/non-standard-filing-of-employment-information/lump-sum-payments", "label": { "en": "Inland Revenue: Lump sum payments, including redundancy and bonuses" } },
+    "enz_redundancy": { "url": "https://www.employment.govt.nz/ending-employment/redundancy", "label": { "en": "Employment New Zealand: Redundancy" } },
+    "enz_public_holidays": { "url": "https://www.employment.govt.nz/leave-and-holidays/public-holidays", "label": { "en": "Employment New Zealand: Public holidays" } },
+    "enz_sick_leave": { "url": "https://www.employment.govt.nz/leave-and-holidays/sick-leave", "label": { "en": "Employment New Zealand: Sick leave" } },
+    "enz_final_pay": { "url": "https://www.employment.govt.nz/pay-and-hours/pay-and-wages/final-pay", "label": { "en": "Employment New Zealand: Final pay" } },
+    "enz_annual": { "url": "https://www.employment.govt.nz/leave-and-holidays/annual-holidays", "label": { "en": "Employment New Zealand: Annual holidays" } },
+    "enz_hours": { "url": "https://www.employment.govt.nz/pay-and-hours/hours-and-breaks", "label": { "en": "Employment New Zealand: Hours of work and breaks" } },
+    "living_wage": { "url": "https://www.livingwage.org.nz/", "label": { "en": "Living Wage Movement Aotearoa NZ: the 2026/27 Living Wage rate" } },
+    "msd_super": { "url": "https://www.workandincome.govt.nz/products/benefit-rates/benefit-rates-april-2026.html", "label": { "en": "Work and Income: Benefit rates at 1 April 2026, NZ Superannuation" } },
+    "msd_super_about": { "url": "https://www.workandincome.govt.nz/eligibility/seniors/superannuation/index.html", "label": { "en": "Work and Income: New Zealand Superannuation" } },
     "stats_income": { "url": "https://www.stats.govt.nz/information-releases/labour-market-statistics-income-june-2026-quarter/", "label": { "en": "Stats NZ: Labour market statistics (income), June 2026 quarter" } }
   },
   "tax": {
@@ -50,7 +62,12 @@
   "stats": { "median_weekly_wages_jun2026": 1419, "median_weekly_wages_jun2025": 1381, "median_hourly_jun2026": 35.96 },
   "schedular": { "min_rate": 0.10, "min_rate_non_resident_visa": 0.15, "no_notification": 0.45 },
   "provisional": { "rit_threshold": 5000 },
-  "gst": { "threshold": 60000 },
-  "leave": { "annual_weeks": 4, "payg_rate": 0.08, "sick_days": 10 },
+  "gst": { "threshold": 60000, "rate": 0.15 },
+  "rwt": { "no_ird_rate": 0.45, "exempt_interest": 5000 },
+  "provisional_tax": { "uplift_last_year": 1.05, "uplift_two_years": 1.10, "safe_harbour": 60000, "instalments": ["28 August", "15 January", "7 May"] },
+  "public_holidays": { "per_year": 12, "premium": 1.5 },
+  "living_wage": { "hourly": 29.90, "from": "2026-09-01" },
+  "super": { "from": "2026-04-01", "fortnight_gross": { "single_alone": 1294.74, "single_sharing": 1191.14, "couple_each": 984.28 }, "fortnight_net_m": { "single_alone": 1110.30, "single_sharing": 1024.90, "couple_each": 854.08 }, "age": 65 },
+  "leave": { "annual_weeks": 4, "payg_rate": 0.08, "sick_days": 10, "sick_max_balance": 20, "sick_after_months": 6 },
   "periods": { "weekly": 52, "fortnightly": 26, "monthly": 12, "annual": 1 }
 }

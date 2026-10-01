@@ -1,0 +1,51 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { publicHolidayPay } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney } from '../../lib/format';
+const lang = 'en';
+const ex = publicHolidayPay({ hourly: 30, hours: 8 });
+const rows = [P.min_wage.adult, 27, 30, 35.96, 45].map((h) => { const x = publicHolidayPay({ hourly: h, hours: 8 }); return [formatMoney(h, 2), formatMoney(x.ordinary, 2), formatMoney(x.pay, 2), formatMoney(x.alternativeDay, 2), formatMoney(x.pay + x.alternativeDay, 2)]; });
+const days: Array<[string, string]> = [['New Year’s Day', '1 January'], ['Day after New Year’s Day', '2 January'], ['Waitangi Day', '6 February'], ['Good Friday', 'Friday before Easter'], ['Easter Monday', 'Monday after Easter'], ['Anzac Day', '25 April'], ['King’s Birthday', 'First Monday of June'], ['Matariki', 'A Friday in June or July, set by law'], ['Labour Day', 'Fourth Monday of October'], ['Christmas Day', '25 December'], ['Boxing Day', '26 December'], ['Provincial anniversary day', 'Varies by region']];
+const faqs = [
+  { q: 'What is the pay rate for working a public holiday in NZ?', a: `At least time and a half for the hours actually worked, so ${formatMoney(30 * P.public_holidays.premium, 2)} an hour on a ${formatMoney(30)} rate. If the day is one you would normally work, you also earn a whole paid day off later, called an alternative holiday. An agreement can pay more than time and a half, never less.` },
+  { q: 'Do I get paid for a public holiday if I do not work?', a: 'Yes, if the holiday falls on a day you would otherwise have worked. You are paid your relevant daily pay, the amount you would have earned that day including regular allowances and overtime. If the holiday falls on a day you never work, such as a Monday for someone rostered Tuesday to Saturday, nothing is due.' },
+  { q: 'Do casual workers get time and a half on public holidays?', a: 'Yes. Every employee who works on a public holiday is paid at least time and a half for those hours, casual or permanent. Whether a casual worker also earns an alternative holiday depends on whether the day would otherwise be a working day for them, judged from their pattern of work over recent weeks.' },
+  { q: 'What happens when Christmas Day falls on a weekend?', a: 'Christmas Day, Boxing Day, New Year’s Day, 2 January, Waitangi Day and Anzac Day are “Mondayised”. If the date falls on a Saturday or Sunday and you do not normally work that day, your holiday moves to the following Monday or Tuesday. If you do normally work on the calendar date, your holiday stays on that date. Nobody gets both.' },
+];
+---
+<Guide id="publicHoliday" title="Public Holiday Pay Calculator NZ 2026: Time and a Half" h1="Public holiday pay calculator: time and a half and the day in lieu"
+  description="Work out pay for working a public holiday in New Zealand in 2026: time and a half for the hours worked, the alternative holiday, and who qualifies for each."
+  intro="Working a public holiday pays at least time and a half, and often a paid day off as well. Enter your rate and hours."
+  resume={`An employee who works on a public holiday in New Zealand must be paid at least time and a half for the hours worked, under the Holidays Act 2003. If the day would otherwise have been a working day for them, they also receive an alternative holiday: a full paid day off to take later, whatever the number of hours worked. On ${formatMoney(30)} an hour, eight hours on a public holiday pay ${formatMoney(ex.pay, 2)} instead of ${formatMoney(ex.ordinary, 2)}, and the alternative holiday is worth a further ${formatMoney(ex.alternativeDay, 2)} when it is taken. There are ${P.public_holidays.per_year} public holidays a year: eleven national days and one provincial anniversary day. An employee who does not work on a public holiday that falls on one of their usual days is paid their normal pay for it.`}
+  faqs={faqs} related={['holidayPay', 'overtime', 'holidayCalc', 'sickLeave', 'hourly', 'minimumWage']} sources={[SRC.enz_public_holidays, SRC.holidays, SRC.min_wage]}>
+  <MiniSim client:visible kind="pubhol" lang={lang} href={route('hourly', lang)} />
+  <h2>An eight-hour public holiday at different hourly rates</h2>
+  <ContentTable headers={['Hourly rate', 'Ordinary pay, 8 h', 'At time and a half', 'Alternative holiday', 'Total value']} align={['r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>The first row is the adult minimum wage, {formatMoney(P.min_wage.adult, 2)} an hour: nobody working a public holiday can be paid less than {formatMoney(P.min_wage.adult * P.public_holidays.premium, 2)} an hour for it. The total column adds the value of the day off, which is paid when it is taken, at the rate that applies on that later day.</p>
+
+  <h2>The {P.public_holidays.per_year} public holidays</h2>
+  <ContentTable headers={['Holiday', 'When']} align={['l', 'l']} rows={days} />
+  <p>The anniversary day depends on where you work, not where you live: Wellington and Auckland observe theirs in late January, Canterbury in November. Matariki moves each year with the Māori lunar calendar and its dates are fixed in legislation decades ahead.</p>
+
+  <h2>Is it “otherwise a working day”?</h2>
+  <p>This question decides two things: whether you are paid for a holiday you do not work, and whether working it earns an alternative holiday. For a fixed roster the answer is obvious. For changing rosters, employer and employee look at the employment agreement, the usual pattern of work, whether the employee works only when work is available, and what the roster would have shown had the day not been a holiday. An employer cannot roster someone off just to avoid the holiday.</p>
+  <p>A common test in practice is the last weeks before the holiday: someone who worked nine of the previous twelve Mondays would normally have worked Easter Monday.</p>
+
+  <h2>What “time and a half” is calculated on</h2>
+  <p>The base is relevant daily pay: what you would have received for the hours worked on that day, including productivity payments, regular overtime and the cash value of board or lodging. For an hourly worker it is the hourly rate multiplied by 1.5. For a salaried employee, the employer converts the salary to a daily amount, pays the normal salary for the day and adds half as much again for the portion worked. If the agreement already gives a higher penal rate for that day, the higher one applies, not both.</p>
+  <p>Where daily pay varies so much that it cannot be determined, average daily pay over the last 52 weeks is used instead: gross earnings divided by the number of whole or part days worked or on paid leave.</p>
+
+  <h2>Taking the alternative holiday</h2>
+  <p>The day is agreed between employer and employee. If they cannot agree within twelve months, the employer can set the date with 14 days’ notice. After twelve months the two can also agree to swap the day for money. It is always a full day, even if you worked two hours on the public holiday. Any alternative holidays still owed when you leave are paid in your final pay.</p>
+
+  <h2>Public holidays during leave or sickness</h2>
+  <p>A public holiday that falls during your annual leave is treated as a public holiday, not as a day of annual leave, so your leave balance is not reduced. The same holds for sick leave: if you were due to work the holiday and are sick, you are paid for the public holiday and no sick day is used. When a job ends, public holidays falling within the period your untaken annual leave would cover, counted from your last day, must also be paid.</p>
+
+  <h2>Tax on public holiday pay</h2>
+  <p>Time and a half is ordinary wages for the pay period. It goes through PAYE with the rest of that week’s pay and counts for KiwiSaver, the ACC levy and holiday pay. A week with a worked public holiday therefore shows a higher PAYE figure than usual, in proportion to the higher gross. The <a href={route('takeHome', lang)}>take-home pay calculator</a> shows a week at any gross amount.</p>
+</Guide>

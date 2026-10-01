@@ -1,0 +1,53 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { gstAdd, gstRemove } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const addRows = [50, 100, 250, 1000, 5000, 20000].map((a) => { const x = gstAdd(a); return [formatMoney(a, 2), formatMoney(x.gst, 2), formatMoney(x.incl, 2)]; });
+const remRows = [50, 115, 250, 1000, 5000, 20000].map((a) => { const x = gstRemove(a); return [formatMoney(a, 2), formatMoney(x.gst, 2), formatMoney(x.excl, 2)]; });
+const r = gstRemove(230);
+const faqs = [
+  { q: 'How do I calculate GST in NZ?', a: `To add GST, multiply the GST-exclusive price by 1.15: ${formatMoney(100)} becomes ${formatMoney(gstAdd(100).incl)}. To find the GST inside a GST-inclusive price, multiply by 3 and divide by 23: ${formatMoney(230)} contains ${formatMoney(r.gst)} of GST and ${formatMoney(r.excl)} of price. Dividing an inclusive price by 1.15 gives the exclusive price directly.` },
+  { q: 'Why is taking 15 % off a GST-inclusive price wrong?', a: `Because the 15 % was added to the exclusive price, not to the total. Taking 15 % off ${formatMoney(115)} gives ${formatMoney(115 * 0.85, 2)}, not ${formatMoney(100)}. The GST share of an inclusive price is 3/23, about ${formatPercent(3 / 23, 2)}, which is the fraction Inland Revenue uses.` },
+  { q: 'When do I have to register for GST?', a: `When your turnover from taxable activity was more than ${formatMoney(P.gst.threshold)} in the last 12 months, or is expected to pass that figure in the next 12. Below it, registration is optional. The test looks at sales, not profit, and it is a rolling 12 months rather than the tax year.` },
+  { q: 'Do contractors charge GST on top of their fees?', a: `A GST-registered contractor adds 15 % to their invoices and pays it to Inland Revenue, less the GST on business costs. Tax withheld from schedular payments is worked out on the GST-exclusive amount. A contractor under ${formatMoney(P.gst.threshold)} who has not registered charges no GST and cannot claim any back.` },
+];
+---
+<Guide id="gst" title="GST Calculator NZ: Add or Remove 15 % GST (2026)" h1="GST calculator: add or remove 15 % GST"
+  description="Add 15 % GST to a price or find the GST inside a GST-inclusive amount in New Zealand, with the 3/23 fraction, worked tables and the $60,000 registration rule."
+  intro="Goods and services tax is 15 % in New Zealand. Enter an amount and say whether it already includes GST."
+  resume={`GST in New Zealand is 15 %, a rate unchanged since 1 October 2010. To add it, multiply a GST-exclusive amount by 1.15: ${formatMoney(1000)} becomes ${formatMoney(gstAdd(1000).incl)}, of which ${formatMoney(gstAdd(1000).gst)} is tax. To remove it from a GST-inclusive amount, multiply by 3 and divide by 23: ${formatMoney(1000)} including GST contains ${formatMoney(gstRemove(1000).gst, 2)} of GST and ${formatMoney(gstRemove(1000).excl, 2)} of price. A business must register once its turnover passes ${formatMoney(P.gst.threshold)} in any 12 months; it then charges GST on its sales, claims the GST on its costs and pays the difference to Inland Revenue. Wages and salaries carry no GST, so employees meet it only as shoppers, in prices that by law are displayed with the tax already included. The same 15 % applies to almost all goods and services, food included, with no reduced rate.`}
+  faqs={faqs} related={['contractor', 'selfEmployed', 'provisionalTax', 'employeeVsContractor', 'incomeTax', 'home']} sources={[SRC.ird_gst, SRC.ird_schedular, SRC.ird_provisional]}>
+  <MiniSim client:visible kind="gst" lang={lang} href={route('contractor', lang)} />
+  <h2>Adding GST to a price</h2>
+  <ContentTable headers={['Excluding GST', 'GST at 15 %', 'Including GST']} align={['r', 'r', 'r']} rows={addRows} />
+  <p>Quotes between businesses are normally written “plus GST”, so this is the direction used when preparing an invoice. The total rounds to the cent; cash payments in shops round to the nearest ten cents, since New Zealand withdrew its five-cent coin in 2006.</p>
+
+  <h2>Finding the GST in a GST-inclusive price</h2>
+  <ContentTable headers={['Including GST', 'GST inside (3/23)', 'Excluding GST']} align={['r', 'r', 'r']} rows={remRows} />
+  <p>Retail prices shown to consumers must include GST. To see how much of a receipt is tax, the 3/23 fraction does it in one step. The second row is the check that the method works: {formatMoney(115)} contains exactly {formatMoney(15)}.</p>
+
+  <h2>Who has to register</h2>
+  <p>Registration is compulsory when turnover from a taxable activity goes above {formatMoney(P.gst.threshold)} over 12 months, counted backwards at the end of any month, or when it is expected to do so over the next 12. A sole trader, a contractor, a company, a partnership and a trust are all tested the same way. Turnover means sales excluding GST; the sale of the business’s capital assets is left out.</p>
+  <p>Under the threshold, registering is a choice. It lets you recover the GST on equipment and other costs, at the price of charging GST to customers and filing returns. It suits businesses whose customers are themselves registered, since they claim the GST back; it rarely suits someone selling to the public at a price the market sets.</p>
+
+  <h2>What is taxed, zero-rated or exempt</h2>
+  <p>Almost everything sold in New Zealand carries GST, food and professional fees included; there is no reduced rate. Exports of goods and many services to overseas customers are zero-rated: the seller charges 0 % yet still claims GST on costs. A going concern sold between registered parties is zero-rated too, as is land sold between registered businesses. Exempt supplies sit outside the system altogether: residential rent, most financial services such as interest and loan fees, and donated goods sold by non-profit bodies. A landlord of residential property neither charges GST nor claims it.</p>
+  <p>Digital services and low-value imported goods bought from overseas suppliers are taxed at 15 % when the supplier sells more than {formatMoney(P.gst.threshold)} a year to New Zealand consumers, which is why streaming subscriptions show GST on the bill.</p>
+
+  <h2>Returns: how often, and on what basis</h2>
+  <p>A registered business files monthly, two-monthly or six-monthly. Two-monthly is the default; six-monthly is available to small businesses and monthly is required for large ones. Each return adds up GST on sales, subtracts GST on purchases and expenses, and the difference is paid or refunded. On the payments basis, GST is counted when money changes hands; on the invoice basis, when the invoice is issued or received. Small businesses usually pick the payments basis because it never asks for GST on a sale the customer has not yet paid.</p>
+  <p>The return and payment are due on the 28th of the month after the period ends, with two exceptions: the period ending 31 March is due on 7 May, and the one ending 30 November on 15 January.</p>
+
+  <h2>Invoices and records</h2>
+  <p>For a sale over {formatMoney(200)} a registered seller must give the buyer taxable supply information: the seller’s name and GST number, the date, a description of the goods or services, and the amount with the GST shown or a statement that the price includes it. Above {formatMoney(1000)} the buyer’s details are required as well. The formal “tax invoice” was replaced by these rules in April 2023, so an ordinary invoice or receipt carrying the information is enough to support a claim. Records must be kept for seven years.</p>
+
+  <h2>GST and your income tax</h2>
+  <p>GST collected is not income, and GST paid on costs is not an expense, once you are registered. Income tax is worked out on GST-exclusive figures. A registered contractor invoicing {formatMoney(gstAdd(80000).incl)} in a year has {formatMoney(80000)} of income and holds {formatMoney(gstAdd(80000).gst)} that belongs to Inland Revenue. Keeping that money in a separate account, together with the tax estimated by the <a href={route('contractor', lang)}>contractor tax calculator</a>, avoids the most common first-year problem: a GST return due with nothing set aside.</p>
+  <p>An unregistered contractor works the other way round. The GST they pay on a laptop or on fuel is part of the cost, and the full GST-inclusive price is deducted from income.</p>
+</Guide>

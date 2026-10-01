@@ -1,0 +1,48 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { rwt } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const ex = rwt({ interest: 2000, otherIncome: 65000 });
+const bands = [[0, 15600, 0.105], [15601, 53500, 0.175], [53501, 78100, 0.30], [78101, 180000, 0.33], [180001, null, 0.39]].map(([a, b, r]) => [b ? `${formatMoney(a as number)} to ${formatMoney(b as number)}` : `Over ${formatMoney(180000)}`, formatPercent(r as number, 1)]);
+const rows = ([[500, 20000], [1500, 45000], [2000, 65000], [4000, 52000], [5000, 90000], [12000, 30000]] as const).map(([i, s]) => { const x = rwt({ interest: i, otherIncome: s }); return [formatMoney(i), formatMoney(s), formatPercent(x.rate, 1), formatMoney(x.withheld), formatMoney(x.net), x.balance === 0 ? 'Nothing' : x.balance > 0 ? `${formatMoney(x.balance)} to pay` : `${formatMoney(-x.balance)} refund`]; });
+const deposit = 50000; const rate = 0.045; const gross = deposit * rate;
+const faqs = [
+  { q: 'How much tax do I pay on savings interest in NZ?', a: `Interest is taxed at your income tax rate. Your bank deducts resident withholding tax before paying you, at the rate you have chosen: 10.5 %, 17.5 %, 30 %, 33 % or 39 %. With ${formatMoney(65000)} of salary, the right rate is ${formatPercent(ex.rate, 0)}, so ${formatMoney(2000)} of interest leaves ${formatMoney(ex.net)}.` },
+  { q: 'Which RWT rate should I choose?', a: `The rate for your total income for the year, interest included: 10.5 % up to ${formatMoney(15600)}, 17.5 % up to ${formatMoney(53500)}, 30 % up to ${formatMoney(78100)}, 33 % up to ${formatMoney(180000)} and 39 % above. If you give your bank no rate, 33 % is used; if you give no IRD number, ${formatPercent(P.rwt.no_ird_rate, 0)}.` },
+  { q: 'What happens if my RWT rate is wrong?', a: 'Inland Revenue squares it up after 31 March. Interest and RWT are reported by the bank and included automatically in your income tax assessment. If the rate was too high you receive a refund; if it was too low you get a bill, and Inland Revenue may instruct your bank to change the rate.' },
+  { q: 'Is there a tax-free allowance for interest in NZ?', a: 'No. New Zealand has no personal allowance and no tax-free savings band: the first dollar of interest is taxable. What a low earner benefits from is the 10.5 % rate on the first slice of total income. Children’s accounts are taxed the same way, on the child’s own income, so a child with no other income should be on 10.5 %.' },
+];
+---
+<Guide id="rwt" title="RWT Calculator NZ 2026-27: Tax on Savings Interest" h1="RWT calculator: tax on your savings interest"
+  description="Find the right resident withholding tax rate for your bank interest in New Zealand for 2026-27, the interest you keep and any refund or bill at year end."
+  intro="Banks deduct resident withholding tax from interest at the rate you choose. Enter your interest and other income to find the correct rate."
+  resume={`In New Zealand, interest on bank accounts and term deposits is taxed through resident withholding tax, deducted by the bank before the interest is paid. The saver chooses the rate, which should match their income tax bracket for the year, counting the interest itself: 10.5 % for total income up to ${formatMoney(15600)}, 17.5 % up to ${formatMoney(53500)}, 30 % up to ${formatMoney(78100)}, 33 % up to ${formatMoney(180000)} and 39 % beyond. Someone earning ${formatMoney(65000)} with ${formatMoney(2000)} of interest should be on ${formatPercent(ex.rate, 0)}: the bank keeps ${formatMoney(ex.withheld)} and pays ${formatMoney(ex.net)}. A saver who provides no IRD number is taxed at ${formatPercent(P.rwt.no_ird_rate, 0)}. There is no tax-free allowance for interest. Any difference between RWT deducted and the tax really owed is settled in the end-of-year assessment.`}
+  faqs={faqs} related={['incomeTax', 'taxRates', 'refund', 'nzSuper', 'kiwisaver', 'taxCodes']} sources={[SRC.ird_rwt, SRC.ird_rates, SRC.ird_provisional]}>
+  <MiniSim client:visible kind="rwt" lang={lang} href={route('incomeTax', lang)} />
+  <h2>RWT rates on interest for individuals</h2>
+  <ContentTable headers={['Total income for the year, interest included', 'RWT rate to choose']} align={['l', 'r']} rows={bands} />
+  <p>The thresholds are those of the income tax scale that has applied since 31 July 2024. A saver who has not reviewed their rate since then may still be on a rate picked for the old thresholds of {formatMoney(14000)}, {formatMoney(48000)} and {formatMoney(70000)}.</p>
+
+  <h2>Worked examples</h2>
+  <ContentTable headers={['Interest', 'Other income', 'Rate', 'RWT deducted', 'Interest kept', 'At year end']} align={['r', 'r', 'r', 'r', 'r', 'l']} rows={rows} />
+  <p>The fourth and sixth rows show interest that straddles a threshold. With {formatMoney(52000)} of other income, {formatMoney(4000)} of interest takes the total to {formatMoney(56000)}: the bank deducts 30 % on all of it, although only the part above {formatMoney(53500)} is really taxed at 30 %. The assessment refunds the difference. A flat rate cannot follow a progressive scale exactly; choosing the rate of your top bracket simply guarantees that you never owe more.</p>
+
+  <h2>Term deposits: the rate you see is before tax</h2>
+  <p>Advertised interest rates are gross. A {formatMoney(deposit)} deposit at {formatPercent(rate, 1)} for one year earns {formatMoney(gross)}. At an RWT rate of 30 % the saver receives {formatMoney(gross * 0.7)}, an after-tax return of {formatPercent(rate * 0.7, 2)}; at 17.5 % it is {formatMoney(gross * 0.825, 2)} and {formatPercent(rate * 0.825, 2)}; at 33 %, {formatMoney(gross * 0.67)} and {formatPercent(rate * 0.67, 2)}. Comparing deposits with other investments, or with paying down a mortgage, only makes sense on those after-tax figures.</p>
+  <p>Interest is taxed in the tax year it is paid or credited. A deposit that pays everything at maturity can therefore push a single year’s income into a higher bracket; choosing quarterly or annual interest payments spreads it.</p>
+
+  <h2>PIE funds and KiwiSaver use a different, capped rate</h2>
+  <p>Cash and term funds structured as portfolio investment entities, and all KiwiSaver funds, are taxed at a prescribed investor rate of 10.5 %, 17.5 % or 28 %. The top PIR is 28 %, below the 30 %, 33 % and 39 % personal rates, and PIE tax is final when the correct PIR was used. For savers in the higher brackets a bank’s PIE cash fund therefore yields more after tax than an ordinary account at the same gross rate. The PIR depends on your income in either of the two previous tax years, a different test from the RWT one.</p>
+
+  <h2>Joint accounts, children and non-residents</h2>
+  <p>On a joint account, one RWT rate applies to all the interest, and each holder declares their share. Couples in different brackets usually choose the higher rate and let the lower earner receive a refund, or hold separate accounts. A child’s account is taxed on the child’s income, with the child’s own IRD number. A person who is not tax resident in New Zealand pays non-resident withholding tax or the approved issuer levy instead of RWT, at rates that depend on the country of residence.</p>
+
+  <h2>How interest reaches your tax assessment</h2>
+  <p>Banks report interest and RWT to Inland Revenue for each customer. After 31 March the figures appear in your income tax assessment alongside your wages, and the tax is recalculated on the total. People whose only untaxed income is modest interest have nothing to do. If the tax still to pay on all your income exceeds {formatMoney(P.provisional.rit_threshold)}, you become liable for provisional tax the following year; the <a href={route('provisionalTax', lang)}>provisional tax calculator</a> shows the instalments. To change your rate, tell each bank, in internet banking or by phone: the choice is made account provider by account provider, not at Inland Revenue. Review it whenever your income changes bracket, at retirement, after a pay rise or when a large deposit matures.</p>
+</Guide>

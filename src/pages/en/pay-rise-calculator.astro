@@ -1,0 +1,52 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { payRise } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const ex = payRise({ gross: 65000, percent: 0.04, kiwisaver: 0.035 });
+const rows = [45000, 52000, 65000, 76000, 90000, 120000].map((g) => { const x = payRise({ gross: g, percent: 0.04, kiwisaver: 0.035 }); return [formatMoney(g), formatMoney(x.newGross), formatMoney(x.extraGross), formatMoney(x.extraNet), formatMoney(x.extraNet / 52, 2), formatPercent(x.kept, 0)]; });
+const pcts = [0.02, 0.03, 0.05, 0.075, 0.10].map((p) => { const x = payRise({ gross: 65000, percent: p, kiwisaver: 0.035 }); return [formatPercent(p, 1), formatMoney(x.newGross), formatMoney(x.extraNet), formatMoney(x.extraNet / 52, 2)]; });
+const cross = payRise({ gross: 76000, percent: 0.04, kiwisaver: 0.035 });
+const me = payRise({ gross: 65000, percent: 0.05, kiwisaver: 0.035, code: 'ME' });
+const faqs = [
+  { q: 'How much of a pay rise do I keep after tax in NZ?', a: `Between about 60 % and 80 % of it, depending on your bracket. On ${formatMoney(65000)}, each extra dollar loses 30 % to income tax, ${formatPercent(P.acc.rate, 2)} to ACC and your KiwiSaver rate, so a 4 % rise of ${formatMoney(ex.extraGross)} leaves ${formatMoney(ex.extraNet)} a year, ${formatMoney(ex.extraNet / 52, 2)} a week.` },
+  { q: 'Will a pay rise put me in a higher tax bracket?', a: `Only the part of the rise above a threshold is taxed at the higher rate. Going from ${formatMoney(76000)} to ${formatMoney(cross.newGross)} moves ${formatMoney(cross.newGross - 78100)} into the 33 % bracket; the first ${formatMoney(78100)} is taxed exactly as before. A rise can never reduce your take-home pay through income tax alone.` },
+  { q: 'Can a pay rise cost me the independent earner tax credit?', a: `Yes, between ${formatMoney(P.ietc.abate_from)} and ${formatMoney(P.ietc.max_income)}. The credit of ${formatMoney(P.ietc.amount)} a year shrinks by 13 cents for each dollar above ${formatMoney(P.ietc.abate_from)}, so in that range a rise is effectively taxed 13 points more. A 5 % rise on ${formatMoney(65000)} with the ME code leaves ${formatMoney(me.extraNet)} instead of the amount the M code would give.` },
+  { q: 'What is a good pay rise in New Zealand in 2026?', a: `One that at least matches the rise in prices. The adult minimum wage rose ${formatPercent(P.min_wage.adult / P.min_wage.previous_adult - 1, 1)} on 1 April 2026 and median weekly wages rose ${formatPercent(P.stats.median_weekly_wages_jun2026 / P.stats.median_weekly_wages_jun2025 - 1, 1)} in the year to June 2026 according to Stats NZ. A rise below those figures leaves you behind the typical worker.` },
+];
+---
+<Guide id="payRise" title="Pay Rise Calculator NZ 2026-27: Your Rise After Tax" h1="Pay rise calculator: what a rise adds to your take-home pay"
+  description="See what a pay rise is worth after PAYE, ACC and KiwiSaver in New Zealand for 2026-27: new salary, extra take-home per week and the share of the rise you keep."
+  intro="A rise is quoted before tax. Enter your salary and the percentage to see what reaches your account each week."
+  resume={`A pay rise in New Zealand is taxed at your top rate, not your average rate, so you keep less of it than of your existing pay. On a salary of ${formatMoney(65000)}, a 4 % rise adds ${formatMoney(ex.extraGross)} before tax and ${formatMoney(ex.extraNet)} after PAYE, the ACC earners’ levy and KiwiSaver at 3.5 %: about ${formatMoney(ex.extraNet / 52, 2)} more a week, ${formatPercent(ex.kept, 0)} of the rise. The share kept falls as income climbs: roughly 77 % below ${formatMoney(53500)}, 65 % up to ${formatMoney(78100)} and 62 % up to ${formatMoney(180000)}, with KiwiSaver at 3.5 %. Two thresholds deserve attention: the independent earner tax credit fades out between ${formatMoney(P.ietc.abate_from)} and ${formatMoney(P.ietc.max_income)}, and student loan repayments take 12 % of every extra dollar above the repayment threshold. None of these can make a rise cost you money: take-home pay always goes up.`}
+  faqs={faqs} related={['takeHome', 'salary', 'bonusTax', 'ietcGuide', 'averageSalary', 'netToGross']} sources={[SRC.ird_rates, SRC.acc_levy, SRC.ird_ietc, SRC.stats_income]}>
+  <MiniSim client:visible kind="payrise" lang={lang} href={route('takeHome', lang)} />
+  <h2>A 4 % rise at different salaries</h2>
+  <ContentTable headers={['Salary now', 'New salary', 'Rise before tax', 'Rise after tax', 'Per week', 'Share kept']} align={['r', 'r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>All rows use the M tax code and KiwiSaver at 3.5 %. The share kept steps down each time the salary crosses a bracket: {formatMoney(53500)} and {formatMoney(78100)}. Someone on {formatMoney(76000)} sees the two rates inside one rise, since the new salary of {formatMoney(cross.newGross)} sits partly above the line.</p>
+
+  <h2>Different rises on {formatMoney(65000)}</h2>
+  <ContentTable headers={['Rise', 'New salary', 'Extra take-home a year', 'Extra a week']} align={['r', 'r', 'r', 'r']} rows={pcts} />
+  <p>Inside one bracket the relationship is a straight line: double the percentage, double the extra pay. That is why a negotiation over one more point is easy to price. On this salary each additional point is worth about {formatMoney(payRise({ gross: 65000, percent: 0.01, kiwisaver: 0.035 }).extraNet / 52, 2)} a week in hand.</p>
+
+  <h2>What comes out of each extra dollar</h2>
+  <p>Four deductions touch a rise. Income tax takes the marginal rate: 10.5 % up to {formatMoney(15600)}, 17.5 % to {formatMoney(53500)}, 30 % to {formatMoney(78100)}, 33 % to {formatMoney(180000)} and 39 % above. The ACC earners’ levy takes {formatPercent(P.acc.rate, 2)} until earnings reach {formatMoney(P.acc.max_liable)}. KiwiSaver takes your contribution rate, which goes to your own fund rather than to the government, and your employer’s {formatPercent(P.kiwisaver.employer_min, 1)} grows with your pay. A student loan takes 12 % above {formatMoney(P.student_loan.threshold_annual)}, which makes the combined rate on a rise close to 46 % for a borrower earning {formatMoney(65000)}.</p>
+
+  <h2>The thresholds where a rise behaves differently</h2>
+  <p>The independent earner tax credit is the main one. Paid through the ME tax code to people earning {formatMoney(P.ietc.min_income)} to {formatMoney(P.ietc.max_income)} who receive no Working for Families or benefit, it is worth {formatMoney(P.ietc.amount)} a year and abates above {formatMoney(P.ietc.abate_from)}. A rise that crosses {formatMoney(P.ietc.max_income)} ends it, and you should change your code from ME to M. A rise that takes a low earner past {formatMoney(P.ietc.min_income)} starts it, a gain of {formatMoney(P.ietc.amount / 52, 2)} a week on top of the rise.</p>
+  <p>Families receiving Working for Families tax credits face a further reduction as income rises, because those credits abate against family income. Inland Revenue’s own estimator is the reference for that calculation; this page covers PAYE only.</p>
+
+  <h2>Rise, bonus or extra KiwiSaver</h2>
+  <p>A rise repeats every year and lifts everything tied to salary: holiday pay, employer KiwiSaver, future percentage increases. A one-off bonus of the same amount is taxed in the same bracket, as the <a href={route('bonusTax', lang)}>bonus tax calculator</a> shows, but leaves next year’s base unchanged. An employer who offers a higher KiwiSaver contribution instead of salary is offering money you cannot spend now, taxed through ESCT at a rate set by your salary band. Comparing offers on take-home pay, with the <a href={route('takeHome', lang)}>take-home pay calculator</a>, is the only like-for-like test.</p>
+
+  <h2>A rise against inflation</h2>
+  <p>A rise equal to inflation keeps your pay level in real terms before tax, but slightly less than level after tax, because the tax thresholds are not indexed: each year a little more of an unchanged real income falls into the higher brackets. The thresholds were last moved on 31 July 2024, after fourteen years without change. Someone on {formatMoney(76000)} whose pay follows prices for two or three years will cross {formatMoney(78100)} without being any better off, and pay 33 % on the top slice. This “bracket creep” is why comparing take-home pay before and after, rather than gross figures, is the honest measure of a rise.</p>
+
+  <h2>Asking for a rise with the right number</h2>
+  <p>Employers think in gross cost, employees in net pay. If you need {formatMoney(50)} more a week in hand on {formatMoney(65000)}, the request is not {formatMoney(2600)} a year but about {formatMoney(2600 / ex.kept)}, since you keep {formatPercent(ex.kept, 0)} of it. The <a href={route('netToGross', lang)}>net to gross calculator</a> turns a target take-home figure into the salary to ask for.</p>
+</Guide>

@@ -1,0 +1,51 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { redundancy, bonus } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const ex = redundancy({ amount: 20000, annualPay: 70000 });
+const asBonus = bonus({ amount: 20000, annualPay: 70000 });
+const rows = ([[8000, 45000], [15000, 60000], [20000, 70000], [30000, 90000], [50000, 120000], [80000, 150000]] as const).map(([r, s]) => { const x = redundancy({ amount: r, annualPay: s }); return [formatMoney(r), formatMoney(s), formatPercent(x.rate, 1), formatMoney(x.paye), formatMoney(x.net)]; });
+const weeks = [4, 6, 8, 12, 26].map((w) => { const amt = Math.round(70000 / 52 * w); const x = redundancy({ amount: amt, annualPay: 70000 }); return [`${w} weeks`, formatMoney(amt), formatMoney(x.net)]; });
+const faqs = [
+  { q: 'Is redundancy pay taxed in New Zealand?', a: `Yes. A redundancy payment is taxable income, taxed as an extra pay at a flat rate. The rate is the income tax rate for your annualised pay plus the payment: 17.5 % up to ${formatMoney(53500)}, 30 % up to ${formatMoney(78100)}, 33 % up to ${formatMoney(180000)} and 39 % above. The ACC earners’ levy is not charged on redundancy, and KiwiSaver is not deducted from it.` },
+  { q: 'Am I entitled to redundancy pay in NZ?', a: 'Only if your employment agreement says so. New Zealand law does not require an employer to pay redundancy compensation. What the law does require is a genuine reason, real consultation before the decision, the notice period in your agreement, and your final pay with all holiday pay owing. Many collective and individual agreements set a formula, often a number of weeks for the first year and fewer for each later year.' },
+  { q: 'How much do I keep from a $20,000 redundancy payment?', a: `On a usual salary of ${formatMoney(70000)}, the total of ${formatMoney(90000)} falls in the 33 % band, so PAYE is ${formatMoney(ex.paye)} and you keep ${formatMoney(ex.net)}. The same sum paid as a bonus would leave ${formatMoney(asBonus.net)} before KiwiSaver, because a bonus also carries the ACC levy.` },
+  { q: 'Does a redundancy payment delay Jobseeker Support?', a: 'It can. Work and Income looks at the income you received in the period before you apply, including redundancy and holiday pay, and may apply a stand-down of one or two weeks before payments start. A large payment does not cancel the entitlement itself. Apply as soon as you have your end date rather than waiting for the money to run out.' },
+];
+---
+<Guide id="redundancy" title="Redundancy Pay Calculator NZ 2026-27: Tax on Redundancy" h1="Redundancy pay calculator: tax on a redundancy payment"
+  description="Work out the tax on redundancy pay in New Zealand for 2026-27: flat extra-pay rate, no ACC levy, no KiwiSaver, and the amount you keep after PAYE."
+  intro="Redundancy pay is taxed at one flat rate, without the ACC levy. Enter the payment and your usual pay to see what you keep."
+  resume={`Redundancy pay in New Zealand is taxable, and it is taxed as an extra pay at a single flat rate. Your employer annualises your last four weeks of pay, adds the redundancy payment and applies the income tax rate for that total to the whole payment: 10.5 % up to ${formatMoney(15600)}, 17.5 % up to ${formatMoney(53500)}, 30 % up to ${formatMoney(78100)}, 33 % up to ${formatMoney(180000)} and 39 % beyond. Unlike a bonus, a redundancy payment carries no ACC earners’ levy and no KiwiSaver deduction. On a usual salary of ${formatMoney(70000)}, a payment of ${formatMoney(20000)} is taxed at ${formatPercent(ex.rate, 0)}: ${formatMoney(ex.paye)} of PAYE and ${formatMoney(ex.net)} in hand. There is no legal right to redundancy compensation; the amount comes from your employment agreement.`}
+  faqs={faqs} related={['finalPay', 'bonusTax', 'holidayCalc', 'refund', 'takeHome', 'payeRates']} sources={[SRC.ird_redundancy, SRC.enz_redundancy, SRC.ird_rates, SRC.enz_final_pay]}>
+  <MiniSim client:visible kind="redundancy" lang={lang} href={route('takeHome', lang)} />
+  <h2>Redundancy pay after tax: worked examples</h2>
+  <ContentTable headers={['Redundancy payment', 'Usual pay a year', 'PAYE rate', 'PAYE', 'You keep']} align={['r', 'r', 'r', 'r', 'r']} rows={rows} />
+  <p>Each rate is the bracket that the salary and the payment reach together. A {formatMoney(15000)} payment on {formatMoney(60000)} stays under {formatMoney(78100)} and is taxed at 30 %. Add another {formatMoney(5000)} to the payment, or {formatMoney(10000)} to the salary, and the whole payment moves to 33 %.</p>
+
+  <h2>Why the rate can look too high</h2>
+  <p>The flat rate is applied to every dollar of the payment, including dollars that, over the full year, belong to a lower bracket. Someone made redundant in June has earned only a quarter of their salary in the tax year. Their real income for the year, salary to date plus redundancy plus whatever they earn afterwards, is often well below the annualised figure used by payroll. The end-of-year assessment corrects this: Inland Revenue recalculates the tax on actual income and refunds the excess, usually between May and July. The <a href={route('refund', lang)}>IRD tax refund calculator</a> gives an estimate for a part-year of work.</p>
+  <p>You cannot ask for a lower rate than the method gives. You can ask for a higher one, which is rarely useful after a job loss.</p>
+
+  <h2>What is and is not deducted</h2>
+  <p>PAYE at the flat rate is the only standard deduction. The ACC earners’ levy of {formatPercent(P.acc.rate, 2)} is not charged, because a redundancy payment is not earnings from work done. KiwiSaver contributions are not taken from it either, and your employer owes no contribution on it. Student loan repayments at 12 % do apply when your annualised pay plus the payment is above {formatMoney(P.student_loan.threshold_annual)}. Child support deductions continue under their own rules.</p>
+  <p>The other items in a final pay are treated differently. Pay in lieu of notice, untaken annual leave and the 8 % holiday pay since your last anniversary are extra pays with the ACC levy and KiwiSaver included. The <a href={route('finalPay', lang)}>final pay calculator</a> covers those lines.</p>
+
+  <h2>How redundancy compensation is usually worked out</h2>
+  <p>With no statutory formula, agreements differ. A common pattern in collective agreements is a number of weeks of pay for the first year of service and a smaller number for each further year, sometimes with a cap. The table shows what several lengths of compensation leave after tax for someone on {formatMoney(70000)}.</p>
+  <ContentTable headers={['Compensation', 'Before tax', 'After PAYE']} align={['l', 'r', 'r']} rows={weeks} />
+  <p>Check which pay the formula uses. “Ordinary pay” usually excludes overtime and allowances, while “total remuneration” includes them. The definition in the agreement decides, and it can change the result by several thousand dollars.</p>
+
+  <h2>What the employer must do before making a role redundant</h2>
+  <p>A redundancy must be genuine: the role is no longer needed, for commercial reasons the employer can explain. Before deciding, the employer must give affected employees the information behind the proposal, a real chance to comment, and must consider those comments and any redeployment option. Notice then runs as the agreement provides. A dismissal that skips these steps can be challenged as unjustified through a personal grievance, which has to be raised within 90 days.</p>
+  <p>If the business is sold or the work is contracted out, some categories of employees, cleaners and food service workers among them, have a right to transfer to the new employer on the same terms.</p>
+
+  <h2>Using the payment well</h2>
+  <p>Three things are worth doing in the first week. Confirm the figures on your final payslip against your agreement and the tables above. Tell Inland Revenue if your tax code will change, for instance if a new part-time job becomes your only income. And check whether your KiwiSaver contributions should pause: without wages there is nothing to deduct, but you may still want to put in enough to receive the government contribution, which requires {formatMoney(P.kiwisaver.govt_max / P.kiwisaver.govt_rate, 2)} of your own money in the year to 30 June.</p>
+</Guide>

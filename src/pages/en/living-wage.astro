@@ -1,0 +1,51 @@
+---
+import MiniSim from '../../components/calc/MiniSim';
+import Guide from '../../components/Guide.astro';
+import ContentTable from '../../components/ContentTable.astro';
+import { route } from '../../i18n/routes';
+import { compute, hourlyToAnnual } from '../../lib/engine/nz';
+import { P } from '../../lib/tables';
+import { SRC } from '../../lib/sources';
+import { formatMoney, formatPercent } from '../../lib/format';
+const lang = 'en';
+const LW = P.living_wage.hourly; const MW = P.min_wage.adult;
+const wk = (h: number, hours: number) => { const g = hourlyToAnnual(h, hours); return compute({ gross: g, code: g >= P.ietc.min_income && g <= P.ietc.max_income ? 'ME' : 'M', kiwisaver: 0.035, period: 'weekly' }); };
+const full = wk(LW, 40); const minFull = wk(MW, 40);
+const rows = [40, 37.5, 30, 20].flatMap((hrs) => [[`Living Wage, ${hrs} h`, formatMoney(LW * hrs, 2), formatMoney(hourlyToAnnual(LW, hrs)), formatMoney(wk(LW, hrs).perPeriod.takeHome, 2)], [`Minimum wage, ${hrs} h`, formatMoney(MW * hrs, 2), formatMoney(hourlyToAnnual(MW, hrs)), formatMoney(wk(MW, hrs).perPeriod.takeHome, 2)]]);
+const faqs = [
+  { q: 'What is the Living Wage in NZ in 2026?', a: `${formatMoney(LW, 2)} an hour for 2026/27, the rate announced by Living Wage Movement Aotearoa NZ and applied by accredited employers from 1 September 2026. For a 40-hour week that is ${formatMoney(LW * 40, 2)} before tax and ${formatMoney(hourlyToAnnual(LW))} a year. The rate is reviewed once a year and is not set by the government.` },
+  { q: 'Is the Living Wage a legal requirement?', a: `No. The only pay floor the law enforces is the minimum wage, ${formatMoney(MW, 2)} an hour for adults since 1 April 2026. The Living Wage is a voluntary standard: employers choose to pay it, and those who commit to paying it to all staff and regular contractors can be accredited by the Living Wage Movement.` },
+  { q: 'What is the Living Wage after tax per week?', a: `About ${formatMoney(full.perPeriod.takeHome, 2)} for 40 hours, with the ME tax code and KiwiSaver at 3.5 %: PAYE of ${formatMoney(full.perPeriod.paye, 2)}, the ACC levy of ${formatMoney(full.perPeriod.acc, 2)} and a KiwiSaver contribution of ${formatMoney(full.perPeriod.kiwisaver, 2)} come out of ${formatMoney(LW * 40, 2)}. Without KiwiSaver the week’s pay is higher by that last amount.` },
+  { q: 'How much more is the Living Wage than the minimum wage?', a: `${formatMoney(LW - MW, 2)} an hour, or ${formatPercent(LW / MW - 1, 0)}. Over a full-time year the gap is ${formatMoney(hourlyToAnnual(LW) - hourlyToAnnual(MW))} before tax and roughly ${formatMoney((full.perPeriod.takeHome - minFull.perPeriod.takeHome) * 52)} after PAYE, ACC and KiwiSaver. The gap changes twice a year: the minimum wage moves on 1 April and the Living Wage on 1 September.` },
+];
+---
+<Guide id="livingWage" title="Living Wage NZ 2026/27: $29.90 an Hour and Take-Home Pay" h1="Living Wage in New Zealand: the 2026/27 rate and what it pays"
+  description="The New Zealand Living Wage for 2026/27 is $29.90 an hour from 1 September 2026. Weekly and yearly pay before and after tax, and the gap with the minimum wage."
+  intro="The Living Wage is a voluntary rate, higher than the legal minimum. Here is the 2026/27 figure and what it leaves each week."
+  resume={`The New Zealand Living Wage for 2026/27 is ${formatMoney(LW, 2)} an hour, the rate that accredited Living Wage employers pay from 1 September 2026. It is ${formatMoney(LW - MW, 2)} above the adult minimum wage of ${formatMoney(MW, 2)}, which is the only rate enforceable by law. For a 40-hour week the Living Wage gives ${formatMoney(LW * 40, 2)} before tax, about ${formatMoney(hourlyToAnnual(LW))} a year. After PAYE with the ME tax code, the ACC earners’ levy and KiwiSaver at 3.5 %, a full-time worker takes home about ${formatMoney(full.perPeriod.takeHome, 2)} a week, against ${formatMoney(minFull.perPeriod.takeHome, 2)} on the minimum wage. The rate is calculated independently each year and published by Living Wage Movement Aotearoa NZ; it has no connection with the government’s annual minimum wage review, and no employer can be compelled to pay it.`}
+  faqs={faqs} related={['minimumWage', 'hourly', 'averageSalary', 'ietcGuide', 'takeHome', 'h-30']} sources={[SRC.living_wage, SRC.min_wage, SRC.ird_rates, SRC.stats_income]}>
+  <MiniSim client:visible kind="living" lang={lang} href={route('hourly', lang)} />
+  <h2>Living Wage and minimum wage, week by week</h2>
+  <ContentTable headers={['Rate and hours', 'Weekly gross', 'Yearly gross', 'Weekly take-home (KiwiSaver 3.5 %)']} align={['l', 'r', 'r', 'r']} rows={rows} />
+  <p>Take-home figures use the ME tax code where the yearly income lies between {formatMoney(P.ietc.min_income)} and {formatMoney(P.ietc.max_income)}, the range of the independent earner tax credit, and the M code otherwise. A full-time Living Wage income of {formatMoney(hourlyToAnnual(LW))} is inside that range, which adds {formatMoney(P.ietc.amount / 52, 2)} a week for workers who receive no benefit or Working for Families payment.</p>
+
+  <h2>Where the figure comes from</h2>
+  <p>The Living Wage is defined as the income a worker needs to pay for the necessities of life and take part in the community. The original calculation, made in 2013, modelled a household of two adults and two children with one and a half incomes, and priced food, housing, transport, childcare and other basic costs. A full recalculation is made periodically; in the years between, the rate moves with the average ordinary-time hourly wage. The new rate is announced in the first half of the year and takes effect on 1 September, which is why it is labelled with two years.</p>
+  <p>The method is the reason the Living Wage can rise faster or slower than the minimum wage. The 2026 minimum wage increase was {formatPercent(P.min_wage.adult / P.min_wage.previous_adult - 1, 1)}, a figure decided by the government each April.</p>
+
+  <h2>Who pays it</h2>
+  <p>Accredited employers commit to paying at least the Living Wage to all directly employed staff and to regular contracted workers such as cleaners and security guards, with a timetable for the contractors. Accreditation is renewed each year and the list of employers is public. Several city councils, including Wellington’s, are accredited, as are some banks, universities, unions and many small businesses. Core public service departments have paid at least the Living Wage rate to their own employees since 2018, without being accredited.</p>
+  <p>If your employer advertises itself as a Living Wage employer and pays you less than {formatMoney(LW, 2)} after 1 September 2026, the remedy is through the Movement or your union rather than the Labour Inspectorate, since no law is broken.</p>
+
+  <h2>Against the median wage</h2>
+  <p>Stats NZ put the median hourly wage at {formatMoney(P.stats.median_hourly_jun2026, 2)} in the June 2026 quarter. The Living Wage is {formatPercent(LW / P.stats.median_hourly_jun2026, 0)} of that figure and the minimum wage {formatPercent(MW / P.stats.median_hourly_jun2026, 0)}. Half of all wage and salary earners are paid less than the median, so a large share of the workforce sits between the legal floor and the Living Wage. The <a href={route('averageSalary', lang)}>average salary page</a> gives the weekly and yearly medians.</p>
+
+  <h2>What the extra {formatMoney(LW - MW, 2)} an hour is worth after deductions</h2>
+  <p>Every additional dollar above the minimum wage is taxed at 17.5 %, with {formatPercent(P.acc.rate, 2)} of ACC levy and any KiwiSaver contribution on top. On 40 hours the Living Wage worker earns {formatMoney((LW - MW) * 40, 2)} more a week before deductions and keeps about {formatMoney(full.perPeriod.takeHome - minFull.perPeriod.takeHome, 2)} of it. Households receiving the Accommodation Supplement or Working for Families tax credits keep less, because those payments reduce as income rises; that interaction is the main criticism made of the Living Wage as a tool against poverty.</p>
+
+  <h2>Checking whether you are paid it</h2>
+  <p>Divide your gross pay for a period by the hours worked in it. For a salary, divide the yearly amount by 52 and then by your weekly hours: {formatMoney(hourlyToAnnual(LW))} for 40 hours is exactly the Living Wage, and {formatMoney(hourlyToAnnual(LW, 37.5))} for a 37.5-hour week. Allowances, overtime premiums and employer KiwiSaver contributions are not counted towards the rate by the Movement’s accreditation rules; the test is the base hourly wage.</p>
+
+  <h2>Part-time hours and annual income</h2>
+  <p>The Living Wage is an hourly rate; the household calculation behind it assumes full-time work. At 30 hours a week it gives {formatMoney(hourlyToAnnual(LW, 30))} a year, still above the {formatMoney(P.ietc.min_income)} needed for the independent earner tax credit. At 20 hours it gives {formatMoney(hourlyToAnnual(LW, 20))}. The <a href={route('hourly', lang)}>hourly to salary calculator</a> converts any rate and number of hours, and the <a href={route('minimumWage', lang)}>minimum wage guide</a> sets out the legal rates, including the starting-out and training rates that the Living Wage does not have.</p>
+</Guide>

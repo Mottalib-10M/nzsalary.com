@@ -14,9 +14,9 @@
  * BaseLayout, avant le chargement de gtag.js, pour qu'aucun cookie ne précède le choix.
  *
  * Le bandeau n'est rendu que si une mesure d'audience est réellement configurée
- * (GA4_ID non vide) : sans elle, le site ne dépose rien et n'a rien à demander.
+ * (GA4_ID ou CLARITY_ID non vide) : sans elle, le site ne dépose rien et n'a rien à demander.
  */
-import { GA4_ID } from '../data/site-config';
+import { GA4_ID, CLARITY_ID } from '../data/site-config';
 import { route } from '../i18n/routes';
 import { consentStrings } from '../data/consent-strings';
 
@@ -26,7 +26,7 @@ const { lang } = Astro.props;
 const s = consentStrings(lang);
 const cookiesHref = route('cookies', lang as never);
 ---
-{GA4_ID && (
+{(GA4_ID || CLARITY_ID) && (
   <>
     <div
       id="consent-banner"
@@ -38,7 +38,7 @@ const cookiesHref = route('cookies', lang as never);
       <div class="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-4 sm:py-5">
         <h2 id="consent-title" class="text-sm font-semibold text-navy-900">{s.title}</h2>
         <p class="text-sm leading-relaxed text-navy-600">
-          {s.body} <a href={cookiesHref} class="underline hover:text-navy-900">{s.more}</a>.
+          {s.body}{' '}<a href={cookiesHref} class="underline hover:text-navy-900">{s.more}</a>.
         </p>
         <div class="flex flex-col gap-2 sm:flex-row">
           <button type="button" data-consent="granted" class="rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700">{s.accept}</button>
@@ -62,6 +62,15 @@ const cookiesHref = route('cookies', lang as never);
               ad_user_data: granted ? 'granted' : 'denied',
               ad_personalization: granted ? 'granted' : 'denied',
             });
+          }
+          // Clarity : charge au premier accord, cookies retires des le refus.
+          if (typeof window.__clarityLoad === 'function') {
+            if (granted) {
+              window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' });
+              window.__clarityLoad();
+            } else if (window.__clarityOn) {
+              window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: 'denied' });
+            }
           }
         };
         var open = function () { banner.classList.remove('hidden'); };

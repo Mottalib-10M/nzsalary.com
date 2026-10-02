@@ -30,5 +30,7 @@ if (typeof window !== 'undefined') {
 export function updateURL(params: Record<string, string | number | boolean | undefined>): void {
   if (!interacted || typeof window === 'undefined') return;
   const enc = encodeState(params);
-  window.history.replaceState(null, '', `${window.location.pathname}${enc ? '?' + enc : ''}`);
+  // Appel sur le prototype : un outil de mesure (Clarity) qui surveille history.replaceState
+  // ne voit pas ce changement, et les valeurs saisies ne quittent donc pas le navigateur.
+  History.prototype.replaceState.call(window.history, null, '', `${window.location.pathname}${enc ? '?' + enc : ''}`);
 }

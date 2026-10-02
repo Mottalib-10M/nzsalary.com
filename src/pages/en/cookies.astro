@@ -4,11 +4,12 @@ import { route } from '../../i18n/routes';
 import { breadcrumbSchema } from '../../lib/seo';
 const lang = 'en';
 ---
-<PageLayout title="Cookies on NZSalary.com: What Is Set in Your Browser" description="Cookies and local storage on NZSalary.com: none for the calculators, your choice if audience measurement is ever enabled, and how to change or withdraw it at any time." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Cookies', path: route('cookies', lang) }])]} breadcrumbs={[{ label: 'Cookies' }]}>
+<PageLayout title="Cookies on NZSalary.com: What Is Set in Your Browser" description="Cookies and local storage on NZSalary.com: none for the calculators, Microsoft Clarity for audience measurement, and how to change or withdraw your choice at any time." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Cookies', path: route('cookies', lang) }])]} breadcrumbs={[{ label: 'Cookies' }]}>
   <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Cookies</h1></header>
   <div class="prose prose-slate max-w-none">
     <p>The calculators do not use cookies. They keep your inputs only in the page itself, and in the address bar when you use the share link.</p>
-    <p>No analytics or advertising cookie is set today. If audience measurement is added, a notice will inform you before anything is loaded, your choice will be kept in your browser’s local storage under the key <code>consent-choice</code>, and a link at the bottom of every page will let you change it.</p>
+    <p>We measure how the site is used with Microsoft Clarity: clicks, scrolling, pages viewed and their address, replayed as anonymous sessions and heatmaps. What you type into a field is masked in your browser before anything is sent. Clarity sets the cookies <code>_clck</code> (one year) and <code>_clsk</code> (one day), and Microsoft may set <code>MUID</code> and <code>CLID</code> on its own domains. No advertising cookie is set.</p>
+    <p>A notice tells you about it on your first visit. Clarity runs unless you choose “Opt out”; once you do, it is no longer loaded and its cookies are removed. Your choice is kept in your browser’s local storage under the key <code>consent-choice</code>, and the “Cookie settings” link at the bottom of every page lets you change it.</p>
     <p>Questions: see the <a href={route('privacy', lang)}>privacy policy</a>.</p>
   </div>
 </PageLayout>

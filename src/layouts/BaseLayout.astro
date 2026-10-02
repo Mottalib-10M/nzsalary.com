@@ -64,7 +64,7 @@ const otherLocales = LOCALES.filter((l) => l !== lang);
       <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}></script>
       <script is:inline set:html={`gtag('js',new Date());gtag('config','${GA4_ID}',{anonymize_ip:true});`} />
     </>)}
-    {/* Clarity ne se charge qu'avec un choix favorable (ou par defaut en regime 'notice').
+    {/* Clarity ne se charge qu'avec un choix favorable (ou par defaut en regime 'notice' ou 'none').
          Sans cela, seule une file d'attente vide existe : aucune requete, aucun cookie. */}
     {CLARITY_ID && (
       <script is:inline set:html={`(function(){var d='${CONSENT_MODE === 'opt-in' ? 'denied' : 'granted'}';var c=null;try{c=localStorage.getItem('consent-choice');}catch(e){}window.clarity=window.clarity||function(){(window.clarity.q=window.clarity.q||[]).push(arguments);};window.__clarityLoad=function(){if(window.__clarityOn)return;window.__clarityOn=true;var s=document.createElement('script');s.async=true;s.src='https://www.clarity.ms/tag/${CLARITY_ID}';document.head.appendChild(s);};if(c==='granted')window.clarity('consentv2',{ad_Storage:'denied',analytics_Storage:'granted'});if(c==='granted'||(c===null&&d==='granted'))window.__clarityLoad();})();`} />
@@ -134,7 +134,7 @@ const otherLocales = LOCALES.filter((l) => l !== lang);
             <p>{ui.footerBrowser}</p>
             <p>{ui.asOf} {YEAR}, {ui.lastUpdated} <time datetime={LAST_UPDATED}>{displayDate(LAST_UPDATED, LANG_TAGS[lang])}</time></p>
             <p>&copy; {new Date().getFullYear()} {SITE_NAMES[lang]}. {ui.footerDisclaimer}</p>
-            {(GA4_ID || CLARITY_ID) && <p><button type="button" data-consent-manage class="underline hover:text-navy-900">{consentStrings(lang).manage}</button></p>}
+            {(GA4_ID || CLARITY_ID) && CONSENT_MODE !== 'none' && <p><button type="button" data-consent-manage class="underline hover:text-navy-900">{consentStrings(lang).manage}</button></p>}
           </div>
         </div>
       </div>

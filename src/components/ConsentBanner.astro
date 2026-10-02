@@ -2,7 +2,9 @@
 /**
  * Bandeau de consentement (Google Consent Mode v2).
  *
- * Deux régimes, selon CONSENT_MODE dans site-config :
+ * Trois régimes, selon CONSENT_MODE dans site-config :
+ *  - 'none' : aucun bandeau ; la mesure d'audience se charge à l'ouverture de la page et les
+ *    pages cookies et confidentialité le disent (choix de l'éditeur, 2026-10-02).
  *  - 'opt-in' (UE, Suisse) : rien n'est autorisé tant que l'utilisateur n'a pas accepté.
  *    Le refus est aussi accessible que l'acceptation, au même niveau visuel (exigence CNIL,
  *    EDPB 03/2022 ; même logique pour l'AEPD, l'AP et les autorités allemandes).
@@ -16,7 +18,7 @@
  * Le bandeau n'est rendu que si une mesure d'audience est réellement configurée
  * (GA4_ID ou CLARITY_ID non vide) : sans elle, le site ne dépose rien et n'a rien à demander.
  */
-import { GA4_ID, CLARITY_ID } from '../data/site-config';
+import { GA4_ID, CLARITY_ID, CONSENT_MODE } from '../data/site-config';
 import { route } from '../i18n/routes';
 import { consentStrings } from '../data/consent-strings';
 
@@ -26,7 +28,7 @@ const { lang } = Astro.props;
 const s = consentStrings(lang);
 const cookiesHref = route('cookies', lang as never);
 ---
-{(GA4_ID || CLARITY_ID) && (
+{(GA4_ID || CLARITY_ID) && CONSENT_MODE !== 'none' && (
   <>
     <div
       id="consent-banner"

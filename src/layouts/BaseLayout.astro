@@ -3,7 +3,7 @@ import { displayDate } from '../lib/format';
 import '../styles/global.css';
 import ConsentBanner from '../components/ConsentBanner.astro';
 import { consentStrings } from '../data/consent-strings';
-import { SITE_URL, YEAR, LAST_UPDATED, BING_VERIFY_CODE, GOOGLE_VERIFY_CODE, CONSENT_MODE, GA4_ID, CLARITY_ID, THEME_COLOR, AUTHOR_NAME, SITE_NAMES, LANG_TAGS, OG_LOCALES, LOGO_SYMBOL } from '../data/site-config';
+import { SITE_URL, YEAR, LAST_UPDATED, BING_VERIFY_CODE, GOOGLE_VERIFY_CODE, CONSENT_MODE, GA4_ID, CLARITY_ID, THEME_COLOR, AUTHOR_NAME, SITE_NAMES, LANG_TAGS, OG_LOCALES } from '../data/site-config';
 import { t } from '../i18n/ui';
 import { altPaths, route, LOCALES, DEFAULT_LOCALE, type Locale } from '../i18n/routes';
 import { navCategories, navDirect, footerColumns, popularLinks } from '../i18n/nav';
@@ -76,7 +76,7 @@ const otherLocales = LOCALES.filter((l) => l !== lang);
     <nav class="fixed top-0 z-50 w-full border-b border-navy-200 bg-white" aria-label={ui.mainNav}>
       <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <a href={homeHref} class="flex items-center gap-2 font-bold text-navy-900">
-          <svg class="h-8 w-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="32" height="32" rx="8" fill={THEME_COLOR} /><text x="16" y="22" font-size={LOGO_SYMBOL.length > 1 ? 11 : 19} font-weight="800" fill="#fff" font-family="Inter, sans-serif" text-anchor="middle">{LOGO_SYMBOL}</text></svg>
+          <img src="/logo.svg" width="32" height="32" alt="" class="h-8 w-8" />
           <span>{SITE_NAMES[lang]}</span>
         </a>
         <div class="hidden items-center gap-1 lg:flex">

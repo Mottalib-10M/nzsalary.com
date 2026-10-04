@@ -4,12 +4,13 @@ import { route } from '../../i18n/routes';
 import { breadcrumbSchema } from '../../lib/seo';
 const lang = 'en';
 ---
-<PageLayout title="Cookies on NZSalary.com: What Is Set in Your Browser" description="Cookies and local storage on NZSalary.com: none for the calculators, Microsoft Clarity for audience measurement with no consent banner, and how to block it in your browser." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Cookies', path: route('cookies', lang) }])]} breadcrumbs={[{ label: 'Cookies' }]}>
+<PageLayout title="Cookies on NZSalary.com: What Is Set in Your Browser" description="Cookies and local storage on NZSalary.com: none for the calculators, Clarity and Google Analytics for statistics, no consent banner, and how to block them." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Cookies', path: route('cookies', lang) }])]} breadcrumbs={[{ label: 'Cookies' }]}>
   <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Cookies</h1></header>
   <div class="prose prose-slate max-w-none">
     <p>The calculators do not use cookies. They keep your inputs only in the page itself, and in the address bar when you use the share link.</p>
     <p>We measure how the site is used with Microsoft Clarity: clicks, scrolling, pages viewed and their address, replayed as anonymous sessions and heatmaps. What you type into a field is masked in your browser before anything is sent. Clarity sets the cookies <code>_clck</code> (one year) and <code>_clsk</code> (one day), and Microsoft may set <code>MUID</code> and <code>CLID</code> on its own domains. No advertising cookie is set.</p>
-    <p>Clarity loads when the page opens: the site shows no notice and no consent banner. To refuse it, block third-party cookies or the domain <code>clarity.ms</code> in your browser, and clear site data to remove cookies already set. The calculators work without them.</p>
+    <p>We also use Google Analytics 4 (Google Ireland Limited) to measure the pages viewed, where visits come from, their duration and engagement, device and browser type, and approximate location. It sets the cookies <code>_ga</code> (two years) and <code>_ga_TEEYWPJZ4E</code> (two years); the data is kept for 14 months.</p>
+    <p>Clarity and Google Analytics load when the page opens: the site shows no notice and no consent banner. To refuse them, block third-party cookies or the domains <code>clarity.ms</code> and <code>google-analytics.com</code> in your browser, or use the official <a href="https://tools.google.com/dlpage/gaoptout" rel="nofollow noopener" target="_blank">Google Analytics opt-out browser add-on</a>, and clear site data to remove cookies already set. The calculators work without them.</p>
     <p>Questions: see the <a href={route('privacy', lang)}>privacy policy</a>.</p>
   </div>
 </PageLayout>

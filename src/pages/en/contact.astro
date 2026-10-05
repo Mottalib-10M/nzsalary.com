@@ -12,13 +12,13 @@ const jsonLd = [contactPageSchema({ name: title, description, path: route('conta
 <PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} breadcrumbs={[{ label: 'Contact' }]}>
   <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Contact</h1></header>
   <div class="prose prose-slate max-w-none">
-    <p>Email is the only channel: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. We read every message and usually reply within a few working days.</p>
+    <p>Send your message to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Nobody answers phones here, but every email is read, and most get a reply in a few working days.</p>
     <h2>Reporting an error</h2>
     <p>Tell us the page, the salary, tax code and KiwiSaver rate you entered, the figure shown and the figure you expected, with its source if you have one: a payslip line or an Inland Revenue statement. Please do not send your IRD number, bank details or full documents; the numbers are enough.</p>
     <h2>Questions about your own situation</h2>
     <p>We cannot give personal tax advice. For your tax and student loan, Inland Revenue answers through myIR and its phone lines; for ACC levies, ACC; for employment rights such as holidays and minimum wage, Employment New Zealand.</p>
     <h2>Embedding the calculator</h2>
-    <p>The pay calculator can be embedded free of charge on any website. The code and conditions are on the <a href={route('widget', lang)}>widget page</a>.</p>
+    <p>Accountants, unions and recruiters can put the PAYE and KiwiSaver calculator on their own site at no cost. The <a href={route('widget', lang)}>widget page</a> has the code and the conditions.</p>
     <h2>Publisher</h2>
     <LegalIdentity lang="en" />
   </div>

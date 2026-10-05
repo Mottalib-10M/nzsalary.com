@@ -3,6 +3,7 @@ import PageLayout from '../../layouts/PageLayout.astro';
 import LegalIdentity from '../../components/LegalIdentity.astro';
 import { route } from '../../i18n/routes';
 import { breadcrumbSchema } from '../../lib/seo';
+import { LEGAL } from '../../data/site-config';
 const lang = 'en';
 ---
 <PageLayout title="Terms of Use and Legal Notice of NZSalary.com" description="Terms of use and legal notice of NZSalary.com: publisher, host, nature of the results, limitation of liability, reuse of content and the free embeddable pay calculator widget." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Terms of use', path: route('terms', lang) }])]} breadcrumbs={[{ label: 'Terms of use' }]}>
@@ -11,14 +12,14 @@ const lang = 'en';
     <h2>Publisher</h2>
     <LegalIdentity lang="en" />
     <h2>Host</h2>
-    <LegalIdentity lang="en" mode="hosting" />
+    <p>Hosting: GitHub Pages, from GitHub, Inc. (San Francisco, CA, USA; street address 88 Colin P Kelly Jr Street, postcode 94107), at <a href={LEGAL.hosting.url} rel="nofollow noopener" target="_blank">pages.github.com</a>. NZSalary.com runs no server of its own: the pages are static files and the PAYE engine is downloaded with them.</p>
     <h2>Nature of the results</h2>
-    <p>The calculators give estimates based on the official rates in force, read on the date shown on each page. They are not financial, tax or legal advice and do not replace your payslip, your income tax assessment or a tax agent. Your situation may involve rules the calculators do not model, listed on the <a href={route('method', lang)}>methodology page</a>.</p>
+    <p>What you see is a projection of PAYE, ACC earners’ levy, KiwiSaver and student loan deductions for the 2026-27 tax year, using Inland Revenue rates as they stood on the check date shown on each page. Use it to plan, not as financial, tax or legal advice: your payslip, the assessment Inland Revenue issues after the tax year ends on 31 March and a registered tax agent take precedence. Rules the engine does not model are on the <a href={route('method', lang)}>methodology page</a>.</p>
     <h2>Liability</h2>
-    <p>We take care to keep the rates accurate and to correct reported errors promptly, but we cannot guarantee that the site is free of error or always available. We are not liable for decisions taken on the basis of the estimates. Nothing in these terms limits a liability that cannot be limited by law, including under the Consumer Guarantees Act 1993 where it applies.</p>
+    <p>Mistakes remain possible despite careful checking, and the site may sometimes be down; reported errors are fixed promptly, but no error-free or uninterrupted service is promised. Choices made on the strength of an estimate are your own responsibility. Where the Consumer Guarantees Act 1993 or any other law prevents liability from being limited, these terms do not try to limit it.</p>
     <h2>Reuse</h2>
-    <p>Texts, tables and code on this site are protected by copyright. You may quote short extracts with a link to the page. The pay calculator may be embedded freely using the code on the <a href={route('widget', lang)}>widget page</a>, provided the credit link stays visible.</p>
+    <p>You are welcome to quote a sentence or a table row from NZSalary.com if you link to the page it came from; beyond that, the words, tables and source code are under copyright. Embedding the pay calculator is free with the code from the <a href={route('widget', lang)}>widget page</a>, as long as the credit line underneath remains.</p>
     <h2>Applicable law</h2>
-    <p>These terms are governed by French law, the law of the publisher’s establishment, without prejudice to mandatory consumer protection rules of your country of residence.</p>
+    <p>Radif Partners is based in France, so French law applies to these terms. That takes away none of the consumer protections that New Zealand law, or the law where you live, makes compulsory.</p>
   </div>
 </PageLayout>

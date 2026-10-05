@@ -11,17 +11,23 @@ const jsonLd = [webPageSchema({ name: title, description, path: route('editorial
 <PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} breadcrumbs={[{ label: 'Editorial policy' }]}>
   <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Editorial policy</h1></header>
   <div class="prose prose-slate max-w-none">
-    <h2>Sources</h2>
-    <p>Rates and rules come from primary sources only: Inland Revenue, ACC and MBIE, Employment New Zealand and Stats NZ, and the legislation they apply. Press articles and other calculators are never a source for a figure. Each page lists the sources it relies on, and each parameter in our engine carries the address it was read from.</p>
-    <h2>Figures</h2>
-    <p>Amounts on the pages are computed by the same engine as the calculators, from the same parameter file, so a correction to a rate updates every page at once. Test cases built from Inland Revenue’s published rates and thresholds run before every publication.</p>
-    <h2>Review cycle</h2>
-    <p>Every page is reviewed at least every {REVIEW_CYCLE_MONTHS} months, all parameters before each 1 April, when new rates take effect, and after each Budget. The date shown at the top and bottom of each page is the date of the last check.</p>
-    <h2>Corrections</h2>
-    <p>When we find or are told about an error, we correct it, rerun the tests and note the date of the change. Significant corrections are described on the page concerned. Reports can be sent through the <a href={route('contact', lang)}>contact page</a>.</p>
-    <h2>Independence</h2>
-    <p>No company, KiwiSaver provider or government body pays for or reviews our content. Advertising, if shown, never appears inside a calculator and never influences what we write.</p>
-    <h2>Use of software</h2>
-    <p>We use software tools, including language models, to help draft and check text. Every figure is produced by the tested engine, and every rule is checked against the official source before publication.</p>
+    <h2>Where our numbers come from</h2>
+    <ul>
+      <li>Inland Revenue: PAYE bands, tax codes, KiwiSaver, ESCT, student loan, IETC, schedular and provisional tax.</li>
+      <li>ACC and MBIE: the earners’ levy rate and the maximum liable earnings for each year.</li>
+      <li>Employment New Zealand: minimum wage, public holidays, annual holidays, sick leave and final pay.</li>
+      <li>Stats NZ: the earnings data quoted in the salary guides.</li>
+    </ul>
+    <p>The Acts those agencies administer complete the list. A media story or a rival calculator can prompt a check but never supplies a figure. Each guide names the pages it relies on, and the parameter file lists the official page behind each block of values.</p>
+    <h2>How the tax year shapes our updates</h2>
+    <p>New Zealand rates turn over on 1 April, so every parameter is reviewed before that date. Each Budget sets off another pass, as do changes announced for a later date, such as the KiwiSaver default rising to 3.5 % on 1 April 2026 and the further step planned for 2028. Apart from that, no page goes more than {REVIEW_CYCLE_MONTHS} months without being read again, and its check date is printed at the top and bottom.</p>
+    <h2>One engine behind every page</h2>
+    <p>PAYE, ACC, KiwiSaver and student loan amounts in the calculators, tables and articles are produced by the same engine reading the same 2026-27 file, so fixing a value there fixes it across the site on the next build. Automated tests pin the engine to figures published by Inland Revenue, MBIE and Work and Income, for example the maximum earners’ levy and the after-tax NZ Super rates.</p>
+    <h2>When we get it wrong</h2>
+    <p>Whether we spot an error or a reader does, the value is fixed, the tests are run again and the change is dated. If a correction moves a result noticeably, the page explains what changed. Reports are welcome through the <a href={route('contact', lang)}>contact page</a>.</p>
+    <h2>Who pays</h2>
+    <p>No employer, bank, KiwiSaver scheme provider or government agency funds NZSalary.com or reviews its pages. If ads are ever introduced they will be kept out of the calculators and will not shape the content.</p>
+    <h2>AI and other tools</h2>
+    <p>Language models and other software help us draft and proofread. Numbers are never left to them: each one is output by the tested engine, and each rule is checked against the Inland Revenue, ACC or Employment New Zealand page before publication.</p>
   </div>
 </PageLayout>

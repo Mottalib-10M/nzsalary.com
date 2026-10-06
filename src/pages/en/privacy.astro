@@ -6,7 +6,7 @@ import { breadcrumbSchema } from '../../lib/seo';
 import { CONTACT_EMAIL, LEGAL } from '../../data/site-config';
 const lang = 'en';
 ---
-<PageLayout title="Privacy Policy of NZSalary.com: What We Collect and Why" description="Privacy policy of NZSalary.com: calculations run in your browser, no personal data is sent, no account is needed, and what hosting logs and optional analytics involve." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Privacy', path: route('privacy', lang) }])]} breadcrumbs={[{ label: 'Privacy' }]}>
+<PageLayout title="Privacy Policy of NZSalary.com: What We Collect and Why" description="Privacy policy of NZSalary.com: calculations run in your browser, no cookies, no visitor records, hosting logs and a cookieless Clarity stability check." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Privacy', path: route('privacy', lang) }])]} breadcrumbs={[{ label: 'Privacy' }]}>
   <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Privacy policy</h1></header>
   <div class="prose prose-slate max-w-none">
     <h2>Controller</h2>
@@ -15,11 +15,15 @@ const lang = 'en';
     <p>Nothing leaves your device. Gross pay, tax code, KiwiSaver rate, student loan: the PAYE engine works them through in your browser, so they never reach us or anyone else, are saved on no server and cannot be connected to you. No account, newsletter or form exists to gather personal information. Once you edit a field, the address bar carries your values so the link can be shared; only the people who receive that link see them.</p>
     <h2>What the host sees</h2>
     <p>{LEGAL.hosting.name} serves the pages. Each request leaves a standard log entry (IP address, page, time, browser type) that the host keeps to run and protect the service. We make no use of those entries to identify anyone.</p>
-    <h2>Statistics: Clarity and Google Analytics</h2>
+    <h2>No cookies, no visitor records</h2>
+    <p>NZSalary.com sets no cookie and stores nothing on your device. The publisher keeps no personal information about the people who visit and runs no audience analytics.</p>
+    <h2>Stability check: Microsoft Clarity without cookies</h2>
     <ul>
-      <li><strong>Microsoft Clarity</strong> (Microsoft Corporation) logs clicks, scroll depth, the pages viewed and their addresses, device, browser and a location estimated from the IP address, to build heatmaps and anonymous replays. Text typed into fields is masked before sending, but the values inside a shared link form part of the address it logs. Replays are kept 30 days and aggregates up to 13 months, possibly outside New Zealand, for instance in the United States (see the <a href="https://privacy.microsoft.com/privacystatement" rel="nofollow noopener" target="_blank">Microsoft privacy statement</a>).</li>
-      <li><strong>Google Analytics 4</strong> (Google Ireland Limited) counts page views, referral sources, session length and engagement, device and browser, and a city-level location derived from an IP address it does not keep. Reports are held for 14 months. Data can go to Google LLC in the United States, certified under the EU–U.S. Data Privacy Framework (see the <a href="https://policies.google.com/privacy" rel="nofollow noopener" target="_blank">Google privacy policy</a>).</li>
-      <li>Both load with the first page, with no notice and no consent banner. To opt out, block third-party cookies or the clarity.ms and google-analytics.com domains, or install Google’s <a href="https://tools.google.com/dlpage/gaoptout" rel="nofollow noopener" target="_blank">opt-out add-on</a>; the <a href={route('cookies', lang)}>cookies page</a> lists each cookie. The calculators behave the same without them.</li>
+      <li><strong>What it sees:</strong> script errors, load times, dead clicks, scroll depth, device and browser type. Page text and form entries are masked before leaving the browser; the page address it notes can still contain the values of a shared calculator link.</li>
+      <li><strong>How it runs:</strong> storage is refused before the script loads, so no cookie is written (no <code>_clck</code>, <code>_clsk</code>, <code>MUID</code> or <code>CLID</code>), each page view has its own identifier and visits are not linked.</li>
+      <li><strong>Who runs it:</strong> Microsoft Ireland Operations Limited, One Microsoft Place, South County Business Park, Leopardstown, Dublin 18, Ireland. Recordings are kept 30 days and aggregates 13 months, possibly outside New Zealand, for instance in the United States (see the <a href="https://privacy.microsoft.com/privacystatement" rel="nofollow noopener" target="_blank">Microsoft privacy statement</a>).</li>
+      <li><strong>Why:</strong> a legitimate interest in keeping the calculators working (Art. 6(1)(f) GDPR, the publisher being in France), a purpose connected with running the site as the Privacy Act 2020 expects.</li>
+      <li><strong>Opting out:</strong> block clarity.ms, or write to us; the <a href={route('cookies', lang)}>cookies page</a> has the detail. The calculators behave the same without it.</li>
       <li>No advertising script runs on NZSalary.com.</li>
     </ul>
     <h2>Your rights</h2>

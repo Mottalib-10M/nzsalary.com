@@ -4,15 +4,17 @@ import { route } from '../../i18n/routes';
 import { breadcrumbSchema } from '../../lib/seo';
 const lang = 'en';
 ---
-<PageLayout title="Cookies on NZSalary.com: What Is Set in Your Browser" description="Cookies and local storage on NZSalary.com: none for the calculators, Clarity and Google Analytics for statistics, no consent banner, and how to block them." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Cookies', path: route('cookies', lang) }])]} breadcrumbs={[{ label: 'Cookies' }]}>
+<PageLayout title="Cookies on NZSalary.com: None Set in Your Browser" description="NZSalary.com sets no cookies and keeps nothing in local storage. A cookieless Microsoft Clarity script only checks that the PAYE calculators load and work." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Cookies', path: route('cookies', lang) }])]} breadcrumbs={[{ label: 'Cookies' }]}>
   <header class="mb-6"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Cookies</h1></header>
   <div class="prose prose-slate max-w-none">
+    <h2>Does NZSalary.com set cookies?</h2>
+    <p>No. Not one cookie is written to your browser by this site or by a third party, which is why you never see a pop-up asking you to accept anything.</p>
     <h2>Does the pay calculator store anything?</h2>
-    <p>No cookie, no local storage. Your pay, tax code and KiwiSaver rate live in the open tab; after you edit a field they also appear in the address bar, which is what lets you share a link to your result.</p>
-    <h2>What do the statistics tools store?</h2>
-    <p>Two analytics services write cookies. Microsoft Clarity, which turns visits into heatmaps and anonymous replays with typed values masked, keeps <code>_clck</code> for a year and <code>_clsk</code> for a day, and Microsoft can add <code>MUID</code> and <code>CLID</code> on its own domains. Google Analytics 4, from Google Ireland Limited, keeps <code>_ga</code> and <code>_ga_TEEYWPJZ4E</code> for two years each to count page views, referrers, time spent, engagement, device and rough location, and holds its reports for 14 months. Neither writes an advertising cookie.</p>
-    <h2>How do I switch them off?</h2>
-    <p>There is no pop-up asking for consent: both scripts run from the first page view. Your browser can stop them if you block third-party cookies or the <code>clarity.ms</code> and <code>google-analytics.com</code> domains, and Google publishes an <a href="https://tools.google.com/dlpage/gaoptout" rel="nofollow noopener" target="_blank">opt-out add-on</a> for Analytics. Delete the site’s data to clear cookies already written. PAYE, KiwiSaver and student loan results come out the same.</p>
-    <p>Questions: see the <a href={route('privacy', lang)}>privacy policy</a>.</p>
+    <p>No cookie, no local storage, no session storage. Your pay, tax code, KiwiSaver rate and student loan setting live in the open tab; after you edit a field they also appear in the address bar, which is what lets you share a link to your result.</p>
+    <h2>What is the Microsoft Clarity script for?</h2>
+    <p>It is a stability check, nothing more. Clarity runs in cookieless mode: the page tells it that storage is denied before the script loads, so <code>_clck</code>, <code>_clsk</code>, <code>MUID</code> and <code>CLID</code> are never set. Every page view gets a new identifier and two visits cannot be tied together. It reports what helps us fix the site: JavaScript errors, page load times, taps that do nothing and how far people scroll. The text on the page and the figures you type are masked in your browser before anything is sent.</p>
+    <p>Clarity is provided by Microsoft Ireland Operations Limited, One Microsoft Place, South County Business Park, Leopardstown, Dublin 18, Ireland. Recordings are kept 30 days and aggregated figures 13 months. We use it on the basis of a legitimate interest in keeping the PAYE, KiwiSaver and student loan tools working. Don’t want it? Block <code>clarity.ms</code> in your browser or content blocker, or email us; your results come out the same.</p>
+    <h2>Anything else?</h2>
+    <p>No audience analytics, no advertising and no social media tracking. The publisher records no personal information about visitors. More in the <a href={route('privacy', lang)}>privacy policy</a>.</p>
   </div>
 </PageLayout>

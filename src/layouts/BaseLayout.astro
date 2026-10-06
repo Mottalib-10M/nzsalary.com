@@ -64,13 +64,21 @@ const otherLocales = LOCALES.filter((l) => l !== lang);
       <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}></script>
       <script is:inline set:html={`gtag('js',new Date());gtag('config','${GA4_ID}',{anonymize_ip:true});`} />
     </>)}
-    {/* Clarity ne se charge qu'avec un choix favorable (ou par defaut en regime 'notice' ou 'none').
-         Sans cela, seule une file d'attente vide existe : aucune requete, aucun cookie. */}
-    {CLARITY_ID && (
+    {/* Régime 'none' (règle du 2026-10-06, RECETTE §15.6) : aucun bandeau, aucun cookie.
+         Clarity est chargé en mode sans consentement : le signal consentv2 « denied » est mis
+         en file AVANT le script, donc Clarity ne pose aucun cookie (_clck, _clsk, MUID, CLID),
+         donne un identifiant par page vue et ne relie pas les sessions. Mesure technique et
+         anonyme de la stabilité (erreurs, performances, clics inopérants), contenu masqué. */}
+    {CLARITY_ID && CONSENT_MODE === 'none' && (
+      <script is:inline set:html={`(function(){window.clarity=window.clarity||function(){(window.clarity.q=window.clarity.q||[]).push(arguments);};window.clarity('consentv2',{ad_Storage:'denied',analytics_Storage:'denied'});var s=document.createElement('script');s.async=true;s.src='https://www.clarity.ms/tag/${CLARITY_ID}';document.head.appendChild(s);})();`} />
+    )}
+    {/* Régimes 'opt-in' / 'notice' (anciens) : Clarity ne se charge qu'avec un choix favorable
+         (ou par défaut en 'notice'). Sans cela, seule une file d'attente vide existe. */}
+    {CLARITY_ID && CONSENT_MODE !== 'none' && (
       <script is:inline set:html={`(function(){var d='${CONSENT_MODE === 'opt-in' ? 'denied' : 'granted'}';var c=null;try{c=localStorage.getItem('consent-choice');}catch(e){}window.clarity=window.clarity||function(){(window.clarity.q=window.clarity.q||[]).push(arguments);};window.__clarityLoad=function(){if(window.__clarityOn)return;window.__clarityOn=true;var s=document.createElement('script');s.async=true;s.src='https://www.clarity.ms/tag/${CLARITY_ID}';document.head.appendChild(s);};if(c==='granted')window.clarity('consentv2',{ad_Storage:'denied',analytics_Storage:'granted'});if(c==='granted'||(c===null&&d==='granted'))window.__clarityLoad();})();`} />
     )}
   </head>
-  <body class="min-h-screen bg-white text-navy-900 antialiased">
+  <body class="min-h-screen bg-white text-navy-900 antialiased" data-clarity-mask="true">
     <a href="#main-content" class="skip-link">{ui.skipToContent}</a>
     <header>
     <nav class="fixed top-0 z-50 w-full border-b border-navy-200 bg-white" aria-label={ui.mainNav}>

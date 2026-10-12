@@ -15,7 +15,7 @@ html { font-size: 17px; } body { line-height: 1.65; } .tabular-nums { font-varia
 .skip-link { position: absolute; top: -100%; left: 50%; transform: translateX(-50%); z-index: 100; padding: .75rem 1.5rem; background: var(--color-accent-600); color: #fff; font-weight: 600; border-radius: 0 0 .5rem .5rem; text-decoration: none; transition: top .2s; } .skip-link:focus { top: 0; }
 *:focus-visible { outline: 2px solid var(--color-accent-500); outline-offset: 2px; } input:focus-visible, select:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-accent-500); border-color: var(--color-accent-500); }
 @media print { nav, footer, .no-print, .skip-link, #mobile-menu-toggle, #mobile-menu { display: none !important; } body { color: #000 !important; background: #fff !important; font-size: 11pt; } main { padding-top: 0 !important; } h1, h2, h3 { page-break-after: avoid; } table { page-break-inside: avoid; } }
-.prose h2 { margin-top: 1.25em; padding-top: 1em; border-top: 1px solid var(--color-navy-200); } .prose h2:first-child { margin-top: 0; padding-top: 0; border-top: none; } .prose h3 { margin-top: 2em; } .prose p { margin-top: 1.4em; margin-bottom: 1.4em; } .prose li { margin-top: .6em; margin-bottom: .6em; }
+.prose h2 { margin-top: 1.25em; padding-top: 1em; border-top: 1px solid var(--color-navy-200); } .prose h2:first-child { margin-top: 0; padding-top: 0; border-top: none; } .prose h3 { margin-top: 2em; } .prose p:not(.not-prose *) { margin-top: 1.4em; margin-bottom: 1.4em; } .prose li { margin-top: .6em; margin-bottom: .6em; }
 .prose table { margin-top: 2em; margin-bottom: 2em; font-size: .95em; } .prose th, .prose td { padding: .65em .9em; } .prose thead th { background-color: var(--color-navy-50); font-weight: 600; }
 .callout { padding: 1.25rem 1.5rem; border-left: 4px solid; border-radius: .5rem; margin: 2em 0; font-size: .95rem; line-height: 1.7; } .callout p:first-child { margin-top: 0; } .callout p:last-child { margin-bottom: 0; } .callout-title { font-weight: 700; margin-bottom: .35em; display: block; }
 .callout-info { border-left-color: #2563eb; background-color: #eff6ff; color: #1e3a8a; } .callout-tip { border-left-color: #15803d; background-color: #f0fdf4; color: #14532d; } .callout-warning { border-left-color: #b45309; background-color: #fffbeb; color: #78350f; } .callout-example { border-left-color: #64748b; background-color: #f8fafc; color: #1e293b; }
@@ -25,6 +25,18 @@ h1, h2, h3, h4 { hyphens: auto; overflow-wrap: break-word; }
 
 /* Rythme vertical (RECETTE §10.3) : le contenu ne touche jamais le calculateur. */
 .rechner { margin-bottom: 3rem; }
+/* Chapeau replié (RECETTE §26) : un seul <p> dans le HTML, l'écran montre la première phrase,
+   « Read the full answer » déplie le reste sans JavaScript, à la suite de la dernière ligne. */
+.clamp { position: relative; }
+.clamp-rest { display: none; }
+.clamp-toggle { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.clamp-toggle:checked ~ p .clamp-rest { display: inline; }
+.clamp-toggle:checked ~ .clamp-more { display: none; }
+.clamp > p { display: inline; }
+.clamp-more { display: inline-block; cursor: pointer; margin-left: 0.25rem; font-size: 0.875rem; font-weight: 600; color: var(--color-accent-700); text-decoration: underline; text-underline-offset: 3px; }
+.clamp-toggle:focus-visible ~ .clamp-more { outline: 2px solid #111827; outline-offset: 3px; }
+/* Premier écran (RECETTE §5, 2026-10-11) : le mini-simulateur qui ouvre un guide suit le chapeau de près. */
+.prose > astro-island:first-of-type > .rechner-mini, .prose > .rechner-mini:first-child { margin-top: 0.75rem; }
 .prose .overflow-x-auto { margin-top: 1.75em; margin-bottom: 1.75em; } .prose .overflow-x-auto > table { margin-top: 0; margin-bottom: 0; }
 
 /* Aide d'un champ (RECETTE §10.3) : dans une rangée à deux champs, si le voisin de droite n'a pas

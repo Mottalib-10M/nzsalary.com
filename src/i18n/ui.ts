@@ -1,6 +1,6 @@
 import type { Locale } from './routes';
 const en = {
-  updatedOn: 'Updated on', editorialPolicy: 'Editorial policy', contactLabel: 'Contact', reviewedBy: 'Reviewed by',
+  updatedOn: 'Updated on', editorialPolicy: 'Editorial policy', contactLabel: 'Contact', reviewedBy: 'Reviewed by', readMore: 'Read the full answer',
   skipToContent: 'Skip to content', mainNav: 'Main navigation', breadcrumbLabel: 'Breadcrumb', breadcrumbHome: 'Home', menuOpen: 'Open the menu',
   faqTitle: 'Questions people ask', relatedCalculators: 'Related calculators and guides', sourcesTitle: 'Sources', writtenBy: 'Written by',
   asOf: 'Rates for', lastUpdated: 'last checked on', footerValidated: 'Inland Revenue rates for 2026-27 · ACC 1.75 % · KiwiSaver 3.5 %',

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import NumberField from '../ui/NumberField';
 import SelectField from '../ui/SelectField';
 import Toggle from '../ui/Toggle';
@@ -30,6 +30,16 @@ export default function NzCalculator({ mode = 'paye', initialGross = 65000, init
   const [wt, setWt] = useState(num(sp, 'wt', 20));
   const [earn, setEarn] = useState(num(sp, 'e', 20000));
   const [copied, setCopied] = useState(false);
+  // Téléphone : tant que la carte du résultat est sous l'écran, une barre collée en bas montre le chiffre clé (RECETTE §5, 2026-10-11).
+  const card = useRef<HTMLDivElement>(null);
+  const [below, setBelow] = useState(false);
+  useEffect(() => {
+    const el = card.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setBelow(!e.isIntersecting && e.boundingClientRect.top > 0));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   useEffect(() => {
     const u = readParams(window.location.search);
     setGross(num(u, 'g', initialGross)); setNet(num(u, 'n', 50000)); setHourly(num(u, 'h', initialHourly)); setHours(num(u, 'hw', 40));
@@ -95,7 +105,7 @@ export default function NzCalculator({ mode = 'paye', initialGross = 65000, init
           <p className="text-xs text-navy-500">Calculated in your browser · nothing is sent · free</p>
         </form>
         <div className="lg:col-span-3" aria-live="polite">
-          <div className="rounded-lg border border-accent-200 bg-white p-5">
+          <div ref={card} data-resultat className="rounded-lg border border-accent-200 bg-white p-5">
             <div className="mb-4 text-center">
               <p className="text-sm font-medium text-navy-500">{head.l}</p>
               <p className="tabular-nums mt-1 text-4xl font-bold text-navy-900 sm:text-5xl">{head.v}</p>
@@ -155,6 +165,13 @@ export default function NzCalculator({ mode = 'paye', initialGross = 65000, init
               <button type="button" onClick={() => window.print()} className="rounded-lg border border-navy-300 bg-white px-3 py-1.5 text-sm font-medium text-navy-700 hover:bg-navy-50">Print</button>
               {methodHref && <a href={methodHref} className="ml-auto self-center text-sm text-accent-700 hover:underline">How this is calculated</a>}
             </div>
+            {below && (
+              <button type="button" aria-hidden="true" tabIndex={-1} onClick={() => card.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="no-print fixed inset-x-0 bottom-0 z-40 flex items-baseline justify-between gap-3 border-t border-accent-200 bg-white px-4 py-3 text-left shadow-lg lg:hidden">
+                <span className="text-sm font-medium text-navy-600">{head.l}</span>
+                <span className="tabular-nums text-xl font-bold text-navy-900">{head.v}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

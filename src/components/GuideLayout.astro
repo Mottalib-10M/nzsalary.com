@@ -2,6 +2,7 @@
 import { LANG_TAGS as __LT } from '../data/site-config';
 import { displayDate } from '../lib/format';
 import PageLayout from '../layouts/PageLayout.astro';
+import Clamp from './Clamp.astro';
 import { route, type Locale } from '../i18n/routes';
 import { t } from '../i18n/ui';
 import { articleSchema, faqSchema, breadcrumbSchema, webPageSchema, type FAQItem } from '../lib/seo';
@@ -13,13 +14,15 @@ const path = route(id, lang);
 const jsonLd = [articleSchema({ title: h1, description, path, lang }), webPageSchema({ name: h1, description, path, lang }), breadcrumbSchema([{ name: t(lang).breadcrumbHome, path: route('home', lang) }, { name: breadcrumbLabel, path }])];
 if (faqs.length) jsonLd.push(faqSchema(faqs, lang));
 ---
-<PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} faqs={faqs} related={related} sources={sources} breadcrumbs={[{ label: breadcrumbLabel }]} noindex={noindex} showAuthor={showAuthor}>
+<PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} faqs={faqs} related={related} sources={sources} breadcrumbs={[{ label: breadcrumbLabel }]} noindex={noindex} showAuthor={showAuthor} compact>
+  {/* Premier écran (RECETTE §5, 2026-10-11) : « Reviewed by » rejoint la date dans la rangée du fil d'Ariane. */}
+  <Fragment slot="crumb-extra">{' · '}{ui.reviewedBy}{' '}<a href={route('about', lang)} class="text-accent-600 hover:underline">{AUTHOR_NAME}</a>{' · '}<a href={route('editorial', lang)} class="text-accent-600 hover:underline">{ui.editorialPolicy}</a></Fragment>
   <article>
-    <header class="mb-8"><h1 class="text-3xl font-bold text-navy-900 md:text-4xl">{h1}</h1>{intro && <p class="mt-3 text-lg text-navy-600">{intro}</p>}
-      <p class="mt-4 text-sm text-navy-500">{ui.reviewedBy} <a href={route('about', lang)} class="text-accent-600 hover:underline">{AUTHOR_NAME}</a> · <a href={route('editorial', lang)} class="text-accent-600 hover:underline">{ui.editorialPolicy}</a></p></header>
+    <header class="mb-4"><h1 class="text-[1.75rem] font-bold text-navy-900 max-sm:leading-tight sm:text-3xl md:text-4xl">{h1}</h1>{intro && <p class="mt-2 text-base text-navy-600 sm:text-lg">{intro}</p>}</header>
     {/* §21 : le paragraphe citable vit dans le corps, jamais dans le <header>,
-        que les moteurs traitent comme un ornement et que check-seo retire. */}
-    {resume && <p class="mb-6 text-navy-700">{resume}</p>}
+        que les moteurs traitent comme un ornement et que check-seo retire.
+        Replié sur sa première phrase (§26) : un seul <p>, entier dans le HTML. */}
+    {resume && <Clamp text={resume} lang={lang} id={`clamp-${id}`} class="mb-3 text-navy-700" />}
     <div class="prose prose-slate max-w-none"><slot /></div>
   </article>
 </PageLayout>

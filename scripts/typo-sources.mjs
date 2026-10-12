@@ -37,6 +37,16 @@ const EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.astro', '.md', '.mdx
 // de son explication et la mention de pied de page. Le demi-cadratin « – »
 // reste légitime dans les intervalles et n'est pas touché.
 const EM_DASH = /\s*(?:—|&mdash;|&#8212;)\s*/g;
+// Un tiret seul n'est pas une incise : valeur vide d'une case (« — »), puce ou
+// début de ligne. Le remplacer par une virgule affichait « , » dans les tableaux
+// et « , Choisir, » dans les listes (guidevoitureelectrique.fr, 2026-10-12). Seul
+// le tiret pris entre deux mots devient une virgule ; les autres deviennent « – ».
+const remplaceCadratin = (m, off, str) => {
+  const avant = str.slice(Math.max(0, off - 1), off), apres = str.slice(off + m.length, off + m.length + 1);
+  const mot = /[\p{L}\p{N})»%€$]/u;
+  return mot.test(avant) && /[\p{L}\p{N}(«]/u.test(apres) ? ', ' : m.replace(/\u2014|&mdash;|&#8212;/, '\u2013');
+};
+
 
 // Typographie française : espace insécable avant les deux-points, le point-virgule,
 // le point d'interrogation, le point d'exclamation et le guillemet fermant, et
@@ -161,7 +171,7 @@ let total = 0, fichiers = 0, insecables = 0;
 for await (const f of parcourir(racine)) {
   const source = await readFile(f, 'utf8');
   const n = (source.match(EM_DASH) || []).length;
-  let texte = source.replace(EM_DASH, ', ');
+  let texte = source.replace(EM_DASH, remplaceCadratin);
   let poses = 0;
   if (FR && /\.(ts|tsx|js|jsx|astro)$/.test(f)) ({ sortie: texte, poses } = espacesFrancaises(texte));
   if (!n && !poses) continue;

@@ -43,6 +43,16 @@ const FR_AFTER = /« /g;
 // ses deux entites. Ne traiter que la premiere laissait passer la majorite
 // des cas, les gabarits Astro ecrivant volontiers `&mdash;`.
 const EM_DASH = /\s*(?:\u2014|&mdash;|&#8212;)\s*/g;
+// Un tiret seul n'est pas une incise : valeur vide d'une case (« — »), puce ou
+// début de ligne. Le remplacer par une virgule affichait « , » dans les tableaux
+// et « , Choisir, » dans les listes (guidevoitureelectrique.fr, 2026-10-12). Seul
+// le tiret pris entre deux mots devient une virgule ; les autres deviennent « – ».
+const remplaceCadratin = (m, off, str) => {
+  const avant = str.slice(Math.max(0, off - 1), off), apres = str.slice(off + m.length, off + m.length + 1);
+  const mot = /[\p{L}\p{N})»%€$]/u;
+  return mot.test(avant) && /[\p{L}\p{N}(«]/u.test(apres) ? ', ' : m.replace(/\u2014|&mdash;|&#8212;/, '\u2013');
+};
+
 
 // Les dossiers d'archive ne sont pas servis : les corriger reviendrait a
 // travailler sur un site fantome.
@@ -68,7 +78,7 @@ function fix(html) {
   // Réécrire 106 appels à `toFixed()` site par site ne tenait pas ; la correction se
   // fait donc ici, sur le seul texte que le lecteur voit (rightetf.com, 2026-09-21).
   const { lang } = dotDecimals(html);
-  const virgule = lang && !/^(en|ja|ko|zh|th|he|hi|bn|ar|ms|id)|^de-CH|^it-CH/i.test(lang);
+  const virgule = lang && !/^(en|ja|ko|zh|th|he|hi|bn|ar|ms|id)|^de-CH|^it-CH|^es-(MX|US|PR|DO|GT|HN|NI|PA|SV)/i.test(lang);
   let count = 0, decimales = 0, cadratins = 0;
   // `application/ld+json` n'est pas du code : c'est le même texte que la page,
   // déclaré à Google. Le sauter faisait diverger la réponse déclarée de la
@@ -90,7 +100,7 @@ function fix(html) {
     if (dedans === 'saut' || !part.trim()) return part;
     const ldJson = dedans === 'ld' ? 1 : 0;
     const typographie = (texte) => {
-      let t = texte.replace(EM_DASH, () => (cadratins++, ', '));
+      let t = texte.replace(EM_DASH, (m, off, str) => (cadratins++, remplaceCadratin(m, off, str)));
       t = t.replace(UNIT, (_, d) => (count++, d + NB));
       if (fr) t = t.replace(FR_BEFORE, () => (count++, NB)).replace(FR_AFTER, () => (count++, '«' + NB));
       if (virgule) t = t.replace(DOT_DECIMAL, (m) => (decimales++, m.replace('.', ',')));
@@ -137,7 +147,7 @@ function texteVisible(html) {
 
 function dotDecimals(html) {
   const lang = (html.match(/<html[^>]*\blang="([^"]+)"/i) || [])[1] || '';
-  if (/^(en|ja|ko|zh|th|he|hi|bn|ar|ms|id)|^de-CH|^it-CH/i.test(lang)) return { lang, hits: [] };   // point décimal : anglais, japonais, coréen, chinois, thaï, hébreu, hindi, bengali, arabe (chiffres latins), malais, indonésien, suisse allemand et italien (CLDR)
+  if (/^(en|ja|ko|zh|th|he|hi|bn|ar|ms|id)|^de-CH|^it-CH|^es-(MX|US|PR|DO|GT|HN|NI|PA|SV)/i.test(lang)) return { lang, hits: [] };   // point décimal : anglais, japonais, coréen, chinois, thaï, hébreu, hindi, bengali, arabe (chiffres latins), malais, indonésien, suisse allemand et italien (CLDR)
   const text = texteVisible(html);
   // Numéro de version (« iDrive 8.5 », « Safety Sense 3.0 », « Blade 2.0 », « mise à jour
   // logicielle 3.5 », « un 2.0 turbo ») : nom propre ou « version / logicielle / un » juste avant,

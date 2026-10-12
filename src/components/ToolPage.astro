@@ -20,15 +20,15 @@ const path = route(id, lang);
 const jsonLd = [webApplicationSchema({ name: h1, description, path, lang }), webPageSchema({ name: h1, description, path, lang }), faqSchema(faqs, lang), breadcrumbSchema([{ name: ui.breadcrumbHome, path: route('home', lang) }, { name: label(id), path }])];
 const rel = related.map((r) => ({ href: route(r, lang), name: label(r), description: '' }));
 ---
-<PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} faqs={faqs} related={rel} sources={sources} breadcrumbs={[{ label: label(id) }]}>
-  <header class="mb-6">
-    <h1 class="text-3xl font-bold text-navy-900 md:text-4xl">{h1}</h1>
-    <p class="mt-3 text-lg text-navy-600">{intro}</p>
-    <p class="mt-2 text-sm text-navy-500">{ui.reviewedBy} <a href={route('about', lang)} class="text-accent-700 hover:underline">{AUTHOR_NAME}</a></p>
+<PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} faqs={faqs} related={rel} sources={sources} breadcrumbs={[{ label: label(id) }]} compact>
+  <header class="mb-4">
+    <h1 class="text-[1.75rem] font-bold text-navy-900 max-sm:leading-tight sm:text-3xl md:text-4xl">{h1}</h1>
+    <p class="mt-2 text-base text-navy-600 sm:text-lg">{intro}</p>
   </header>
   <div data-outil>
     <NzCalculator client:load mode={mode} methodHref={route('method', lang)} initialGross={initialGross} initialHourly={initialHourly} initialPeriod={initialPeriod} />
   </div>
+  <p class="mb-6 text-sm text-navy-500">{ui.reviewedBy} <a href={route('about', lang)} class="text-accent-700 hover:underline">{AUTHOR_NAME}</a></p>
   <AdSlot slot={`${id}-1`} />
   <section class="prose prose-slate max-w-none"><slot /></section>
 </PageLayout>

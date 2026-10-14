@@ -19,6 +19,15 @@
  *      dépasser — la zone colorée couvre toute l'option.
  *   10. Aide d'un champ coincée : dans une rangée à deux champs, aide sur 2 lignes ou plus dans
  *      une demi-colonne alors que le voisin n'en a pas (elle doit s'étendre sur la rangée).
+ *   11. Unité dans le champ (« $ », « € », « mo ») : centrée verticalement sur le champ (±3 px) et
+ *      dedans. Un conteneur `relative` étiré par la grille fait glisser l'unité sous le champ
+ *      (plans65.com, 2026-10-14).
+ *   12. Liste déroulante : flèche dessinée par le site (appearance: none) avec ≥ 28 px de marge
+ *      droite pour le texte ; la flèche native se colle au bord et le texte long bute dessus
+ *      (plans65.com, 2026-10-14).
+ *   13. Blanc avant le titre : ≤ 80 px entre le bas de l'en-tête et le haut du H1 (bureau). La date
+ *      de mise à jour seule sur sa ligne, avec marge haute et basse, en laissait ≈ 100
+ *      (plantcare101.com, 2026-10-14) : elle va à droite sur la ligne fine du fil d'Ariane.
  *   7. Hydratation (même page) : aucune erreur React (#418…) au chargement le surlendemain du
  *      build, ni sur un lien partagé rechargé. Lire l'URL ou la date du jour pendant le premier
  *      rendu donne un HTML différent de celui du build : l'erreur survient à chaque visite.
@@ -164,6 +173,40 @@ function inspect(__EDITORIAL__) {
         out.push(`colonne trop étroite : ${Math.round(right - left)} px dans ${Math.round(width)} px, `
           + `${Math.round(gapL)} px de vide de chaque côté`);
       }
+    }
+  }
+  // 11 — unité posée dans le champ
+  for (const inp of document.querySelectorAll('main input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range])')) {
+    if (!vis(inp)) continue;
+    const ir = inp.getBoundingClientRect();
+    for (const u of inp.parentElement?.children || []) {
+      if (u === inp || !vis(u) || getComputedStyle(u).position !== 'absolute') continue;
+      const t = u.textContent.trim(); if (!t || t.length > 8) continue;
+      const ur = u.getBoundingClientRect();
+      const dc = (ur.top + ur.height / 2) - (ir.top + ir.height / 2);
+      if (Math.abs(dc) > 3 || ur.top < ir.top - 1 || ur.bottom > ir.bottom + 1)
+        out.push(`unité « ${t} » décalée de ${Math.round(dc)} px par rapport au centre du champ #${inp.id || inp.name || '?'}`);
+    }
+  }
+  // 12 — flèche des listes déroulantes
+  for (const sel of document.querySelectorAll('main select:not([multiple])')) {
+    if (!vis(sel) || (sel.size && sel.size > 1)) continue;
+    const cs = getComputedStyle(sel);
+    if (cs.appearance !== 'none' && cs.webkitAppearance !== 'none') out.push(`liste #${sel.id || sel.name || '?'} : flèche native collée au bord (appearance: ${cs.appearance}) — dessiner la flèche, marge droite ≥ 28 px`);
+    else if (parseFloat(cs.paddingRight) < 28) out.push(`liste #${sel.id || sel.name || '?'} : marge droite de ${Math.round(parseFloat(cs.paddingRight))} px, le texte passe sous la flèche`);
+  }
+  // 13 — blanc entre l'en-tête et le titre
+  {
+    const h1 = main && [...main.querySelectorAll('h1')].find(vis);
+    const hd = document.querySelector('body > header, header');
+    if (h1 && hd && innerWidth >= 1024) {
+      const top = h1.getBoundingClientRect().top + parseFloat(getComputedStyle(h1).paddingTop);
+      // L'élément <header> peut ne mesurer que 0 px (barre en position fixe dans un
+      // conteneur sans hauteur, plans65.com) : on prend le bas du plus bas de ses
+      // éléments visibles du haut de l'écran.
+      const hb = Math.max(hd.getBoundingClientRect().bottom, ...[...hd.querySelectorAll('*')].filter(vis).map((e) => e.getBoundingClientRect().bottom).filter((b) => b < 220));
+      const blank = top - hb;
+      if (blank > 80 && h1.getBoundingClientRect().top < innerHeight) out.push(`blanc avant le titre : ${Math.round(blank)} px sous l'en-tête (≤ 80) — date à droite sur une ligne fine, pas seule sur sa ligne`);
     }
   }
   // 10 — aide coincée dans une demi-colonne
@@ -360,7 +403,7 @@ for (const [vw, vh, label] of LARGEURS) {
       if (over > 1) issues.push(`débordement horizontal de ${over} px`);
     }
     const path = u.replace(base, '') || '/';
-    for (const i of issues) if (label === 'desktop' || !/contenu décentré|rangée/.test(i)) faults.push(`[${label}] ${path} — ${i}`);
+    for (const i of issues) if (label === 'desktop' || !/contenu décentré|rangée|blanc avant le titre|unité «|^liste #/.test(i)) faults.push(`[${label}] ${path} — ${i}`);
   }
   await ctx.close();
 }

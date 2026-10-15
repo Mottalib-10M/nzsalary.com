@@ -35,7 +35,7 @@ const jsonLd = [webApplicationSchema({ name: `PAYE Calculator NZ ${P.tax_year}`,
   <header class="mb-6">
     <h1 class="text-3xl font-bold text-navy-900 md:text-4xl">PAYE calculator NZ {P.tax_year}: your take-home pay after tax</h1>
     <p class="mt-3 text-lg text-navy-600">Enter your salary, pay frequency and tax code. You get the PAYE, the ACC levy, KiwiSaver at the rate you chose and your student loan repayment for each pay, with your employer’s KiwiSaver after ESCT and the government contribution. Rates are Inland Revenue’s for the tax year from 1 April {YEAR}.</p>
-    <p class="mt-3"><span class="inline-block rounded-full border border-navy-200 bg-white px-3 py-1 text-xs font-medium text-navy-600">Inland Revenue rates {P.tax_year} · checked on <time datetime={LAST_UPDATED}>{displayDate(LAST_UPDATED, LANG_TAGS[lang])}</time> by {AUTHOR_NAME}</span></p>
+    <p class="mt-3"><span class="inline-block rounded-full border border-navy-200 bg-white px-3 py-1 text-xs font-medium text-navy-600">Inland Revenue rates {P.tax_year}</span></p>
   </header>
   <NzCalculator client:load mode="paye" methodHref={route('method', lang)} />
   <AdSlot slot="home-1" />

@@ -48,8 +48,10 @@ const T = TEXTES[LANG] || TEXTES.en;
 // construite à minuit recule d'un jour sur une machine à l'ouest de Greenwich.
 const dateLisible = (iso) => {
   const d = new Date(`${iso}T12:00:00Z`);
-  return new Intl.DateTimeFormat(LANG === 'fr' ? 'fr-FR' : 'en-GB',
+  const s = new Intl.DateTimeFormat(LANG === 'fr' ? 'fr-FR' : 'en-GB',
     { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(d);
+  // Français : « 1er octobre », jamais « 1 octobre ».
+  return LANG === 'fr' ? s.replace(/^1 /, '1er ') : s;
 };
 
 const dateDuFichier = (f) => {
@@ -84,7 +86,9 @@ for (const f of pages) {
   // Haut de page : juste après l'ouverture du <main>.
   const haut = `<p data-trust-kit class="trust-top" style="margin:0 0 .75rem;font-size:.8125rem;opacity:.75">`
     + `${T.maj} <time datetime="${date}">${lisible}</time></p>`;
-  html = html.replace(/(<main\b[^>]*>)/i, `$1\n        ${haut}`);
+  // Seulement sur une page de lecture (Article déclaré) : sur un simulateur ou un
+  // accueil, la date reste en bas (RECETTE §8.4, 2026-10-15).
+  if (/"@type"\s*:\s*"(?:Article|BlogPosting|NewsArticle)"/.test(html)) html = html.replace(/(<main\b[^>]*>)/i, `$1\n        ${haut}`);
 
   // Bas de page : dans le <footer>, car c'est là que le lecteur — et le contrôle —
   // cherchent la date, l'auteur et le lien vers la méthode.

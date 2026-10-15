@@ -16,7 +16,7 @@ if (faqs.length) jsonLd.push(faqSchema(faqs, lang));
 ---
 <PageLayout title={title} description={description} lang={lang} jsonLd={jsonLd} faqs={faqs} related={related} sources={sources} breadcrumbs={[{ label: breadcrumbLabel }]} noindex={noindex} showAuthor={showAuthor} compact>
   {/* Premier écran (RECETTE §5, 2026-10-11) : « Reviewed by » rejoint la date dans la rangée du fil d'Ariane. */}
-  <Fragment slot="crumb-extra">{' · '}{ui.reviewedBy}{' '}<a href={route('about', lang)} class="text-accent-600 hover:underline">{AUTHOR_NAME}</a>{' · '}<a href={route('editorial', lang)} class="text-accent-600 hover:underline">{ui.editorialPolicy}</a></Fragment>
+  <Fragment slot="crumb-extra">{ui.reviewedBy}{' '}<a href={route('about', lang)} class="text-accent-600 hover:underline">{AUTHOR_NAME}</a>{' · '}<a href={route('editorial', lang)} class="text-accent-600 hover:underline">{ui.editorialPolicy}</a></Fragment>
   <article>
     <header class="mb-4"><h1 class="text-[1.75rem] font-bold text-navy-900 max-sm:leading-tight sm:text-3xl md:text-4xl">{h1}</h1>{intro && <p class="mt-2 text-base text-navy-600 sm:text-lg">{intro}</p>}</header>
     {/* §21 : le paragraphe citable vit dans le corps, jamais dans le <header>,

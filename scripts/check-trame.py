@@ -492,6 +492,34 @@ if os.path.exists(racine):
 
     pages.append({'path': '/', 'kind': 'racine', 'noindex': True, 'flags': flags})
 
+# ---- §13 : IndexNow — clé propre au site, lue dans sa config (§26 du 2026-10-16) ----
+# L'ancienne trame écrivait dans scripts/indexnow.sh la clé et l'URL de lohnnetto.ch
+# (ex-nettolohn-rechner.ch) : chaque site copié aurait pingé avec la clé d'un autre.
+CLE_TRAME = 'c1f0e5f4b7a94d2e9b3c8a7d6e5f4a3b'
+flags = []
+_cfg = f'{site}/src/data/site-config.ts'
+_cfg = open(_cfg, encoding='utf-8').read() if os.path.exists(_cfg) else ''
+_m = re.search(r"INDEXNOW_KEY\s*=\s*['\"]([^'\"]*)['\"]", _cfg)
+_cle = _m.group(1) if _m else ''
+_url = re.search(r"SITE_URL\s*=\s*['\"]([^'\"]*)['\"]", _cfg)
+_dom = re.sub(r'^https?://', '', _url.group(1)).strip('/') if _url else ''
+_sh = f'{site}/scripts/indexnow.sh'
+if os.path.exists(_sh):
+    _src = open(_sh, encoding='utf-8').read()
+    # Une clé écrite en dur n'est un défaut que si ce n'est pas celle du site.
+    _durs = set(re.findall(r'^\s*KEY=["\']?([0-9a-fA-F]{16,})', _src, re.M)) | ({CLE_TRAME} & set(re.findall(r'[0-9a-f]{32}', _src)))
+    _etr = sorted(k for k in _durs if k != _cle)
+    if _etr:
+        flags.append(f'scripts/indexnow.sh envoie la clé {_etr[0][:8]}… qui n\'est pas INDEXNOW_KEY du site — '
+                     'reprendre celui de la trame (clé et site lus dans src/data/site-config.ts)')
+if _cle:
+    if _cle == CLE_TRAME and _dom != 'lohnnetto.ch':
+        flags.append(f'INDEXNOW_KEY = clé de lohnnetto.ch — générer la clé du site (secrets.token_hex(16))')
+    if not os.path.exists(f'{site}/public/{_cle}.txt'):
+        flags.append(f'public/{_cle}.txt manquant : IndexNow refusera la clé (403)')
+if flags:
+    pages.append({'path': '(indexnow)', 'kind': 'config', 'noindex': True, 'flags': flags})
+
 # ---- §7 : une question ne paraît que sur une seule page ------------------
 doublons = {q: p for q, p in questions_seen.items() if len(set(p)) > 1}
 for q, paths in doublons.items():

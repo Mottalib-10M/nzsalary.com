@@ -59,7 +59,22 @@ const otherLocales = LOCALES.filter((l) => l !== lang);
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     {jsonLd.map((ld) => <script type="application/ld+json" set:html={ld} />)}
-    {GA4_ID && (<>
+    {/* GA4, régime 'none' (décision de l'éditeur du 2026-10-17, RECETTE §15.6) : Google Analytics 4
+         normal, avec cookies, SANS bandeau. Consentement par défaut : mesure d'audience accordée
+         (analytics_storage 'granted'), publicité refusée (ad_storage, ad_user_data, ad_personalization
+         'denied'), aucune lecture de localStorage. Cookies _ga et _ga_<ID> limités à 390 jours
+         (13 mois au plus, recommandation CNIL) et non prolongés à chaque visite (cookie_update false) ;
+         signaux Google et personnalisation publicitaire coupés. Les pages légales le disent
+         (scripts/gen-legal-pages.py). L'adresse envoyée à GA4 est sans paramètres (page_location) : les
+         saisies qu'un lien de partage porte dans l'adresse ne partent pas chez Google. Contrôle :
+         check-cookies.py. */}
+    {GA4_ID && CONSENT_MODE === 'none' && (<>
+      <script is:inline set:html={`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('consent','default',{analytics_storage:'granted',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',functionality_storage:'granted',security_storage:'granted'});`} />
+      <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}></script>
+      <script is:inline set:html={`gtag('js',new Date());gtag('config','${GA4_ID}',{anonymize_ip:true,page_location:location.origin+location.pathname,cookie_expires:33696000,cookie_update:false,allow_google_signals:false,allow_ad_personalization_signals:false});`} />
+    </>)}
+    {/* Régimes 'opt-in' / 'notice' (anciens) : GA4 suit le choix enregistré dans consent-choice. */}
+    {GA4_ID && CONSENT_MODE !== 'none' && (<>
       <script is:inline set:html={`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;(function(){var d='${CONSENT_MODE === 'opt-in' ? 'denied' : 'granted'}';var c=null;try{c=localStorage.getItem('consent-choice');}catch(e){}var v=(c==='granted'||(c===null&&d==='granted'))?'granted':'denied';gtag('consent','default',{ad_storage:v,analytics_storage:v,ad_user_data:v,ad_personalization:v,functionality_storage:'granted',security_storage:'granted',wait_for_update:500});})();`} />
       <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}></script>
       <script is:inline set:html={`gtag('js',new Date());gtag('config','${GA4_ID}',{anonymize_ip:true});`} />

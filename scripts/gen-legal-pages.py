@@ -1,785 +1,845 @@
 # -*- coding: utf-8 -*-
-"""Génère les pages légales des 7 sites : mention légale du pays (mentions légales,
-Impressum, aviso legal, disclaimer, terms of use) et politique de confidentialité.
+"""Pages légales types d'un site de la trame : confidentialité, cookies, mentions légales / CGU.
 
-Ces pages existaient, mais sous forme d'ébauches de 120 à 330 mots contenant des
-crochets « [à compléter] » et des mentions conditionnelles « [Si activé :] » : elles
-n'auraient satisfait ni la LCEN, ni le §5 DDG, ni la LSSI, ni le RGPD, et auraient été
-mises en ligne telles quelles. Elles sont réécrites ici en fonction de la juridiction
-de chaque site, et l'identité de l'éditeur n'y est plus recopiée à la main : elle vient
-du bloc LEGAL de `src/data/site-config.ts` via le composant `LegalIdentity`, si bien
-qu'un champ non renseigné ressort en jaune sur la page et fait échouer `npm run check:legal`.
+Usage (dans le dossier du site, ou en donnant son chemin) :
+    python3 scripts/gen-legal-pages.py .            # écrit les pages
+    python3 scripts/gen-legal-pages.py . --dry-run  # montre ce qui serait écrit
+    python3 scripts/gen-legal-pages.py . --force    # écrit même si GA4_ID est vide
+    python3 scripts/gen-legal-pages.py . --layout   # remplace aussi, dans src/layouts/BaseLayout.astro,
+                                                    # le bloc GA4 par celui de la trame (reste du layout gardé)
 
-Plan §2.2 (pages de service obligatoires) et §4.3 (« mention légale adaptée au pays »).
+Décision de l'éditeur du 2026-10-17 (RECETTE §15.6) : Google Analytics 4 normal, AVEC
+cookies, SANS bandeau, sur tous les sites ; Clarity reste sans cookie ; aucune publicité.
+Les pages doivent alors dire vrai :
+  - cookies _ga et _ga_<ID> : 13 mois au plus (390 jours, cookie_expires = 33 696 000 s,
+    cookie_update = false dans BaseLayout.astro), au lieu des 2 ans par défaut de Google
+    (référence des cookies Google : business.safety.google/adscookies) — recommandation
+    CNIL (cnil.fr, « Cookies : solutions pour les outils de mesure d'audience ») : 13 mois,
+    sans prolongation automatique à chaque visite ;
+  - finalité : mesure d'audience ; IP non enregistrée par GA4 (support.google.com/analytics/
+    answer/2763052) ; aucune publicité, aucun partage publicitaire ;
+  - fournisseur : Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande ;
+  - transfert : Google LLC (États-Unis), EU–U.S. Data Privacy Framework + clauses types ;
+  - conservation côté GA : 14 mois (réglage posé par seo-platform/scripts/create-ga4.ts ;
+    options GA4 : 2 ou 14 mois, support.google.com/analytics/answer/7667196) ;
+  - opposition : réglages du navigateur et module tools.google.com/dlpage/gaoptout ;
+  - base juridique : intérêt légitime (art. 6-1 f RGPD) et l'équivalent local (nLPD/revDSG
+    pour la Suisse, UK GDPR, LPRPDE/PIPEDA, APP 3, IPP 1, PDPA…). Jamais « consentement »,
+    jamais de bandeau ni de choix proposé : il n'y en a pas.
+
+Les pages rendent les deux états à la construction ({GA4_ID ? … : …}, {CLARITY_ID && …}) :
+elles restent exactes si GA4_ID ou CLARITY_ID changent. Sans GA4_ID, le script ne touche à
+rien (les textes en place sont exacts), sauf --force.
+
+Ce qui est écrit, pour chaque langue gérée (fr, en, de, es, nl ; variantes fr-FR, fr-BE,
+fr-CH, fr-LU, fr-CA, de-DE, de-AT, de-CH, en-GB, en-IE, en-CA, en-AU, en-NZ, en-SG, en-US,
+es-ES, nl-NL, nl-BE, et la variante européenne par défaut) :
+  - confidentialité et cookies : page réécrite en entier. Un passage propre au site se garde
+    entre {/* site:debut */} et {/* site:fin */} : il est reporté tel quel avant « Vos droits » ;
+  - mentions légales / CGU : si la page existe, seule sa section « Données personnelles »
+    (ou « Cookies et données », « Personal data », « Datenschutz »…) est remplacée — le reste,
+    propre au site, est gardé ; sinon une page type est écrite.
+Les chemins viennent de src/i18n/routes.ts (routes « privacy », « cookies », « terms »), la
+région de LANG_TAGS (site-config.ts). Une langue non gérée (it, pt, fi, sv, nb, da, pl, el…)
+est signalée : ses pages se rédigent à la main sur le modèle français, avec les mêmes faits.
+
+Contrôle ensuite : npm run check (check-cookies.py vérifie GA4, consentement par défaut et
+pages légales). L'ancienne version (7 sites de la vague du 2026-10-05) est dans
+_trame/legacy/gen-legal-pages-7sites-2026-10-06.py.
 """
 import os
+import re
+import sys
 
-ROOT = '/Users/mottalib/Documents/simulateurs-2026'
+ARGS = [a for a in sys.argv[1:] if not a.startswith('--')]
+DRY = '--dry-run' in sys.argv
+FORCE = '--force' in sys.argv
+LAYOUT = '--layout' in sys.argv
+TRAME_LAYOUT = os.path.expanduser('~/Documents/GitHub/_trame/_template/src/layouts/BaseLayout.astro')
+SITE = os.path.abspath(ARGS[0] if ARGS else '.')
 
-# terms_id : identifiant de route de la mention légale (le site suisse dit « imprint »)
-# name     : expression Astro donnant le nom du site dans la langue
-SITES = {
-    'ch-lohnrechner':      dict(langs=['de', 'fr'], terms_id='imprint',
-                                name={'de': 'SITE_NAME', 'fr': 'SITE_NAME_FR'}),
-    'de-arbeitslosengeld': dict(langs=['de'], terms_id='terms', name={'de': 'SITE_NAMES[lang]'}),
-    'fr-simulateur-are':   dict(langs=['fr'], terms_id='terms', name={'fr': 'SITE_NAMES[lang]'}),
-    'es-calculadora-paro': dict(langs=['es'], terms_id='terms', name={'es': 'SITE_NAMES[lang]'}),
-    'nl-ww-berekenen':     dict(langs=['nl'], terms_id='terms', name={'nl': 'SITE_NAMES[lang]'}),
-    'ca-ei-calculator':    dict(langs=['en', 'fr'], terms_id='terms',
-                                name={'en': 'SITE_NAMES[lang]', 'fr': 'SITE_NAMES[lang]'}),
-    'au-final-pay':        dict(langs=['en'], terms_id='terms', name={'en': 'SITE_NAMES[lang]'}),
-}
+GA_OPTOUT = 'https://tools.google.com/dlpage/gaoptout'
+GOOGLE_IE = 'Google Ireland Limited, Gordon House, Barrow Street, Dublin 4'
+MS_IE = 'Microsoft Ireland Operations Limited, One Microsoft Place, South County Business Park, Leopardstown, Dublin 18'
+ID = "{GA4_ID.replace('G-', '')}"
+EXT = 'rel="nofollow noopener" target="_blank"'
+MAIL = '<a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>'
 
-# Chemins réels des pages, relevés dans chaque src/i18n/routes.ts
-PATHS = {
-    ('ch-lohnrechner', 'de'):      dict(terms='/de/impressum/', privacy='/de/datenschutz/'),
-    ('ch-lohnrechner', 'fr'):      dict(terms='/fr/mentions-legales/', privacy='/fr/protection-donnees/'),
-    ('de-arbeitslosengeld', 'de'): dict(terms='/de/impressum/', privacy='/de/datenschutz/'),
-    ('fr-simulateur-are', 'fr'):   dict(terms='/fr/mentions-legales/', privacy='/fr/confidentialite/'),
-    ('es-calculadora-paro', 'es'): dict(terms='/es/aviso-legal/', privacy='/es/privacidad/'),
-    ('nl-ww-berekenen', 'nl'):     dict(terms='/nl/disclaimer/', privacy='/nl/privacy/'),
-    ('ca-ei-calculator', 'en'):    dict(terms='/en/terms/', privacy='/en/privacy/'),
-    ('ca-ei-calculator', 'fr'):    dict(terms='/fr/conditions/', privacy='/fr/confidentialite/'),
-    ('au-final-pay', 'en'):        dict(terms='/en/terms/', privacy='/en/privacy/'),
-}
-
-# Titre (≤ 60 caractères, nom du site compris) et meta description (140–155 caractères)
-META = {}
-BODIES = {}
 
 # --------------------------------------------------------------------------- #
-# France — simulateur-are.fr
-# LCEN art. 6 III-1 pour les mentions légales, RGPD art. 13 pour l'information.
+# Lecture du site
 # --------------------------------------------------------------------------- #
-META['fr-simulateur-are', 'fr', 'terms'] = (
-    'Mentions légales – ${SITE_NAMES[lang]}',
-    'Éditeur, directeur de la publication, hébergeur, propriété intellectuelle, limites de responsabilité et droit applicable à ce simulateur d’allocation chômage.')
-BODIES['fr-simulateur-are', 'fr', 'terms'] = """    <h1>Mentions légales</h1>
+def lire(rel):
+    p = os.path.join(SITE, rel)
+    return open(p, encoding='utf-8').read() if os.path.isfile(p) else ''
+
+
+def config():
+    sc = lire('src/data/site-config.ts')
+    if not sc:
+        sys.exit(f'gen-legal-pages : pas de src/data/site-config.ts dans {SITE}')
+    ga = re.search(r"export const GA4_ID\s*(?::\s*string\s*)?=\s*'([^']*)'", sc)
+    tags = re.search(r'export const LANG_TAGS[^=]*=\s*(\{[^}]*\})', sc)
+    lang_tags = dict(re.findall(r'"([a-z]{2})"\s*:\s*"([^"]+)"', tags.group(1))) if tags else {}
+    lang_tags.update(dict(re.findall(r"'([a-z]{2})'\s*:\s*'([^']+)'", tags.group(1))) if tags else {})
+    return (ga.group(1) if ga else ''), lang_tags
+
+
+def routes():
+    """{(id, lang): '/xx/slug/'} pour privacy, cookies, terms, et la liste LOCALES."""
+    rt = lire('src/i18n/routes.ts')
+    if not rt:
+        sys.exit(f'gen-legal-pages : pas de src/i18n/routes.ts dans {SITE}')
+    m = re.search(r'LOCALES\s*=\s*\[([^\]]*)\]', rt)
+    locales = re.findall(r"'([a-z]{2})'", m.group(1)) if m else []
+    out = {}
+    # Fabrique de routes : const R = (id: string, fr: string, en: string, noindex = false) => ({ id,
+    # paths: { fr: `/fr/${fr}/`, en: `/en/${en}/` } … }) ou, en raccourci, paths: { fr, nl } (chemins entiers).
+    rdef = re.search(r'const (\w+)\s*=\s*\(\s*id\s*:\s*string\s*,\s*([^)]*?)\)[^\n]*', rt)
+    fab, params, tpl = None, [], {}
+    if rdef:
+        fab = rdef.group(1)
+        params = [p.split(':')[0].strip() for p in rdef.group(2).split(',') if p.strip() and 'noindex' not in p]
+        tpl = dict(re.findall(r'\b([a-z]{2})\s*:\s*`([^`]*)`', rdef.group(0)))
+        po = re.search(r'paths\s*:\s*\{([^}`]*)\}', rdef.group(0))
+        if not tpl and po:
+            tpl = {k: '${' + k + '}' for k in re.findall(r'\b([a-z]{2})\b', po.group(1))}
+    for rid in ('privacy', 'cookies', 'terms'):
+        lit = re.search(r"\{\s*id\s*:\s*'" + rid + r"'\s*,\s*paths\s*:\s*\{([^}]*)\}", rt)
+        if lit:
+            for lg, p in re.findall(r"([a-z]{2})\s*:\s*['`]([^'`]+)['`]", lit.group(1)):
+                out[rid, lg] = p
+            continue
+        call = re.search(r"\b" + re.escape(fab or 'R') + r"\(\s*'" + rid + r"'\s*,([^)]*)\)", rt)
+        if call and params:
+            args = re.findall(r"'([^']*)'", call.group(1))
+            vals = dict(zip(params, args))
+            for lg, t in tpl.items():
+                p = t
+                for k, v in vals.items():
+                    p = p.replace('${' + k + '}', v)
+                if '${' not in p:
+                    out[rid, lg] = p
+    return locales, out
+
+
+def fichier(chemin):
+    base = os.path.join(SITE, 'src/pages', chemin.strip('/'))
+    return base + '/index.astro' if os.path.isfile(base + '/index.astro') else base + '.astro'
+
+
+# --------------------------------------------------------------------------- #
+# Variantes juridiques par région (code pays de LANG_TAGS)
+# loi : lois citées en tête de la confidentialité ; base : équivalent local de l'art. 6-1 f ;
+# aut : autorité locale ajoutée à celle de LEGAL.supervisoryAuthority.
+# --------------------------------------------------------------------------- #
+REG = {
+    'fr': {
+        'FR': dict(loi=' et à la loi n° 78-17 du 6 janvier 1978 modifiée', base='', aut=''),
+        'BE': dict(loi=' et à la loi belge du 30 juillet 2018 relative à la protection des personnes physiques à l’égard des traitements de données à caractère personnel',
+                   base='', aut=' En Belgique, vous pouvez aussi saisir l’Autorité de protection des données (APD).'),
+        'LU': dict(loi=' et à la loi luxembourgeoise du 1er août 2018 portant organisation de la CNPD', base='',
+                   aut=' Au Luxembourg, vous pouvez aussi saisir la Commission nationale pour la protection des données (CNPD).'),
+        'CH': dict(loi=' et, pour les visiteurs en Suisse, à la loi fédérale sur la protection des données (nLPD)',
+                   base=' et art. 31, al. 1, nLPD, intérêt prépondérant',
+                   aut=' En Suisse, vous pouvez aussi vous adresser au Préposé fédéral à la protection des données et à la transparence (PFPDT).'),
+        'CA': dict(loi=' et, pour les visiteurs au Canada, à la Loi sur la protection des renseignements personnels et les documents électroniques (LPRPDE) et, au Québec, à la Loi sur la protection des renseignements personnels dans le secteur privé',
+                   base=' ; au Canada, art. 5(3) de la LPRPDE, fins qu’une personne raisonnable estimerait acceptables dans les circonstances',
+                   aut=' Au Québec, vous pouvez aussi vous adresser à la Commission d’accès à l’information.'),
+        '': dict(loi='', base='', aut=''),
+    },
+    'en': {
+        'GB': dict(loi=', the UK GDPR and the Data Protection Act 2018', base=' and Article 6(1)(f) UK GDPR',
+                   aut=' In the United Kingdom you may also complain to the Information Commissioner’s Office (ICO).'),
+        'IE': dict(loi=' and the Irish Data Protection Act 2018', base='',
+                   aut=' In Ireland you may also complain to the Data Protection Commission.'),
+        'CA': dict(loi=' and, for visitors in Canada, the Personal Information Protection and Electronic Documents Act (PIPEDA)',
+                   base='; in Canada, section 5(3) of PIPEDA, purposes a reasonable person would consider appropriate in the circumstances',
+                   aut=' In Quebec you may also contact the Commission d’accès à l’information.'),
+        'AU': dict(loi=' and, for visitors in Australia, the Privacy Act 1988 and the Australian Privacy Principles',
+                   base='; in Australia, Australian Privacy Principle 3, collection reasonably necessary for our activities',
+                   aut=' In Australia you may also complain to the Office of the Australian Information Commissioner (OAIC).'),
+        'NZ': dict(loi=' and, for visitors in New Zealand, the Privacy Act 2020', base='; in New Zealand, Information Privacy Principle 1 of the Privacy Act 2020, collection for a lawful purpose connected with our activities',
+                   aut=' In New Zealand you may also complain to the Office of the Privacy Commissioner.'),
+        'SG': dict(loi=' and, for visitors in Singapore, the Personal Data Protection Act 2012 (PDPA)',
+                   base='; in Singapore, the legitimate interests exception of the PDPA, First Schedule, Part 3',
+                   aut=' In Singapore you may also contact the Personal Data Protection Commission (PDPC).'),
+        'US': dict(loi='; for visitors in the United States, no personal information is sold or shared within the meaning of the California Consumer Privacy Act (CCPA/CPRA)',
+                   base='; for visitors in the United States, no personal information is sold or shared within the meaning of the CCPA/CPRA',
+                   aut=''),
+        'CH': dict(loi=' and, for visitors in Switzerland, the Swiss Federal Act on Data Protection (revFADP)',
+                   base=' and Article 31(1) revFADP, overriding interest',
+                   aut=' In Switzerland you may also contact the Federal Data Protection and Information Commissioner (FDPIC).'),
+        '': dict(loi='', base='', aut=''),
+    },
+    'de': {
+        'DE': dict(loi=' und des Bundesdatenschutzgesetzes (BDSG)', base='', aut=''),
+        'AT': dict(loi=' und des österreichischen Datenschutzgesetzes (DSG)', base='',
+                   aut=' In Österreich können Sie sich auch an die Datenschutzbehörde wenden.'),
+        'CH': dict(loi=' und, für Besucher in der Schweiz, des Bundesgesetzes über den Datenschutz (revDSG)',
+                   base=' sowie Art. 31 Abs. 1 revDSG, überwiegendes Interesse',
+                   aut=' In der Schweiz können Sie sich auch an den Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) wenden.'),
+        '': dict(loi='', base='', aut=''),
+    },
+    'es': {
+        'ES': dict(loi=' y de la Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD)', base='',
+                   aut=' En España, también puede reclamar ante la Agencia Española de Protección de Datos (AEPD).'),
+        '': dict(loi='', base='', aut=''),
+    },
+    'nl': {
+        'NL': dict(loi=' en de Uitvoeringswet AVG', base='', aut=' In Nederland kunt u ook een klacht indienen bij de Autoriteit Persoonsgegevens.'),
+        'BE': dict(loi=' en de Belgische wet van 30 juli 2018 betreffende de bescherming van natuurlijke personen met betrekking tot de verwerking van persoonsgegevens', base='',
+                   aut=' In België kunt u ook terecht bij de Gegevensbeschermingsautoriteit (GBA).'),
+        '': dict(loi='', base='', aut=''),
+    },
+}
+
+
+# --------------------------------------------------------------------------- #
+# Textes. «BASE», «LOI», «AUT» : variantes ci-dessus ; «ID» : G-ID sans « G- ».
+# Apostrophe typographique partout (’) : les textes passent aussi dans des chaînes JS.
+# --------------------------------------------------------------------------- #
+T = {}
+
+T['fr'] = dict(
+    bc=dict(privacy='Confidentialité', cookies='Cookies', terms='Mentions légales'),
+    title=dict(privacy='Politique de confidentialité', cookies='Cookies', terms='Mentions légales'),
+    desc=dict(
+        privacy_ga='Mesure d’audience Google Analytics avec cookies, sans publicité ; saisies gardées dans votre navigateur ; journaux de l’hébergeur ; vos droits et l’autorité de contrôle.',
+        privacy_no='Saisies gardées dans votre navigateur, aucun cookie, journaux de l’hébergeur : les traitements de données du site, vos droits et l’autorité de contrôle.',
+        cookies_ga='Des cookies de mesure d’audience Google Analytics, et eux seuls : noms, finalité, durée de 13 mois au plus, fournisseur et moyens de vous y opposer.',
+        cookies_no='Le site ne dépose aucun cookie : vos saisies restent dans votre navigateur, rien n’est gardé sur votre appareil.',
+        terms='Éditeur, directeur de la publication, hébergeur, absence de conseil, propriété intellectuelle, données personnelles et droit applicable.'),
+    base='l’intérêt légitime de l’éditeur (art. 6-1 f du RGPD«BASE»)',
+    privacy="""    <h1>Politique de confidentialité</h1>
+    <p>Cette page décrit les traitements de données personnelles liés à l’utilisation de {SITE_URL}, conformément aux articles 12 à 14 du règlement (UE) 2016/679 (RGPD)«LOI».</p>
+    <h2>1. Responsable du traitement</h2>
+    <LegalIdentity lang={lang} />
+    <p>Pour toute question relative à vos données : «MAIL». Aucun délégué à la protection des données n’a été désigné, les conditions de l’article 37 du RGPD n’étant pas réunies.</p>
+    <h2>2. Vos saisies restent dans votre navigateur</h2>
+    <p>Les calculs du site sont exécutés par votre navigateur. Les montants, dates et situations que vous saisissez <strong>ne sont transmis à aucun serveur</strong>, ne sont enregistrés nulle part et ne sont rattachés à aucun identifiant. Le site ne demande ni compte, ni nom, ni adresse électronique. Un lien de partage reprend vos saisies dans l’adresse de la page : ne le transmettez qu’aux personnes de votre choix.</p>
+    <h2>3. Traitements réalisés</h2>
+    <h3>Journaux de connexion de l’hébergeur</h3>
+    <p>L’hébergeur enregistre, à chaque requête, l’adresse IP, la date et l’heure, la page demandée, le navigateur et la page de provenance. Finalité : sécurité du service et diagnostic des pannes. Base juridique : «B». Durée : celle de la politique de l’hébergeur.</p>
+    {GA4_ID ? (<>
+    <h3>Mesure d’audience avec Google Analytics</h3>
+    <p>Le site utilise Google Analytics 4 pour compter ses visites et savoir quelles pages servent : pages vues, page de provenance, durée de la visite, type d’appareil et de navigateur, pays et ville approximatifs. Google Analytics dépose pour cela deux cookies sur votre terminal : <code>_ga</code>, qui distingue les visiteurs par un identifiant aléatoire, et <code>_ga_«ID»</code>, qui garde l’état de la visite. Leur durée de vie est réglée à 13 mois au plus (390 jours) et n’est pas prolongée à chaque visite ; Google prévoit 2 ans par défaut.</p>
+    <p>L’adresse IP est anonymisée : Google Analytics 4 ne l’enregistre ni ne la conserve, il s’en sert seulement au moment de la collecte pour déduire un pays et une ville approximatifs. L’adresse de page transmise à Google Analytics est privée de ses paramètres : les saisies d’un lien de partage n’y figurent pas. Le site n’affiche pas de publicité : le stockage publicitaire, les données publicitaires, la personnalisation des annonces et les signaux Google sont désactivés, et les données de mesure ne sont partagées avec aucun annonceur.</p>
+    <p>Finalité : mesure d’audience. Base juridique : «B». Fournisseur : «GOOGLE», Irlande. Conservation chez Google : 14 mois pour les données liées aux visites et aux identifiants, puis suppression ; seuls restent des totaux anonymes.</p>
+    </>) : (<>
+    <h3>Pas de mesure d’audience</h3>
+    <p>Le site ne dépose aucun cookie et n’utilise aucun outil d’analyse d’audience ni de publicité.</p>
+    </>)}
+    {CLARITY_ID && (<>
+    <h3>Mesure technique de la stabilité avec Microsoft Clarity, sans cookie</h3>
+    <p>Pour repérer les erreurs, les pages lentes et les boutons qui ne réagissent pas, le site utilise Microsoft Clarity en mode sans cookie : Clarity ne dépose aucun cookie, chaque page vue reçoit un identifiant distinct, le texte des pages et vos saisies sont masqués. Clarity reçoit la structure de la page, les clics, le défilement, le type d’appareil, les temps de chargement et les erreurs. Finalité : stabilité du site. Base juridique : «B». Fournisseur : «MS», Irlande. Conservation : 30 jours pour les enregistrements de pages, 13 mois au plus pour les données agrégées.</p>
+    </>)}
+    <h3>Messages que vous nous envoyez</h3>
+    <p>Si vous écrivez à l’adresse de contact, votre adresse électronique et votre message sont gardés le temps de vous répondre et, le cas échéant, de corriger une erreur, puis supprimés au plus tard trois ans après le dernier échange. Base juridique : «B».</p>
+    <h2>4. Destinataires</h2>
+    <p>Aucune donnée n’est vendue, louée ni cédée. Y accèdent l’hébergeur{GA4_ID && ', Google Ireland Limited pour Google Analytics'}{CLARITY_ID && ', Microsoft Ireland Operations Limited pour Clarity'}, comme sous-traitants au sens de l’article 28 du RGPD. Aucune régie publicitaire n’intervient sur le site.</p>
+    <h2>5. Transferts hors de l’Union européenne</h2>
+    <p>Les journaux de l’hébergeur peuvent être traités aux États-Unis.{GA4_ID && ' Les données de Google Analytics peuvent être transférées à Google LLC, aux États-Unis.'}{CLARITY_ID && ' Celles de Clarity peuvent l’être à Microsoft Corporation, aux États-Unis.'} Ces transferts sont encadrés par le cadre de protection des données UE–États-Unis (EU–U.S. Data Privacy Framework) et par les clauses contractuelles types de la Commission européenne.</p>
+«SITE»    <h2>6. Vos droits</h2>
+    <p>Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de portabilité prévus aux articles 15 à 22 du RGPD. Écrivez à «MAIL» ; nous répondons dans un délai d’un mois. Sans compte utilisateur, nous ne détenons le plus souvent aucune donnée permettant de vous identifier : nous vous le dirons alors.</p>
+    {GA4_ID && (<p>Pour vous opposer à la mesure d’audience sans nous écrire : bloquez ou supprimez les cookies dans les réglages de votre navigateur, ou installez le <a href="«OPTOUT»" «EXT»>module de désactivation de Google Analytics</a>. Le site fonctionne alors de la même façon.</p>)}
+    {CLARITY_ID && (<p>Pour la mesure de stabilité : bloquez le domaine <code>clarity.ms</code> dans votre navigateur ou avec un bloqueur de contenu.</p>)}
+    <p>Vous pouvez introduire une réclamation auprès de l’autorité de contrôle : {LEGAL.supervisoryAuthority} (<a href={LEGAL.supervisoryAuthorityUrl} «EXT»>{LEGAL.supervisoryAuthorityUrl}</a>).«AUT»</p>
+    <h2>7. Pas de décision automatisée</h2>
+    <p>Le résultat d’un calcul est une estimation faite à votre demande, sur vos saisies, dans votre navigateur. Il ne produit aucun effet juridique et n’est pas une décision automatisée au sens de l’article 22 du RGPD. Aucun profilage n’est pratiqué.</p>
+    <p>Voir aussi la page <a href={route('cookies', lang)}>cookies</a>. Dernière mise à jour : {LAST_UPDATED}.</p>""",
+    cookies="""    <h1>Cookies</h1>
+    {GA4_ID ? (<>
+    <p>Le site dépose des cookies de mesure d’audience Google Analytics, et ceux-là seulement : ni cookie publicitaire, ni cookie de réseau social. Le détail des traitements figure dans la <a href={route('privacy', lang)}>politique de confidentialité</a>.</p>
+    <h2>Les cookies déposés</h2>
+    <table><thead><tr><th>Nom</th><th>Fournisseur</th><th>Finalité</th><th>Durée</th></tr></thead><tbody>
+    <tr><td><code>_ga</code></td><td>Google Analytics</td><td>Distinguer les visiteurs par un identifiant aléatoire</td><td>13 mois au plus (390 jours)</td></tr>
+    <tr><td><code>_ga_«ID»</code></td><td>Google Analytics</td><td>Garder l’état de la visite en cours</td><td>13 mois au plus (390 jours)</td></tr>
+    </tbody></table>
+    <p>Ces durées ne sont pas prolongées à chaque visite ; Google prévoit 2 ans par défaut, le site les réduit. Finalité : mesure d’audience (pages vues, provenance, appareil, pays approximatif). L’adresse IP est anonymisée : Google Analytics 4 ne l’enregistre ni ne la conserve. Pas de publicité ni de partage publicitaire : le stockage publicitaire, la personnalisation des annonces et les signaux Google sont désactivés.</p>
+    <p>Fournisseur : «GOOGLE», Irlande. Les données peuvent être transférées à Google LLC, aux États-Unis, dans le cadre du EU–U.S. Data Privacy Framework et des clauses contractuelles types de la Commission européenne. Conservation chez Google : 14 mois. Base juridique : «B».</p>
+    <h2>Vous opposer à ces cookies</h2>
+    <p>Bloquez ou supprimez les cookies dans les réglages de votre navigateur, ou installez le <a href="«OPTOUT»" «EXT»>module de désactivation de Google Analytics</a>. Le site et ses calculs fonctionnent alors de la même façon.</p>
+    </>) : (<>
+    <p>Le site <strong>ne dépose aucun cookie</strong>. Le détail des traitements figure dans la <a href={route('privacy', lang)}>politique de confidentialité</a>.</p>
+    </>)}
+    {CLARITY_ID && (<><h2>Microsoft Clarity, sans cookie</h2><p>La stabilité des pages est mesurée avec Microsoft Clarity en mode sans cookie : Clarity ne dépose aucun cookie, chaque page vue reçoit un identifiant à usage unique, le contenu des pages et vos saisies sont masqués. Bloquer <code>clarity.ms</code> l’arrête.</p></>)}
+    <h2>Vos saisies</h2>
+    <p>Les calculs se font dans votre navigateur : ce que vous saisissez n’est envoyé à aucun serveur et disparaît à la fermeture de la page.</p>
+    <p>Une question : «MAIL». Mise à jour : {LAST_UPDATED}.</p>""",
+    terms_h2='Données personnelles et cookies',
+    terms_sec="""    {GA4_ID ? (<p>Les saisies des calculateurs ne quittent pas votre navigateur. Le site dépose des cookies de mesure d’audience Google Analytics (<code>_ga</code>, <code>_ga_«ID»</code>, 13 mois au plus), sans publicité{CLARITY_ID && ' ; la stabilité des pages est mesurée avec Microsoft Clarity, sans cookie'}. Détails, base juridique et moyens de vous y opposer : <a href={route('privacy', lang)}>politique de confidentialité</a> et page <a href={route('cookies', lang)}>cookies</a>.</p>) : (<p>Les saisies des calculateurs ne quittent pas votre navigateur et le site ne dépose aucun cookie{CLARITY_ID && ' ; la stabilité des pages est mesurée de façon anonyme avec Microsoft Clarity, sans cookie'}. Voir la <a href={route('privacy', lang)}>politique de confidentialité</a> et la page <a href={route('cookies', lang)}>cookies</a>.</p>)}""",
+    terms="""    <h1>Mentions légales</h1>
     <p>Informations publiées en application de l’article 6 III-1 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l’économie numérique.</p>
-
     <h2>Éditeur du site</h2>
     <LegalIdentity lang={lang} />
-    <p>Directeur de la publication : {AUTHOR_NAME}, responsable à ce titre de l’ensemble des contenus éditoriaux publiés sur {SITE_URL}.</p>
-
+    <p>Directeur de la publication : {AUTHOR_NAME}, responsable des contenus publiés sur {SITE_URL}.</p>
     <h2>Hébergeur</h2>
     <LegalIdentity mode="hosting" lang={lang} />
-
     <h2>Objet du site et absence de conseil</h2>
-    <p>Ce site met à disposition un simulateur d’allocation d’aide au retour à l’emploi et des guides explicatifs, à titre gratuit et informatif. Les résultats sont des <strong>estimations</strong> calculées à partir de la réglementation d’assurance chômage publiée par l’Unédic et France Travail. Ils ne constituent ni un conseil juridique, fiscal ou financier personnalisé, ni une décision, ni un engagement de qui que ce soit sur le montant ou la durée de vos droits. Seule la notification de France Travail détermine vos droits réels. La méthode, les paramètres retenus et les situations volontairement non couvertes sont décrits dans notre <a href={route('method', lang)}>méthodologie</a>.</p>
-
+    <p>Le site met gratuitement à disposition des calculateurs et des guides, à titre informatif. Les résultats sont des estimations calculées à partir des textes et barèmes officiels cités sur chaque page ; ils ne constituent ni un conseil personnalisé, ni une décision, ni un engagement de l’administration. Méthode et limites : <a href={route('method', lang)}>méthode</a>.</p>
     <h2>Limites de responsabilité</h2>
-    <p>Nous mettons à jour les paramètres à chaque revalorisation et vérifions les calculs sur des cas de référence, mais nous ne garantissons pas l’absence d’erreur ni l’exhaustivité. La réglementation évolue, et certaines situations (activité à l’étranger, intermittence, contrats particuliers) obéissent à des règles que le simulateur n’applique pas. L’éditeur ne peut être tenu responsable des conséquences d’une décision prise sur la seule base d’une estimation, ni d’une interruption du service. Toute erreur constatée peut nous être signalée par la page <a href={route('contact', lang)}>contact</a> : la procédure de correction figure dans notre <a href={route('editorial', lang)}>charte éditoriale</a>.</p>
-
+    <p>Les paramètres sont mis à jour et les calculs vérifiés sur des cas de référence, sans garantie d’absence d’erreur. L’éditeur ne peut être tenu responsable d’une décision prise sur la seule base d’une estimation. Une erreur se signale par la page <a href={route('contact', lang)}>contact</a>.</p>
     <h2>Propriété intellectuelle</h2>
-    <p>La structure du site, les textes, les graphismes et le code source sont protégés par le code de la propriété intellectuelle et restent la propriété de l’éditeur. Toute reproduction ou réutilisation, totale ou partielle, sans autorisation préalable, est interdite, à l’exception des courtes citations accompagnées d’un lien vers la page d’origine. Les textes réglementaires et les données publiques cités sont reproduits sous <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence" rel="noopener" target="_blank">Licence ouverte Etalab</a>, dans les conditions qu’elle prévoit.</p>
-
-    <h2>Intégration du simulateur</h2>
-    <p>Le simulateur peut être intégré gratuitement dans une iframe sur un autre site, à condition de conserver le lien visible vers la page d’origine et de ne pas laisser croire que l’outil émane d’un organisme public. Écrivez-nous pour obtenir le code d’intégration.</p>
-
-    <h2>Liens externes</h2>
-    <p>Les liens vers des sites tiers sont fournis pour faciliter la vérification des sources. Nous n’exerçons aucun contrôle sur leur contenu et déclinons toute responsabilité à leur égard.</p>
-
-    <h2>Données personnelles et cookies</h2>
-    <p>Les saisies du simulateur ne quittent jamais votre navigateur. Le traitement des données de connexion, la mesure d’audience et vos droits sont décrits dans la <a href={route('privacy', lang)}>politique de confidentialité</a> et la page <a href={route('cookies', lang)}>cookies</a>.</p>
-
-    <h2>Signalement d’un contenu illicite</h2>
-    <p>Tout contenu manifestement illicite peut être signalé à <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>, avec l’adresse exacte de la page et le motif. Nous accusons réception et traitons le signalement sans délai.</p>
-
+    <p>Textes, graphismes et code restent la propriété de l’éditeur ; les courtes citations sont autorisées avec un lien vers la page d’origine.</p>
+    <h2>«H2»</h2>
+«SEC»
+    <h2>Signalement</h2>
+    <p>Un contenu illicite se signale à «MAIL», avec l’adresse de la page et le motif.</p>
     <h2>Droit applicable</h2>
-    <p>Les présentes mentions sont soumises au droit français. À défaut de résolution amiable, tout litige relève des juridictions compétentes de {LEGAL.jurisdiction}. Dernière mise à jour : {LAST_UPDATED}.</p>"""
+    <p>Droit français. À défaut d’accord amiable, les juridictions compétentes de {LEGAL.jurisdiction}. Mise à jour : {LAST_UPDATED}.</p>""",
+)
 
-META['fr-simulateur-are', 'fr', 'privacy'] = (
-    'Politique de confidentialité – ${SITE_NAMES[lang]}',
-    'Quelles données ce site traite, sur quelle base juridique, combien de temps, qui y accède, et comment exercer vos droits RGPD ou saisir la CNIL.')
-BODIES['fr-simulateur-are', 'fr', 'privacy'] = """    <h1>Politique de confidentialité</h1>
-    <p>Cette page décrit les traitements de données à caractère personnel liés à l’utilisation de {SITE_URL}, conformément aux articles 12 à 14 du règlement (UE) 2016/679 (RGPD) et à la loi n° 78-17 du 6 janvier 1978 modifiée.</p>
-
-    <h2>1. Responsable du traitement</h2>
+T['en'] = dict(
+    bc=dict(privacy='Privacy', cookies='Cookies', terms='Legal notice'),
+    title=dict(privacy='Privacy policy', cookies='Cookies', terms='Legal notice'),
+    desc=dict(
+        privacy_ga='Google Analytics audience measurement with cookies and no advertising; inputs kept in your browser; host logs; your rights and the supervisory authority.',
+        privacy_no='Inputs kept in your browser, no cookies, host logs: the data processing behind the site, your rights and the supervisory authority you can contact.',
+        cookies_ga='Google Analytics audience measurement cookies and nothing else: names, purpose, a lifetime of 13 months at most, the provider and how to object.',
+        cookies_no='The site sets no cookies: what you type stays in your browser and nothing is kept on your device.',
+        terms='Publisher, editor in charge, host, no advice, intellectual property, personal data and governing law for this site.'),
+    base='the publisher’s legitimate interests (Article 6(1)(f) GDPR«BASE»)',
+    privacy="""    <h1>Privacy policy</h1>
+    <p>This page describes the processing of personal data linked to the use of {SITE_URL}, under Articles 12 to 14 of Regulation (EU) 2016/679 (GDPR)«LOI».</p>
+    <h2>1. Controller</h2>
     <LegalIdentity lang={lang} />
-    <p>Pour toute question relative à vos données : <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Compte tenu de la nature du site, aucun délégué à la protection des données n’a été désigné : les conditions de l’article 37 du RGPD ne sont pas réunies.</p>
-
-    <h2>2. Ce que le simulateur ne fait pas</h2>
-    <p>Le calcul est intégralement exécuté par votre navigateur. Salaires, durée d’affiliation, âge, situation familiale et revenu fiscal de référence <strong>ne sont transmis à aucun serveur</strong>, ne sont enregistrés nulle part et ne sont associés à aucun identifiant. Nous ne créons pas de compte, ne demandons pas d’inscription et ne collectons aucune donnée relative à votre situation professionnelle. Si vous utilisez le lien de partage, vos saisies sont encodées dans l’URL : ne le transmettez qu’aux personnes de votre choix.</p>
-
-    <h2>3. Traitements effectivement réalisés</h2>
-    <h3>Journaux de connexion</h3>
-    <p>L’hébergeur enregistre, à chaque requête, l’adresse IP, la date et l’heure, la page demandée, le code de réponse, le navigateur et le référent. Finalité : sécurité du service, prévention des abus et diagnostic des pannes. Base juridique : l’intérêt légitime de l’éditeur à maintenir un service disponible et sûr (art. 6-1 f du RGPD). Durée de conservation : 30 jours au maximum, puis suppression.</p>
-    <h3>Mesure d’audience</h3>
-    <p>Si vous y consentez, l’audience est mesurée avec Google Analytics 4, en mode de consentement Google et avec anonymisation de l’adresse IP, aux seules fins de savoir quelles pages sont consultées et par quel canal. Base juridique : votre consentement (art. 6-1 a du RGPD et art. 82 de la loi Informatique et Libertés). Sans consentement, aucun cookie de mesure n’est déposé. Durée de conservation des données d’audience : 14 mois.</p>
-    <h3>Publicité</h3>
-    <p>Des emplacements publicitaires peuvent être servis par Google AdSense. Avec votre consentement, Google peut déposer des cookies de personnalisation ; sans consentement, seules des annonces non personnalisées sont diffusées. Le traitement opéré par Google pour son propre compte est décrit dans ses <a href="https://policies.google.com/technologies/ads" rel="noopener" target="_blank">règles publicitaires</a>.</p>
-    <h3>Messages que vous nous envoyez</h3>
-    <p>Lorsque vous écrivez à l’adresse de contact, votre adresse électronique et le contenu de votre message sont traités pour vous répondre et, le cas échéant, corriger une erreur de calcul. Base juridique : l’intérêt légitime à répondre aux sollicitations. Conservation : trois ans à compter du dernier échange.</p>
-
-    <h2>4. Destinataires et sous-traitants</h2>
-    <p>Aucune donnée n’est vendue, louée ni cédée. Y accèdent uniquement l’hébergeur, agissant comme sous-traitant au sens de l’article 28 du RGPD, et, en cas de consentement, Google Ireland Limited pour la mesure d’audience et la publicité. Ces prestataires sont liés par contrat et n’utilisent les données que sur instruction, à l’exception de Google qui agit comme responsable conjoint ou distinct pour certaines finalités publicitaires qu’il documente lui-même.</p>
-
-    <h2>5. Transferts hors Union européenne</h2>
-    <p>Les traitements Google peuvent impliquer un transfert vers les États-Unis. Ils sont encadrés par les clauses contractuelles types de la Commission européenne et par la certification de Google LLC au titre du cadre de protection des données UE–États-Unis (EU–U.S. Data Privacy Framework). Vous pouvez éviter tout transfert en refusant la mesure d’audience et la publicité depuis le bandeau cookies.</p>
-
-    <h2>6. Vos droits</h2>
-    <p>Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de portabilité prévus aux articles 15 à 22 du RGPD, ainsi que du droit de définir des directives relatives au sort de vos données après votre décès. Le consentement donné au bandeau cookies peut être retiré à tout moment, aussi facilement qu’il a été donné. Exercez ces droits à l’adresse <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> ; nous répondons dans un délai d’un mois. En pratique, en l’absence de compte utilisateur, nous ne disposons le plus souvent d’aucune donnée permettant de vous identifier : nous vous le dirons alors explicitement.</p>
-    <p>Vous pouvez introduire une réclamation auprès de la {LEGAL.supervisoryAuthority} : <a href={LEGAL.supervisoryAuthorityUrl} rel="noopener" target="_blank">{LEGAL.supervisoryAuthorityUrl}</a>.</p>
-
-    <h2>7. Absence de décision automatisée et de profilage</h2>
-    <p>Le résultat affiché par le simulateur est un calcul effectué à votre demande, sur vos propres saisies, dans votre navigateur. Il ne produit aucun effet juridique et ne constitue pas une décision automatisée au sens de l’article 22 du RGPD. Nous ne pratiquons aucun profilage.</p>
-
-    <h2>8. Mineurs</h2>
-    <p>Le site s’adresse à des personnes majeures ou à des jeunes actifs entrant sur le marché du travail. Il ne s’adresse pas aux enfants et ne collecte sciemment aucune donnée les concernant.</p>
-
-    <h2>9. Sécurité et modifications</h2>
-    <p>Le site est servi exclusivement en HTTPS et ne comporte aucune base de données d’utilisateurs. Cette politique peut être modifiée pour tenir compte d’évolutions légales ou techniques ; la date ci-dessous fait foi. Dernière mise à jour : {LAST_UPDATED}.</p>"""
-
-# --------------------------------------------------------------------------- #
-# Allemagne — arbeitslosengeld-berechnen.de
-# §5 DDG (ex-§5 TMG) et §18 Abs. 2 MStV pour l'Impressum, DSGVO Art. 13 pour la
-# Datenschutzerklärung, §36 VSBG pour la mention de règlement des litiges.
-# --------------------------------------------------------------------------- #
-META['de-arbeitslosengeld', 'de', 'terms'] = (
-    'Impressum – ${SITE_NAMES[lang]}',
-    'Anbieterkennzeichnung nach §5 DDG und §18 MStV: Betreiber, Kontakt, inhaltlich Verantwortlicher, Haftung für Inhalte und Links, Urheberrecht.')
-BODIES['de-arbeitslosengeld', 'de', 'terms'] = """    <h1>Impressum</h1>
-    <p>Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG) und § 18 Abs. 2 Medienstaatsvertrag (MStV).</p>
-
-    <h2>Anbieter</h2>
+    <p>For any question about your data: «MAIL». No data protection officer has been appointed, as the conditions of Article 37 GDPR are not met.</p>
+    <h2>2. What you type stays in your browser</h2>
+    <p>The site’s calculations run in your browser. The amounts, dates and circumstances you enter <strong>are sent to no server</strong>, are stored nowhere and are linked to no identifier. The site asks for no account, name or email address. A share link carries your inputs in the page address: only send it to people you choose.</p>
+    <h2>3. Processing carried out</h2>
+    <h3>Host access logs</h3>
+    <p>For each request the host records the IP address, date and time, the page requested, the browser and the referring page. Purpose: security of the service and fault diagnosis. Legal basis: «B». Retention: as set by the host’s own policy.</p>
+    {GA4_ID ? (<>
+    <h3>Audience measurement with Google Analytics</h3>
+    <p>The site uses Google Analytics 4 to count visits and see which pages are useful: pages viewed, referring page, visit length, device and browser type, approximate country and city. To do so Google Analytics sets two cookies on your device: <code>_ga</code>, which tells visitors apart with a random identifier, and <code>_ga_«ID»</code>, which keeps the state of the visit. Their lifetime is set to 13 months at most (390 days) and is not extended on each visit; Google’s default is 2 years.</p>
+    <p>The IP address is anonymised: Google Analytics 4 neither logs nor stores it, and only uses it at collection time to derive an approximate country and city. The page address sent to Google Analytics is stripped of its parameters, so the inputs carried by a share link are not included. The site shows no advertising: ad storage, ad user data, ad personalisation and Google signals are switched off, and measurement data is shared with no advertiser.</p>
+    <p>Purpose: audience measurement. Legal basis: «B». Provider: «GOOGLE», Ireland. Retention at Google: 14 months for visit-level and identifier-level data, then deletion; only anonymous totals remain.</p>
+    </>) : (<>
+    <h3>No audience measurement</h3>
+    <p>The site sets no cookies and uses no analytics or advertising tool.</p>
+    </>)}
+    {CLARITY_ID && (<>
+    <h3>Technical stability monitoring with Microsoft Clarity, cookie-free</h3>
+    <p>To spot errors, slow pages and buttons that do not respond, the site uses Microsoft Clarity in cookie-free mode: Clarity sets no cookies, each page view gets its own identifier, and page text and your inputs are masked. Clarity receives the page structure, clicks, scrolling, device type, load times and errors. Purpose: site stability. Legal basis: «B». Provider: «MS», Ireland. Retention: 30 days for page recordings, 13 months at most for aggregated data.</p>
+    </>)}
+    <h3>Messages you send us</h3>
+    <p>If you write to the contact address, your email address and message are kept for as long as needed to reply and, where relevant, fix an error, then deleted no later than three years after the last exchange. Legal basis: «B».</p>
+    <h2>4. Recipients</h2>
+    <p>No data is sold, rented or passed on. Access is limited to the host{GA4_ID && ', Google Ireland Limited for Google Analytics'}{CLARITY_ID && ', Microsoft Ireland Operations Limited for Clarity'}, acting as processors under Article 28 GDPR. No advertising network operates on the site.</p>
+    <h2>5. Transfers outside the European Union</h2>
+    <p>Host logs may be processed in the United States.{GA4_ID && ' Google Analytics data may be transferred to Google LLC in the United States.'}{CLARITY_ID && ' Clarity data may be transferred to Microsoft Corporation in the United States.'} These transfers rely on the EU–U.S. Data Privacy Framework and the European Commission’s standard contractual clauses.</p>
+«SITE»    <h2>6. Your rights</h2>
+    <p>You have the rights of access, rectification, erasure, restriction, objection and portability set out in Articles 15 to 22 GDPR. Write to «MAIL»; we reply within one month. With no user accounts, we usually hold no data that identifies you, and we will tell you so.</p>
+    {GA4_ID && (<p>To object to audience measurement without writing to us: block or delete cookies in your browser settings, or install the <a href="«OPTOUT»" «EXT»>Google Analytics opt-out browser add-on</a>. The site works the same way.</p>)}
+    {CLARITY_ID && (<p>For stability monitoring: block the <code>clarity.ms</code> domain in your browser or with a content blocker.</p>)}
+    <p>You may lodge a complaint with the supervisory authority: {LEGAL.supervisoryAuthority} (<a href={LEGAL.supervisoryAuthorityUrl} «EXT»>{LEGAL.supervisoryAuthorityUrl}</a>).«AUT»</p>
+    <h2>7. No automated decision-making</h2>
+    <p>A calculation result is an estimate produced at your request, from your inputs, in your browser. It has no legal effect and is not an automated decision under Article 22 GDPR. No profiling takes place.</p>
+    <p>See also the <a href={route('cookies', lang)}>cookies</a> page. Last updated: {LAST_UPDATED}.</p>""",
+    cookies="""    <h1>Cookies</h1>
+    {GA4_ID ? (<>
+    <p>The site sets Google Analytics audience measurement cookies and those alone: no advertising cookie, no social media cookie. Details of the processing are in the <a href={route('privacy', lang)}>privacy policy</a>.</p>
+    <h2>Cookies set</h2>
+    <table><thead><tr><th>Name</th><th>Provider</th><th>Purpose</th><th>Lifetime</th></tr></thead><tbody>
+    <tr><td><code>_ga</code></td><td>Google Analytics</td><td>Tell visitors apart with a random identifier</td><td>13 months at most (390 days)</td></tr>
+    <tr><td><code>_ga_«ID»</code></td><td>Google Analytics</td><td>Keep the state of the current visit</td><td>13 months at most (390 days)</td></tr>
+    </tbody></table>
+    <p>These lifetimes are not extended on each visit; Google’s default is 2 years and the site shortens it. Purpose: audience measurement (pages viewed, referrer, device, approximate country). The IP address is anonymised: Google Analytics 4 neither logs nor stores it. No advertising and no ad sharing: ad storage, ad personalisation and Google signals are switched off.</p>
+    <p>Provider: «GOOGLE», Ireland. Data may be transferred to Google LLC in the United States under the EU–U.S. Data Privacy Framework and the European Commission’s standard contractual clauses. Retention at Google: 14 months. Legal basis: «B».</p>
+    <h2>Objecting to these cookies</h2>
+    <p>Block or delete cookies in your browser settings, or install the <a href="«OPTOUT»" «EXT»>Google Analytics opt-out browser add-on</a>. The site and its calculators work the same way.</p>
+    </>) : (<>
+    <p>The site <strong>sets no cookies</strong>. Details of the processing are in the <a href={route('privacy', lang)}>privacy policy</a>.</p>
+    </>)}
+    {CLARITY_ID && (<><h2>Microsoft Clarity, cookie-free</h2><p>Page stability is monitored with Microsoft Clarity in cookie-free mode: Clarity sets no cookies, each page view gets a single-use identifier, and page content and your inputs are masked. Blocking <code>clarity.ms</code> stops it.</p></>)}
+    <h2>What you type</h2>
+    <p>Calculations run in your browser: what you enter is sent to no server and is gone when you close the page.</p>
+    <p>Questions: «MAIL». Last updated: {LAST_UPDATED}.</p>""",
+    terms_h2='Personal data and cookies',
+    terms_sec="""    {GA4_ID ? (<p>What you type in the calculators stays in your browser. The site sets Google Analytics audience measurement cookies (<code>_ga</code>, <code>_ga_«ID»</code>, 13 months at most), with no advertising{CLARITY_ID && '; page stability is monitored with Microsoft Clarity, cookie-free'}. Details, legal basis and how to object: <a href={route('privacy', lang)}>privacy policy</a> and <a href={route('cookies', lang)}>cookies</a> page.</p>) : (<p>What you type in the calculators stays in your browser and the site sets no cookies{CLARITY_ID && '; page stability is monitored anonymously with Microsoft Clarity, cookie-free'}. See the <a href={route('privacy', lang)}>privacy policy</a> and the <a href={route('cookies', lang)}>cookies</a> page.</p>)}""",
+    terms="""    <h1>Legal notice</h1>
+    <p>Information about the publisher and the conditions of use of {SITE_URL}.</p>
+    <h2>Publisher</h2>
     <LegalIdentity lang={lang} />
-    <p>Inhaltlich verantwortlich im Sinne des § 18 Abs. 2 MStV: {AUTHOR_NAME}, unter der vorstehenden Anschrift.</p>
-
-    <h2>Hosting</h2>
+    <p>Editor in charge: {AUTHOR_NAME}, responsible for the content published on {SITE_URL}.</p>
+    <h2>Host</h2>
     <LegalIdentity mode="hosting" lang={lang} />
+    <h2>Purpose of the site and no advice</h2>
+    <p>The site offers free calculators and guides for information. Results are estimates based on the official rules and rates cited on each page; they are neither personal advice, nor a decision, nor a commitment by any authority. Method and limits: <a href={route('method', lang)}>method</a>.</p>
+    <h2>Liability</h2>
+    <p>Parameters are updated and calculations checked against reference cases, with no guarantee that errors are absent. The publisher is not liable for a decision made on an estimate alone. Please report errors through the <a href={route('contact', lang)}>contact page</a>.</p>
+    <h2>Intellectual property</h2>
+    <p>Texts, design and code belong to the publisher; short quotations with a link to the original page are welcome.</p>
+    <h2>«H2»</h2>
+«SEC»
+    <h2>Reporting content</h2>
+    <p>Report unlawful content to «MAIL», with the page address and the reason.</p>
+    <h2>Governing law</h2>
+    <p>French law. Failing an amicable settlement, the competent courts of {LEGAL.jurisdiction}. Last updated: {LAST_UPDATED}.</p>""",
+)
 
-    <h2>Zweck des Angebots und kein Rechtsrat</h2>
-    <p>Dieses Angebot stellt einen kostenlosen Rechner für das Arbeitslosengeld I sowie erläuternde Ratgeber bereit. Die Ergebnisse sind <strong>unverbindliche Schätzungen</strong> auf Grundlage des SGB III, der Leistungsentgeltverordnung und des jeweils gültigen Programmablaufplans zur Lohnsteuer. Sie ersetzen weder den Bescheid der Agentur für Arbeit noch eine Rechts-, Steuer- oder Sozialberatung; sie begründen keinen Anspruch. Maßgeblich ist allein der Bescheid der zuständigen Agentur für Arbeit. Welche Fälle der Rechner abbildet und welche bewusst nicht, steht in der <a href={route('method', lang)}>Methodik</a>.</p>
-
-    <h2>Haftung für Inhalte</h2>
-    <p>Als Diensteanbieter sind wir gemäß § 7 Abs. 1 DDG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind wir jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen. Die Parameter werden zu jeder Anpassung überprüft und gegen Referenzfälle getestet; eine Gewähr für Richtigkeit, Vollständigkeit und Aktualität können wir gleichwohl nicht übernehmen. Einen erkannten Fehler melden Sie bitte über die <a href={route('contact', lang)}>Kontaktseite</a>; wie wir damit umgehen, beschreibt unsere <a href={route('editorial', lang)}>Redaktionsrichtlinie</a>.</p>
-
-    <h2>Haftung für Links</h2>
-    <p>Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Zum Zeitpunkt der Verlinkung waren keine Rechtsverstöße erkennbar. Eine permanente inhaltliche Kontrolle ist ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen entfernen wir derartige Links umgehend.</p>
-
-    <h2>Urheberrecht</h2>
-    <p>Die durch die Betreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechts bedürfen unserer schriftlichen Zustimmung; kurze Zitate mit Quellenlink sind zulässig. Amtliche Werke, Gesetzestexte und Daten der Bundesagentur für Arbeit sind nach § 5 UrhG gemeinfrei.</p>
-
-    <h2>Einbindung des Rechners</h2>
-    <p>Der Rechner darf kostenlos als iframe in andere Websites eingebunden werden, sofern der sichtbare Quellenhinweis auf diese Website erhalten bleibt und nicht der Eindruck eines amtlichen Angebots entsteht. Den Einbindungscode senden wir auf Anfrage zu.</p>
-
-    <h2>Verbraucherstreitbeilegung</h2>
-    <p>Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle im Sinne des § 36 VSBG teilzunehmen.</p>
-
-    <h2>Datenschutz</h2>
-    <p>Wie personenbezogene Daten verarbeitet werden, steht in der <a href={route('privacy', lang)}>Datenschutzerklärung</a> und im <a href={route('cookies', lang)}>Cookie-Hinweis</a>. Stand: {LAST_UPDATED}.</p>"""
-
-META['de-arbeitslosengeld', 'de', 'privacy'] = (
-    'Datenschutzerklärung – ${SITE_NAMES[lang]}',
-    'Verarbeitung nach DSGVO: Verantwortlicher, Server-Logfiles, Einwilligung für Statistik und Werbung, Speicherdauer, Ihre Rechte und Beschwerdeweg.')
-BODIES['de-arbeitslosengeld', 'de', 'privacy'] = """    <h1>Datenschutzerklärung</h1>
-    <p>Diese Erklärung informiert nach Art. 13 und 14 der Datenschutz-Grundverordnung (DSGVO) sowie nach dem Bundesdatenschutzgesetz (BDSG) und dem TDDDG darüber, welche personenbezogenen Daten bei der Nutzung von {SITE_URL} verarbeitet werden.</p>
-
+T['de'] = dict(
+    bc=dict(privacy='Datenschutz', cookies='Cookies', terms='Impressum'),
+    title=dict(privacy='Datenschutzerklärung', cookies='Cookies', terms='Impressum'),
+    desc=dict(
+        privacy_ga='Reichweitenmessung mit Google Analytics und Cookies, ohne Werbung; Eingaben bleiben im Browser; Server-Logs des Hosters; Ihre Rechte und die Aufsichtsbehörde.',
+        privacy_no='Eingaben bleiben im Browser, keine Cookies, Server-Logs des Hosters: welche Daten die Seite verarbeitet, Ihre Rechte und die zuständige Aufsichtsbehörde.',
+        cookies_ga='Cookies der Reichweitenmessung von Google Analytics und sonst keine: Namen, Zweck, Laufzeit von höchstens 13 Monaten, Anbieter und Widerspruch.',
+        cookies_no='Die Seite setzt keine Cookies: Ihre Eingaben bleiben in Ihrem Browser, auf Ihrem Gerät wird nichts gespeichert.',
+        terms='Anbieter, inhaltlich Verantwortlicher, Hoster, keine Beratung, Urheberrecht, Datenschutz und anwendbares Recht dieser Seite.'),
+    base='das berechtigte Interesse des Anbieters (Art. 6 Abs. 1 lit. f DSGVO«BASE»)',
+    privacy="""    <h1>Datenschutzerklärung</h1>
+    <p>Diese Seite beschreibt die Verarbeitung personenbezogener Daten bei der Nutzung von {SITE_URL} nach Art. 12 bis 14 der Verordnung (EU) 2016/679 (DSGVO)«LOI».</p>
     <h2>1. Verantwortlicher</h2>
     <LegalIdentity lang={lang} />
-    <p>Fragen zum Datenschutz richten Sie bitte an <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Ein Datenschutzbeauftragter ist nicht zu benennen, weil die Voraussetzungen des Art. 37 DSGVO und des § 38 BDSG hier nicht vorliegen.</p>
-
-    <h2>2. Der Rechner überträgt nichts</h2>
-    <p>Sämtliche Berechnungen laufen ausschließlich in Ihrem Browser. Bruttoentgelt, Steuerklasse, Alter, Versicherungszeiten und die Angabe zu einem Kind <strong>verlassen Ihr Gerät nicht</strong>, werden nirgends gespeichert und keiner Kennung zugeordnet. Es gibt keine Registrierung und kein Nutzerkonto. Wenn Sie den Teilen-Link verwenden, sind Ihre Eingaben in der URL kodiert – geben Sie ihn nur an Personen weiter, die sie sehen dürfen.</p>
-
-    <h2>3. Tatsächliche Verarbeitungen</h2>
-    <h3>Server-Logfiles</h3>
-    <p>Beim Abruf jeder Seite protokolliert der Hoster IP-Adresse, Zeitpunkt, aufgerufene Ressource, Statuscode, übertragene Datenmenge, Browsertyp und Referrer. Zweck: technischer Betrieb, Sicherheit und Missbrauchsabwehr. Rechtsgrundlage ist unser berechtigtes Interesse an einem störungsfreien und sicheren Betrieb (Art. 6 Abs. 1 lit. f DSGVO). Die Logs werden spätestens nach 30 Tagen gelöscht.</p>
-    <h3>Reichweitenmessung</h3>
-    <p>Nur mit Ihrer Einwilligung setzen wir Google Analytics 4 mit IP-Anonymisierung und Google-Consent-Mode ein, um zu erkennen, welche Seiten gefunden und genutzt werden. Rechtsgrundlage: Ihre Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO und § 25 Abs. 1 TDDDG. Ohne Einwilligung wird kein Statistik-Cookie gesetzt. Speicherdauer der Auswertungsdaten: 14 Monate.</p>
-    <h3>Werbung</h3>
-    <p>Auf einzelnen Seiten kann Werbung über Google AdSense ausgeliefert werden. Mit Ihrer Einwilligung darf Google Cookies zur Personalisierung setzen; ohne Einwilligung werden ausschließlich nicht personalisierte Anzeigen ausgeliefert. Einzelheiten der Verarbeitung durch Google: <a href="https://policies.google.com/technologies/ads" rel="noopener" target="_blank">policies.google.com/technologies/ads</a>.</p>
-    <h3>Kontaktaufnahme</h3>
-    <p>Schreiben Sie uns, verarbeiten wir Ihre E-Mail-Adresse und den Inhalt Ihrer Nachricht, um zu antworten und gemeldete Rechenfehler zu beheben (Art. 6 Abs. 1 lit. f DSGVO). Die Korrespondenz wird drei Jahre nach dem letzten Kontakt gelöscht.</p>
-
-    <h2>4. Empfänger und Auftragsverarbeitung</h2>
-    <p>Daten werden weder verkauft noch vermietet. Zugriff haben allein der Hoster als Auftragsverarbeiter nach Art. 28 DSGVO, mit dem ein Auftragsverarbeitungsvertrag besteht, und – nur bei erteilter Einwilligung – die Google Ireland Limited für Statistik und Werbung.</p>
-
-    <h2>5. Drittlandübermittlung</h2>
-    <p>Bei Einsatz der Google-Dienste können Daten in die USA übermittelt werden. Grundlage sind die Standardvertragsklauseln der EU-Kommission sowie die Zertifizierung von Google LLC unter dem EU-US Data Privacy Framework. Wenn Sie die Einwilligung verweigern, findet keine solche Übermittlung statt.</p>
-
-    <h2>6. Ihre Rechte</h2>
-    <p>Sie haben das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21 DSGVO). Eine erteilte Einwilligung können Sie jederzeit mit Wirkung für die Zukunft widerrufen – so einfach, wie Sie sie erteilt haben, über die Cookie-Einstellungen im Seitenfuß. Wenden Sie sich an <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; wir antworten innerhalb eines Monats. Da wir kein Nutzerkonto führen, liegen uns in aller Regel keine Daten vor, die Sie identifizieren – auch das teilen wir Ihnen dann mit.</p>
-    <p>Ihnen steht ein Beschwerderecht bei einer Aufsichtsbehörde zu, insbesondere bei {LEGAL.supervisoryAuthority} (<a href={LEGAL.supervisoryAuthorityUrl} rel="noopener" target="_blank">{LEGAL.supervisoryAuthorityUrl}</a>).</p>
-
-    <h2>7. Keine automatisierte Entscheidung, kein Profiling</h2>
-    <p>Das Rechenergebnis entsteht auf Ihre Eingabe hin in Ihrem Browser. Es entfaltet keine rechtliche Wirkung und ist keine automatisierte Entscheidung im Sinne des Art. 22 DSGVO. Profiling findet nicht statt.</p>
-
-    <h2>8. Erforderlichkeit und Sicherheit</h2>
-    <p>Die Bereitstellung personenbezogener Daten ist weder gesetzlich noch vertraglich vorgeschrieben; Sie können den Rechner ohne jede Angabe nutzen. Die Website wird ausschließlich über HTTPS ausgeliefert und führt keine Nutzerdatenbank. Stand: {LAST_UPDATED}.</p>"""
-
-# --------------------------------------------------------------------------- #
-# Suisse — nettolohn-rechner.ch (DE + FR)
-# Pas d'obligation d'Impressum au sens allemand, mais l'art. 3 al. 1 let. s LCD
-# impose d'indiquer clairement son identité et ses coordonnées ; nLPD pour les données.
-# --------------------------------------------------------------------------- #
-META['ch-lohnrechner', 'de', 'terms'] = (
-    'Impressum – ${SITE_NAME}',
-    'Betreiber, Kontakt und UID dieses Lohnrechners, Haftungsausschluss zu Steuerberechnungen, Urheberrecht, Einbindung des Rechners und anwendbares Recht.')
-BODIES['ch-lohnrechner', 'de', 'terms'] = """    <h1>Impressum</h1>
-    <p>Angaben zum Betreiber dieser Website, veröffentlicht in Übereinstimmung mit Art. 3 Abs. 1 lit. s des Bundesgesetzes gegen den unlauteren Wettbewerb (UWG).</p>
-
-    <h2>Betreiber und verantwortlich für den Inhalt</h2>
+    <p>Fragen zu Ihren Daten: «MAIL». Ein Datenschutzbeauftragter ist nicht benannt, da die Voraussetzungen des Art. 37 DSGVO nicht vorliegen.</p>
+    <h2>2. Ihre Eingaben bleiben im Browser</h2>
+    <p>Die Berechnungen laufen in Ihrem Browser. Beträge, Daten und Angaben zu Ihrer Situation <strong>werden an keinen Server übertragen</strong>, nirgends gespeichert und keiner Kennung zugeordnet. Die Seite verlangt weder Konto noch Namen noch E-Mail-Adresse. Ein Teilen-Link enthält Ihre Eingaben in der Adresse der Seite: Geben Sie ihn nur an Personen Ihrer Wahl weiter.</p>
+    <h2>3. Verarbeitungen</h2>
+    <h3>Server-Logs des Hosters</h3>
+    <p>Der Hoster speichert bei jedem Abruf IP-Adresse, Datum und Uhrzeit, die abgerufene Seite, den Browser und die verweisende Seite. Zweck: Sicherheit des Dienstes und Fehlerdiagnose. Rechtsgrundlage: «B». Dauer: nach den Richtlinien des Hosters.</p>
+    {GA4_ID ? (<>
+    <h3>Reichweitenmessung mit Google Analytics</h3>
+    <p>Die Seite nutzt Google Analytics 4, um Besuche zu zählen und zu sehen, welche Seiten weiterhelfen: aufgerufene Seiten, verweisende Seite, Besuchsdauer, Geräte- und Browsertyp, ungefähres Land und ungefähre Stadt. Dazu setzt Google Analytics zwei Cookies auf Ihrem Gerät: <code>_ga</code>, das Besucher über eine zufällige Kennung unterscheidet, und <code>_ga_«ID»</code>, das den Stand des Besuchs speichert. Ihre Laufzeit ist auf höchstens 13 Monate (390 Tage) eingestellt und verlängert sich nicht bei jedem Besuch; Google sieht standardmäßig 2 Jahre vor.</p>
+    <p>Die IP-Adresse wird anonymisiert: Google Analytics 4 protokolliert und speichert sie nicht, sondern nutzt sie nur bei der Erfassung, um Land und Stadt ungefähr zu bestimmen. Die an Google Analytics übermittelte Seitenadresse enthält keine Parameter, die Eingaben eines Teilen-Links gehen also nicht mit. Die Seite zeigt keine Werbung: Werbe-Speicherung, Werbedaten, personalisierte Anzeigen und Google-Signale sind abgeschaltet, Messdaten gehen an keinen Werbetreibenden.</p>
+    <p>Zweck: Reichweitenmessung. Rechtsgrundlage: «B». Anbieter: «GOOGLE», Irland. Speicherdauer bei Google: 14 Monate für Besuchs- und Kennungsdaten, danach Löschung; es bleiben nur anonyme Summen.</p>
+    </>) : (<>
+    <h3>Keine Reichweitenmessung</h3>
+    <p>Die Seite setzt keine Cookies und nutzt keine Analyse- oder Werbewerkzeuge.</p>
+    </>)}
+    {CLARITY_ID && (<>
+    <h3>Technische Stabilitätsmessung mit Microsoft Clarity, ohne Cookies</h3>
+    <p>Um Fehler, langsame Seiten und nicht reagierende Schaltflächen zu finden, nutzt die Seite Microsoft Clarity im cookiefreien Modus: Clarity setzt keine Cookies, jeder Seitenaufruf erhält eine eigene Kennung, Seitentext und Ihre Eingaben sind maskiert. Clarity erhält die Seitenstruktur, Klicks, Scrollen, Gerätetyp, Ladezeiten und Fehler. Zweck: Stabilität der Seite. Rechtsgrundlage: «B». Anbieter: «MS», Irland. Speicherdauer: 30 Tage für Seitenaufzeichnungen, höchstens 13 Monate für zusammengefasste Daten.</p>
+    </>)}
+    <h3>Nachrichten an uns</h3>
+    <p>Schreiben Sie an die Kontaktadresse, werden Ihre E-Mail-Adresse und Ihre Nachricht so lange aufbewahrt, wie es für die Antwort und gegebenenfalls eine Fehlerkorrektur nötig ist, und spätestens drei Jahre nach dem letzten Austausch gelöscht. Rechtsgrundlage: «B».</p>
+    <h2>4. Empfänger</h2>
+    <p>Daten werden weder verkauft noch vermietet noch weitergegeben. Zugriff haben nur der Hoster{GA4_ID && ', Google Ireland Limited für Google Analytics'}{CLARITY_ID && ', Microsoft Ireland Operations Limited für Clarity'}, jeweils als Auftragsverarbeiter nach Art. 28 DSGVO. Werbenetzwerke sind auf der Seite nicht tätig.</p>
+    <h2>5. Übermittlung außerhalb der Europäischen Union</h2>
+    <p>Server-Logs des Hosters können in den USA verarbeitet werden.{GA4_ID && ' Daten von Google Analytics können an Google LLC in den USA übermittelt werden.'}{CLARITY_ID && ' Daten von Clarity können an die Microsoft Corporation in den USA übermittelt werden.'} Grundlage sind das EU-U.S. Data Privacy Framework und die Standardvertragsklauseln der Europäischen Kommission.</p>
+«SITE»    <h2>6. Ihre Rechte</h2>
+    <p>Sie haben die Rechte auf Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch und Datenübertragbarkeit nach Art. 15 bis 22 DSGVO. Schreiben Sie an «MAIL»; wir antworten innerhalb eines Monats. Ohne Benutzerkonten haben wir meist keine Daten, die Sie identifizieren; das teilen wir Ihnen dann mit.</p>
+    {GA4_ID && (<p>Der Reichweitenmessung widersprechen Sie auch ohne Nachricht an uns: Blockieren oder löschen Sie Cookies in den Einstellungen Ihres Browsers, oder installieren Sie das <a href="«OPTOUT»" «EXT»>Browser-Add-on zur Deaktivierung von Google Analytics</a>. Die Seite funktioniert dann genauso.</p>)}
+    {CLARITY_ID && (<p>Für die Stabilitätsmessung: Blockieren Sie die Domain <code>clarity.ms</code> im Browser oder mit einem Inhaltsblocker.</p>)}
+    <p>Sie können sich bei der Aufsichtsbehörde beschweren: {LEGAL.supervisoryAuthority} (<a href={LEGAL.supervisoryAuthorityUrl} «EXT»>{LEGAL.supervisoryAuthorityUrl}</a>).«AUT»</p>
+    <h2>7. Keine automatisierte Entscheidung</h2>
+    <p>Ein Rechenergebnis ist eine Schätzung, die auf Ihre Anfrage aus Ihren Eingaben in Ihrem Browser entsteht. Es hat keine Rechtswirkung und ist keine automatisierte Entscheidung nach Art. 22 DSGVO. Ein Profiling findet nicht statt.</p>
+    <p>Siehe auch die Seite <a href={route('cookies', lang)}>Cookies</a>. Stand: {LAST_UPDATED}.</p>""",
+    cookies="""    <h1>Cookies</h1>
+    {GA4_ID ? (<>
+    <p>Die Seite setzt Cookies der Reichweitenmessung von Google Analytics und nur diese: keine Werbe-Cookies, keine Cookies sozialer Netzwerke. Einzelheiten stehen in der <a href={route('privacy', lang)}>Datenschutzerklärung</a>.</p>
+    <h2>Gesetzte Cookies</h2>
+    <table><thead><tr><th>Name</th><th>Anbieter</th><th>Zweck</th><th>Laufzeit</th></tr></thead><tbody>
+    <tr><td><code>_ga</code></td><td>Google Analytics</td><td>Besucher über eine zufällige Kennung unterscheiden</td><td>höchstens 13 Monate (390 Tage)</td></tr>
+    <tr><td><code>_ga_«ID»</code></td><td>Google Analytics</td><td>Stand des laufenden Besuchs speichern</td><td>höchstens 13 Monate (390 Tage)</td></tr>
+    </tbody></table>
+    <p>Die Laufzeiten verlängern sich nicht bei jedem Besuch; Google sieht standardmäßig 2 Jahre vor, die Seite verkürzt sie. Zweck: Reichweitenmessung (aufgerufene Seiten, Herkunft, Gerät, ungefähres Land). Die IP-Adresse wird anonymisiert: Google Analytics 4 protokolliert und speichert sie nicht. Werbung und Weitergabe zu Werbezwecken gibt es nicht: Werbe-Speicherung, personalisierte Anzeigen und Google-Signale sind abgeschaltet.</p>
+    <p>Anbieter: «GOOGLE», Irland. Daten können an Google LLC in den USA übermittelt werden, auf Grundlage des EU-U.S. Data Privacy Framework und der Standardvertragsklauseln der Europäischen Kommission. Speicherdauer bei Google: 14 Monate. Rechtsgrundlage: «B».</p>
+    <h2>Widerspruch</h2>
+    <p>Blockieren oder löschen Sie Cookies in den Einstellungen Ihres Browsers, oder installieren Sie das <a href="«OPTOUT»" «EXT»>Browser-Add-on zur Deaktivierung von Google Analytics</a>. Die Seite und ihre Rechner funktionieren dann genauso.</p>
+    </>) : (<>
+    <p>Die Seite <strong>setzt keine Cookies</strong>. Einzelheiten stehen in der <a href={route('privacy', lang)}>Datenschutzerklärung</a>.</p>
+    </>)}
+    {CLARITY_ID && (<><h2>Microsoft Clarity, ohne Cookies</h2><p>Die Stabilität der Seiten wird mit Microsoft Clarity im cookiefreien Modus gemessen: Clarity setzt keine Cookies, jeder Seitenaufruf erhält eine Einmal-Kennung, Seiteninhalt und Ihre Eingaben sind maskiert. Wer <code>clarity.ms</code> blockiert, stoppt die Messung.</p></>)}
+    <h2>Ihre Eingaben</h2>
+    <p>Die Berechnungen laufen in Ihrem Browser: Was Sie eingeben, geht an keinen Server und ist nach dem Schließen der Seite verschwunden.</p>
+    <p>Fragen: «MAIL». Stand: {LAST_UPDATED}.</p>""",
+    terms_h2='Datenschutz und Cookies',
+    terms_sec="""    {GA4_ID ? (<p>Ihre Eingaben in den Rechnern verlassen Ihren Browser nicht. Die Seite setzt Cookies der Reichweitenmessung von Google Analytics (<code>_ga</code>, <code>_ga_«ID»</code>, höchstens 13 Monate), ohne Werbung{CLARITY_ID && '; die Stabilität der Seiten wird mit Microsoft Clarity ohne Cookies gemessen'}. Einzelheiten, Rechtsgrundlage und Widerspruch: <a href={route('privacy', lang)}>Datenschutzerklärung</a> und Seite <a href={route('cookies', lang)}>Cookies</a>.</p>) : (<p>Ihre Eingaben in den Rechnern verlassen Ihren Browser nicht, und die Seite setzt keine Cookies{CLARITY_ID && '; die Stabilität der Seiten wird anonym mit Microsoft Clarity ohne Cookies gemessen'}. Siehe <a href={route('privacy', lang)}>Datenschutzerklärung</a> und Seite <a href={route('cookies', lang)}>Cookies</a>.</p>)}""",
+    terms="""    <h1>Impressum</h1>
+    <p>Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG) und § 18 Abs. 2 Medienstaatsvertrag (MStV) für {SITE_URL}.</p>
+    <h2>Anbieter</h2>
     <LegalIdentity lang={lang} />
-    <p>Redaktionell verantwortlich: {AUTHOR_NAME}.</p>
-
+    <p>Inhaltlich verantwortlich nach § 18 Abs. 2 MStV: {AUTHOR_NAME}, Anschrift wie oben.</p>
     <h2>Hosting</h2>
     <LegalIdentity mode="hosting" lang={lang} />
-
-    <h2>Zweck der Website und keine Beratung</h2>
-    <p>Diese Website stellt einen kostenlosen Nettolohnrechner für die Schweiz samt Ratgebern bereit. Die Ergebnisse sind <strong>unverbindliche Schätzungen</strong> auf Grundlage der Steuertarife der Eidgenössischen Steuerverwaltung, der kantonalen und kommunalen Steuerfüsse sowie der Sozialversicherungsansätze des jeweiligen Jahres. Sie ersetzen weder die Veranlagung der zuständigen Steuerverwaltung noch eine Steuer-, Rechts- oder Vorsorgeberatung. Massgebend ist einzig die Veranlagungsverfügung. Was der Rechner abbildet und was bewusst nicht, steht in der <a href={route('method', lang)}>Methodik</a>.</p>
-
-    <h2>Haftungsausschluss</h2>
-    <p>Wir prüfen Tarife und Steuerfüsse bei jeder Anpassung und testen den Rechner gegen amtliche Referenzfälle. Trotzdem können Fehler, Lücken oder Verzögerungen bei der Aktualisierung nicht ausgeschlossen werden. Eine Haftung für Schäden materieller oder immaterieller Art, die aus dem Zugriff auf diese Website, ihrer Nutzung oder Nichtnutzung entstehen, wird im gesetzlich zulässigen Umfang ausgeschlossen. Fehler melden Sie bitte über die <a href={route('contact', lang)}>Kontaktseite</a>; das Vorgehen beschreibt die <a href={route('editorial', lang)}>Redaktionsrichtlinie</a>.</p>
-
+    <h2>Zweck des Angebots und keine Beratung</h2>
+    <p>Die Seite stellt kostenlose Rechner und Ratgeber zur Information bereit. Die Ergebnisse sind unverbindliche Schätzungen auf Grundlage der auf jeder Seite genannten amtlichen Regeln und Werte; sie ersetzen weder eine Beratung noch einen Bescheid. Methode und Grenzen: <a href={route('method', lang)}>Methodik</a>.</p>
+    <h2>Haftung</h2>
+    <p>Die Parameter werden aktualisiert und die Rechnungen an Referenzfällen geprüft; eine Gewähr für Fehlerfreiheit besteht nicht. Für Entscheidungen, die allein auf einer Schätzung beruhen, haftet der Anbieter nicht. Fehler melden Sie über die <a href={route('contact', lang)}>Kontaktseite</a>.</p>
     <h2>Urheberrecht</h2>
-    <p>Texte, Grafiken, Datenaufbereitung und Quellcode dieser Website sind urheberrechtlich geschützt. Jede Verwendung ausserhalb der Schranken des Urheberrechtsgesetzes bedarf unserer Zustimmung; kurze Zitate mit Quellenlink sind zulässig. Steuerdaten stammen von der Eidgenössischen Steuerverwaltung und den Kantonen und unterliegen deren Nutzungsbedingungen.</p>
+    <p>Texte, Gestaltung und Code gehören dem Anbieter; kurze Zitate mit Link auf die Ursprungsseite sind erlaubt.</p>
+    <h2>«H2»</h2>
+«SEC»
+    <h2>Meldung rechtswidriger Inhalte</h2>
+    <p>Rechtswidrige Inhalte melden Sie an «MAIL», mit Adresse der Seite und Grund.</p>
+    <h2>Anwendbares Recht</h2>
+    <p>Es gilt französisches Recht. Ohne gütliche Einigung sind die Gerichte von {LEGAL.jurisdiction} zuständig. Stand: {LAST_UPDATED}.</p>""",
+)
 
-    <h2>Einbindung des Rechners</h2>
-    <p>Die Einbindung als Widget ist unter den Bedingungen der <a href={route('widget', lang)}>Widget-Seite</a> kostenlos gestattet, solange der sichtbare Quellenhinweis erhalten bleibt und nicht der Eindruck eines amtlichen Angebots entsteht.</p>
-
-    <h2>Externe Links</h2>
-    <p>Für Inhalte verlinkter Websites sind ausschliesslich deren Betreiber verantwortlich. Zum Zeitpunkt der Verlinkung waren keine Rechtsverstösse erkennbar.</p>
-
-    <h2>Datenschutz und anwendbares Recht</h2>
-    <p>Die Bearbeitung von Personendaten ist in der <a href={route('privacy', lang)}>Datenschutzerklärung</a> und im <a href={route('cookies', lang)}>Cookie-Hinweis</a> beschrieben. Es gilt schweizerisches Recht; Gerichtsstand ist {LEGAL.jurisdiction}, soweit nicht zwingende Bestimmungen etwas anderes vorsehen. Stand: {LAST_UPDATED}.</p>"""
-
-META['ch-lohnrechner', 'de', 'privacy'] = (
-    'Datenschutzerklärung – ${SITE_NAME}',
-    'Bearbeitung von Personendaten nach revidiertem DSG: Logfiles, Einwilligung für Statistik und Werbung, Bekanntgabe ins Ausland, Ihre Rechte, EDÖB.')
-BODIES['ch-lohnrechner', 'de', 'privacy'] = """    <h1>Datenschutzerklärung</h1>
-    <p>Diese Erklärung informiert nach dem revidierten Bundesgesetz über den Datenschutz (revDSG, in Kraft seit 1. September 2023) und – soweit die Verordnung auf Besucherinnen und Besucher aus der EU anwendbar ist – nach der DSGVO über die Bearbeitung von Personendaten auf {SITE_URL}.</p>
-
-    <h2>1. Verantwortliche Person</h2>
+T['es'] = dict(
+    bc=dict(privacy='Privacidad', cookies='Cookies', terms='Aviso legal'),
+    title=dict(privacy='Política de privacidad', cookies='Cookies', terms='Aviso legal'),
+    desc=dict(
+        privacy_ga='Medición de audiencia con Google Analytics y cookies, sin publicidad; los datos introducidos quedan en su navegador; registros del alojamiento; sus derechos.',
+        privacy_no='Los datos introducidos quedan en su navegador, sin cookies, registros del alojamiento: los tratamientos del sitio, sus derechos y la autoridad de control.',
+        cookies_ga='Cookies de medición de audiencia de Google Analytics y ninguna más: nombres, finalidad, duración máxima de 13 meses, proveedor y cómo oponerse.',
+        cookies_no='El sitio no instala cookies: lo que introduce se queda en su navegador y no se guarda nada en su dispositivo.',
+        terms='Titular, responsable de contenidos, alojamiento, ausencia de asesoramiento, propiedad intelectual, datos personales y ley aplicable.'),
+    base='el interés legítimo del titular (art. 6.1.f RGPD«BASE»)',
+    privacy="""    <h1>Política de privacidad</h1>
+    <p>Esta página describe los tratamientos de datos personales ligados al uso de {SITE_URL}, conforme a los artículos 12 a 14 del Reglamento (UE) 2016/679 (RGPD)«LOI».</p>
+    <h2>1. Responsable del tratamiento</h2>
     <LegalIdentity lang={lang} />
-    <p>Fragen zum Datenschutz: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Eine Vertretung in der EU nach Art. 27 DSGVO ist nicht bestellt, da sich das Angebot an Personen in der Schweiz richtet.</p>
-
-    <h2>2. Der Rechner bearbeitet lokal</h2>
-    <p>Lohn, Zivilstand, Kinder, Konfession, Wohngemeinde, Pensionskassenabzüge: alle Eingaben werden ausschliesslich in Ihrem Browser verarbeitet und <strong>weder an uns noch an Dritte übermittelt</strong>. Beim Wechsel des Kantons lädt Ihr Browser lediglich eine statische Datendatei dieser Website. Der Teilen-Link kodiert Ihre Eingaben in der URL; geben Sie ihn nur bewusst weiter.</p>
-
-    <h2>3. Was tatsächlich bearbeitet wird</h2>
-    <h3>Server-Logfiles</h3>
-    <p>Der Hosting-Anbieter protokolliert IP-Adresse, Zeitpunkt, aufgerufene Seite, Statuscode, Browser und Referrer. Zweck: sicherer Betrieb und Fehlersuche; Grundlage ist unser überwiegendes privates Interesse am störungsfreien Betrieb (Art. 31 Abs. 1 revDSG, Art. 6 Abs. 1 lit. f DSGVO). Löschung nach spätestens 30 Tagen.</p>
-    <h3>Reichweitenmessung und Werbung</h3>
-    <p>Nur mit Ihrer Einwilligung setzen wir Google Analytics 4 mit IP-Anonymisierung und Consent-Mode ein; ohne Einwilligung wird kein Statistik-Cookie gesetzt. Wird auf einzelnen Seiten Werbung über Google AdSense ausgeliefert, erfolgt eine Personalisierung nur mit Einwilligung, andernfalls werden ausschliesslich nicht personalisierte Anzeigen angezeigt. Die Einwilligung können Sie jederzeit über die Cookie-Einstellungen im Seitenfuss widerrufen.</p>
-    <h3>Kontaktaufnahme</h3>
-    <p>E-Mail-Adresse und Inhalt Ihrer Nachricht bearbeiten wir, um zu antworten und gemeldete Rechenfehler zu beheben. Die Korrespondenz wird drei Jahre nach dem letzten Kontakt gelöscht.</p>
-
-    <h2>4. Bekanntgabe an Dritte und ins Ausland</h2>
-    <p>Personendaten werden weder verkauft noch vermietet. Zugriff haben der Hosting-Anbieter als Auftragsbearbeiter nach Art. 9 revDSG und, nur bei erteilter Einwilligung, Google. Dabei können Daten in die USA bekanntgegeben werden. Die Bekanntgabe stützt sich auf die Standardvertragsklauseln der EU-Kommission, anerkannt durch den EDÖB, sowie auf die Zertifizierung von Google LLC unter dem Swiss–U.S. Data Privacy Framework (Art. 16 f. revDSG).</p>
-
-    <h2>5. Ihre Rechte</h2>
-    <p>Sie haben insbesondere das Recht auf Auskunft (Art. 25 revDSG), auf Berichtigung (Art. 32), auf Löschung oder Vernichtung, auf Widerspruch gegen eine Bearbeitung sowie auf Herausgabe oder Übertragung Ihrer Daten (Art. 28 revDSG). Für Personen im Anwendungsbereich der DSGVO gelten zusätzlich deren Art. 15 bis 22. Melden Sie sich unter <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; wir antworten in der Regel innert 30 Tagen. Da wir kein Nutzerkonto führen, liegen uns meist keine Daten vor, die Sie identifizieren.</p>
-    <p>Sie können sich jederzeit an die Aufsichtsbehörde wenden: {LEGAL.supervisoryAuthority} (<a href={LEGAL.supervisoryAuthorityUrl} rel="noopener" target="_blank">{LEGAL.supervisoryAuthorityUrl}</a>).</p>
-
-    <h2>6. Keine automatisierte Einzelentscheidung</h2>
-    <p>Das Rechenergebnis entsteht auf Ihre Eingabe hin in Ihrem Browser und hat keine Rechtswirkung; eine automatisierte Einzelentscheidung im Sinne von Art. 21 revDSG liegt nicht vor. Profiling findet nicht statt.</p>
-
-    <h2>7. Sicherheit und Änderungen</h2>
-    <p>Die Website wird ausschliesslich über HTTPS ausgeliefert und führt keine Nutzerdatenbank. Wir passen diese Erklärung an, wenn sich Recht oder Technik ändern. Stand: {LAST_UPDATED}.</p>"""
-
-META['ch-lohnrechner', 'fr', 'terms'] = (
-    'Mentions légales – ${SITE_NAME_FR}',
-    'Exploitant, contact et IDE de ce calculateur de salaire net, exclusion de responsabilité, droit d’auteur, intégration du widget et droit applicable.')
-BODIES['ch-lohnrechner', 'fr', 'terms'] = """    <h1>Mentions légales</h1>
-    <p>Informations relatives à l’exploitant de ce site, publiées conformément à l’art. 3 al. 1 let. s de la loi fédérale contre la concurrence déloyale (LCD).</p>
-
-    <h2>Exploitant et responsable du contenu</h2>
-    <LegalIdentity lang={lang} />
-    <p>Responsable éditorial : {AUTHOR_NAME}.</p>
-
-    <h2>Hébergeur</h2>
-    <LegalIdentity mode="hosting" lang={lang} />
-
-    <h2>Objet du site et absence de conseil</h2>
-    <p>Ce site propose gratuitement un calculateur de salaire net suisse et des guides explicatifs. Les résultats sont des <strong>estimations indicatives</strong> fondées sur les barèmes de l’Administration fédérale des contributions, les coefficients cantonaux et communaux et les taux de cotisations sociales de l’année considérée. Ils ne remplacent ni la taxation de l’administration fiscale compétente, ni un conseil fiscal, juridique ou de prévoyance. Seule la décision de taxation fait foi. Ce que le calculateur couvre et ce qu’il ne couvre volontairement pas figure dans la <a href={route('method', lang)}>méthodologie</a>.</p>
-
-    <h2>Exclusion de responsabilité</h2>
-    <p>Nous contrôlons les barèmes et les coefficients à chaque mise à jour et testons le calculateur sur des cas de référence officiels. Des erreurs, lacunes ou retards de mise à jour ne peuvent cependant pas être exclus. Toute responsabilité pour des dommages matériels ou immatériels résultant de l’accès à ce site, de son utilisation ou de sa non-utilisation est exclue dans les limites permises par la loi. Signalez-nous toute erreur via la page <a href={route('contact', lang)}>contact</a> ; la procédure est décrite dans notre <a href={route('editorial', lang)}>charte éditoriale</a>.</p>
-
-    <h2>Droit d’auteur</h2>
-    <p>Les textes, graphiques, mises en forme de données et le code source de ce site sont protégés par le droit d’auteur. Toute utilisation dépassant les limites légales requiert notre accord ; les courtes citations accompagnées d’un lien vers la source sont autorisées. Les données fiscales proviennent de l’Administration fédérale des contributions et des cantons et restent soumises à leurs conditions d’utilisation.</p>
-
-    <h2>Intégration du calculateur</h2>
-    <p>L’intégration sous forme de widget est autorisée gratuitement aux conditions indiquées sur la <a href={route('widget', lang)}>page widget</a>, pour autant que la mention visible de la source subsiste et qu’aucune confusion avec une offre officielle ne soit créée.</p>
-
-    <h2>Liens externes</h2>
-    <p>Les exploitants des sites liés sont seuls responsables de leur contenu. Aucune infraction n’était décelable au moment de la création du lien.</p>
-
-    <h2>Protection des données et droit applicable</h2>
-    <p>Le traitement des données personnelles est décrit dans la <a href={route('privacy', lang)}>déclaration de protection des données</a> et la page <a href={route('cookies', lang)}>cookies</a>. Le droit suisse est applicable ; le for est à {LEGAL.jurisdiction}, sous réserve des dispositions impératives. Dernière mise à jour : {LAST_UPDATED}.</p>"""
-
-META['ch-lohnrechner', 'fr', 'privacy'] = (
-    'Protection des données – ${SITE_NAME_FR}',
-    'Traitement des données selon la nLPD : journaux, consentement pour la mesure d’audience et la publicité, communication à l’étranger, vos droits, PFPDT.')
-BODIES['ch-lohnrechner', 'fr', 'privacy'] = """    <h1>Déclaration de protection des données</h1>
-    <p>Cette déclaration informe, conformément à la loi fédérale révisée sur la protection des données (nLPD, en vigueur depuis le 1<sup>er</sup> septembre 2023) et, dans la mesure où il s’applique aux visiteurs de l’Union européenne, au RGPD, sur le traitement des données personnelles sur {SITE_URL}.</p>
-
-    <h2>1. Responsable du traitement</h2>
-    <LegalIdentity lang={lang} />
-    <p>Questions relatives à la protection des données : <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Aucun représentant dans l’Union européenne au sens de l’art. 27 RGPD n’a été désigné, l’offre s’adressant aux personnes résidant en Suisse.</p>
-
-    <h2>2. Le calculateur traite localement</h2>
-    <p>Salaire, état civil, enfants, confession, commune de domicile, déductions de caisse de pension : toutes les saisies sont traitées exclusivement dans votre navigateur et <strong>ne nous sont jamais transmises, ni à des tiers</strong>. Lors d’un changement de canton, votre navigateur charge uniquement un fichier de données statique de ce site. Le lien de partage encode vos saisies dans l’URL : ne le transmettez qu’en connaissance de cause.</p>
-
-    <h2>3. Ce qui est réellement traité</h2>
-    <h3>Journaux du serveur</h3>
-    <p>L’hébergeur enregistre l’adresse IP, l’horodatage, la page appelée, le code de réponse, le navigateur et le référent. Finalité : exploitation sécurisée et diagnostic ; le traitement repose sur notre intérêt privé prépondérant à un service disponible (art. 31 al. 1 nLPD, art. 6 par. 1 let. f RGPD). Suppression après 30 jours au plus.</p>
-    <h3>Mesure d’audience et publicité</h3>
-    <p>Uniquement avec votre consentement, nous utilisons Google Analytics 4 avec anonymisation de l’adresse IP et mode de consentement ; sans consentement, aucun cookie statistique n’est déposé. Si de la publicité Google AdSense est diffusée sur certaines pages, la personnalisation n’intervient qu’avec votre consentement ; à défaut, seules des annonces non personnalisées sont affichées. Vous pouvez révoquer votre consentement à tout moment depuis les réglages cookies du pied de page.</p>
-    <h3>Prise de contact</h3>
-    <p>Votre adresse électronique et le contenu de votre message sont traités pour vous répondre et corriger les erreurs de calcul signalées. La correspondance est supprimée trois ans après le dernier échange.</p>
-
-    <h2>4. Communication à des tiers et à l’étranger</h2>
-    <p>Aucune donnée n’est vendue ni louée. Y ont accès l’hébergeur, en qualité de sous-traitant au sens de l’art. 9 nLPD, et, en cas de consentement, Google. Des données peuvent alors être communiquées aux États-Unis, sur la base des clauses contractuelles types de la Commission européenne reconnues par le PFPDT et de la certification de Google LLC au titre du Swiss–U.S. Data Privacy Framework (art. 16 s. nLPD).</p>
-
-    <h2>5. Vos droits</h2>
-    <p>Vous disposez notamment du droit d’accès (art. 25 nLPD), de rectification (art. 32), d’effacement ou de destruction, d’opposition au traitement, ainsi que du droit à la remise ou à la transmission de vos données (art. 28 nLPD). Les personnes relevant du RGPD bénéficient en outre de ses art. 15 à 22. Écrivez à <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> ; nous répondons en règle générale dans les 30 jours. En l’absence de compte utilisateur, nous ne détenons le plus souvent aucune donnée permettant de vous identifier.</p>
-    <p>Vous pouvez en tout temps vous adresser à l’autorité de surveillance : {LEGAL.supervisoryAuthority} (<a href={LEGAL.supervisoryAuthorityUrl} rel="noopener" target="_blank">{LEGAL.supervisoryAuthorityUrl}</a>).</p>
-
-    <h2>6. Absence de décision individuelle automatisée</h2>
-    <p>Le résultat du calcul est produit dans votre navigateur, à votre demande, et n’a aucun effet juridique : il ne constitue pas une décision individuelle automatisée au sens de l’art. 21 nLPD. Aucun profilage n’est effectué.</p>
-
-    <h2>7. Sécurité et modifications</h2>
-    <p>Le site est servi exclusivement en HTTPS et ne tient aucune base de données d’utilisateurs. Nous adaptons cette déclaration en cas d’évolution juridique ou technique. Dernière mise à jour : {LAST_UPDATED}.</p>"""
-
-# --------------------------------------------------------------------------- #
-# Espagne — calculadora-paro.es
-# Art. 10 LSSI-CE pour l'aviso legal, RGPD + LOPDGDD pour la politique de confidentialité.
-# --------------------------------------------------------------------------- #
-META['es-calculadora-paro', 'es', 'terms'] = (
-    'Aviso legal – ${SITE_NAMES[lang]}',
-    'Titular del sitio, objeto, condiciones de uso, exclusión de responsabilidad, propiedad intelectual, enlaces, legislación aplicable y fuero competente.')
-BODIES['es-calculadora-paro', 'es', 'terms'] = """    <h1>Aviso legal</h1>
-    <p>Información exigida por el artículo 10 de la Ley 34/2002, de 11 de julio, de servicios de la sociedad de la información y de comercio electrónico (LSSI-CE).</p>
-
+    <p>Para cualquier pregunta sobre sus datos: «MAIL». No se ha designado delegado de protección de datos, al no darse las condiciones del artículo 37 del RGPD.</p>
+    <h2>2. Lo que introduce se queda en su navegador</h2>
+    <p>Los cálculos se ejecutan en su navegador. Los importes, fechas y circunstancias que introduce <strong>no se envían a ningún servidor</strong>, no se guardan en ningún sitio y no se asocian a ningún identificador. El sitio no pide cuenta, nombre ni correo electrónico. Un enlace para compartir incluye sus datos en la dirección de la página: compártalo solo con quien usted elija.</p>
+    <h2>3. Tratamientos realizados</h2>
+    <h3>Registros del alojamiento</h3>
+    <p>El proveedor de alojamiento registra en cada petición la dirección IP, la fecha y la hora, la página solicitada, el navegador y la página de procedencia. Finalidad: seguridad del servicio y diagnóstico de averías. Base jurídica: «B». Plazo: el de la política del proveedor.</p>
+    {GA4_ID ? (<>
+    <h3>Medición de audiencia con Google Analytics</h3>
+    <p>El sitio usa Google Analytics 4 para contar las visitas y saber qué páginas resultan útiles: páginas vistas, página de procedencia, duración de la visita, tipo de dispositivo y de navegador, país y ciudad aproximados. Para ello Google Analytics instala dos cookies en su dispositivo: <code>_ga</code>, que distingue a los visitantes con un identificador aleatorio, y <code>_ga_«ID»</code>, que conserva el estado de la visita. Su duración está fijada en 13 meses como máximo (390 días) y no se prolonga en cada visita; Google prevé 2 años por defecto.</p>
+    <p>La dirección IP se anonimiza: Google Analytics 4 no la registra ni la conserva, solo la usa en el momento de la recogida para deducir un país y una ciudad aproximados. La dirección de página enviada a Google Analytics va sin sus parámetros, de modo que los datos de un enlace para compartir no se incluyen. El sitio no muestra publicidad: el almacenamiento publicitario, los datos publicitarios, la personalización de anuncios y las señales de Google están desactivados, y los datos de medición no se comparten con ningún anunciante.</p>
+    <p>Finalidad: medición de audiencia. Base jurídica: «B». Proveedor: «GOOGLE», Irlanda. Conservación en Google: 14 meses para los datos de visitas e identificadores, después se suprimen; solo quedan totales anónimos.</p>
+    </>) : (<>
+    <h3>Sin medición de audiencia</h3>
+    <p>El sitio no instala cookies y no usa ninguna herramienta de analítica ni de publicidad.</p>
+    </>)}
+    {CLARITY_ID && (<>
+    <h3>Medición técnica de la estabilidad con Microsoft Clarity, sin cookies</h3>
+    <p>Para detectar errores, páginas lentas y botones que no responden, el sitio usa Microsoft Clarity en modo sin cookies: Clarity no instala cookies, cada página vista recibe un identificador propio y el texto de las páginas y sus datos quedan ocultos. Clarity recibe la estructura de la página, los clics, el desplazamiento, el tipo de dispositivo, los tiempos de carga y los errores. Finalidad: estabilidad del sitio. Base jurídica: «B». Proveedor: «MS», Irlanda. Conservación: 30 días para las grabaciones de páginas, 13 meses como máximo para los datos agregados.</p>
+    </>)}
+    <h3>Mensajes que nos envía</h3>
+    <p>Si escribe a la dirección de contacto, su correo y su mensaje se conservan el tiempo necesario para responderle y, en su caso, corregir un error, y se suprimen como tarde tres años después del último intercambio. Base jurídica: «B».</p>
+    <h2>4. Destinatarios</h2>
+    <p>Ningún dato se vende, alquila ni cede. Solo acceden el proveedor de alojamiento{GA4_ID && ', Google Ireland Limited para Google Analytics'}{CLARITY_ID && ', Microsoft Ireland Operations Limited para Clarity'}, como encargados del tratamiento según el artículo 28 del RGPD. Ninguna red publicitaria interviene en el sitio.</p>
+    <h2>5. Transferencias fuera de la Unión Europea</h2>
+    <p>Los registros del alojamiento pueden tratarse en Estados Unidos.{GA4_ID && ' Los datos de Google Analytics pueden transferirse a Google LLC, en Estados Unidos.'}{CLARITY_ID && ' Los de Clarity pueden transferirse a Microsoft Corporation, en Estados Unidos.'} Estas transferencias se basan en el Marco de Privacidad de Datos UE-EE. UU. (EU–U.S. Data Privacy Framework) y en las cláusulas contractuales tipo de la Comisión Europea.</p>
+«SITE»    <h2>6. Sus derechos</h2>
+    <p>Tiene derecho de acceso, rectificación, supresión, limitación, oposición y portabilidad (artículos 15 a 22 del RGPD). Escriba a «MAIL»; respondemos en el plazo de un mes. Sin cuentas de usuario, lo habitual es que no tengamos ningún dato que le identifique, y se lo diremos.</p>
+    {GA4_ID && (<p>Para oponerse a la medición de audiencia sin escribirnos: bloquee o elimine las cookies en la configuración de su navegador, o instale el <a href="«OPTOUT»" «EXT»>complemento de inhabilitación de Google Analytics</a>. El sitio funciona igual.</p>)}
+    {CLARITY_ID && (<p>Para la medición de estabilidad: bloquee el dominio <code>clarity.ms</code> en su navegador o con un bloqueador de contenidos.</p>)}
+    <p>Puede presentar una reclamación ante la autoridad de control: {LEGAL.supervisoryAuthority} (<a href={LEGAL.supervisoryAuthorityUrl} «EXT»>{LEGAL.supervisoryAuthorityUrl}</a>).«AUT»</p>
+    <h2>7. Sin decisiones automatizadas</h2>
+    <p>El resultado de un cálculo es una estimación hecha a petición suya, con sus datos, en su navegador. No produce efectos jurídicos y no es una decisión automatizada en el sentido del artículo 22 del RGPD. No se elaboran perfiles.</p>
+    <p>Véase también la página de <a href={route('cookies', lang)}>cookies</a>. Última actualización: {LAST_UPDATED}.</p>""",
+    cookies="""    <h1>Cookies</h1>
+    {GA4_ID ? (<>
+    <p>El sitio instala cookies de medición de audiencia de Google Analytics y solo esas: ninguna cookie publicitaria ni de redes sociales. El detalle de los tratamientos está en la <a href={route('privacy', lang)}>política de privacidad</a>.</p>
+    <h2>Cookies instaladas</h2>
+    <table><thead><tr><th>Nombre</th><th>Proveedor</th><th>Finalidad</th><th>Duración</th></tr></thead><tbody>
+    <tr><td><code>_ga</code></td><td>Google Analytics</td><td>Distinguir a los visitantes con un identificador aleatorio</td><td>13 meses como máximo (390 días)</td></tr>
+    <tr><td><code>_ga_«ID»</code></td><td>Google Analytics</td><td>Conservar el estado de la visita en curso</td><td>13 meses como máximo (390 días)</td></tr>
+    </tbody></table>
+    <p>Estas duraciones no se prolongan en cada visita; Google prevé 2 años por defecto y el sitio las reduce. Finalidad: medición de audiencia (páginas vistas, procedencia, dispositivo, país aproximado). La dirección IP se anonimiza: Google Analytics 4 no la registra ni la conserva. Sin publicidad ni cesión publicitaria: el almacenamiento publicitario, la personalización de anuncios y las señales de Google están desactivados.</p>
+    <p>Proveedor: «GOOGLE», Irlanda. Los datos pueden transferirse a Google LLC, en Estados Unidos, en el marco del EU–U.S. Data Privacy Framework y de las cláusulas contractuales tipo de la Comisión Europea. Conservación en Google: 14 meses. Base jurídica: «B».</p>
+    <h2>Cómo oponerse a estas cookies</h2>
+    <p>Bloquee o elimine las cookies en la configuración de su navegador, o instale el <a href="«OPTOUT»" «EXT»>complemento de inhabilitación de Google Analytics</a>. El sitio y sus calculadoras funcionan igual.</p>
+    </>) : (<>
+    <p>El sitio <strong>no instala cookies</strong>. El detalle de los tratamientos está en la <a href={route('privacy', lang)}>política de privacidad</a>.</p>
+    </>)}
+    {CLARITY_ID && (<><h2>Microsoft Clarity, sin cookies</h2><p>La estabilidad de las páginas se mide con Microsoft Clarity en modo sin cookies: Clarity no instala cookies, cada página vista recibe un identificador de un solo uso y el contenido y sus datos quedan ocultos. Bloquear <code>clarity.ms</code> la detiene.</p></>)}
+    <h2>Lo que introduce</h2>
+    <p>Los cálculos se hacen en su navegador: lo que introduce no se envía a ningún servidor y desaparece al cerrar la página.</p>
+    <p>Preguntas: «MAIL». Última actualización: {LAST_UPDATED}.</p>""",
+    terms_h2='Datos personales y cookies',
+    terms_sec="""    {GA4_ID ? (<p>Lo que introduce en las calculadoras no sale de su navegador. El sitio instala cookies de medición de audiencia de Google Analytics (<code>_ga</code>, <code>_ga_«ID»</code>, 13 meses como máximo), sin publicidad{CLARITY_ID && '; la estabilidad de las páginas se mide con Microsoft Clarity, sin cookies'}. Detalles, base jurídica y cómo oponerse: <a href={route('privacy', lang)}>política de privacidad</a> y página de <a href={route('cookies', lang)}>cookies</a>.</p>) : (<p>Lo que introduce en las calculadoras no sale de su navegador y el sitio no instala cookies{CLARITY_ID && '; la estabilidad de las páginas se mide de forma anónima con Microsoft Clarity, sin cookies'}. Véase la <a href={route('privacy', lang)}>política de privacidad</a> y la página de <a href={route('cookies', lang)}>cookies</a>.</p>)}""",
+    terms="""    <h1>Aviso legal</h1>
+    <p>Información exigida por el artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI-CE), para {SITE_URL}.</p>
     <h2>Titular del sitio</h2>
     <LegalIdentity lang={lang} />
     <p>Responsable de los contenidos: {AUTHOR_NAME}.</p>
-
     <h2>Alojamiento</h2>
     <LegalIdentity mode="hosting" lang={lang} />
+    <h2>Objeto del sitio y ausencia de asesoramiento</h2>
+    <p>El sitio ofrece gratis calculadoras y guías con fines informativos. Los resultados son estimaciones basadas en las normas y cuantías oficiales citadas en cada página; no son asesoramiento personalizado, ni una resolución, ni un compromiso de la Administración. Método y límites: <a href={route('method', lang)}>metodología</a>.</p>
+    <h2>Responsabilidad</h2>
+    <p>Los parámetros se actualizan y los cálculos se comprueban con casos de referencia, sin garantía de ausencia de errores. El titular no responde de una decisión tomada solo a partir de una estimación. Los errores se comunican por la página de <a href={route('contact', lang)}>contacto</a>.</p>
+    <h2>Propiedad intelectual</h2>
+    <p>Textos, diseño y código pertenecen al titular; se permiten citas breves con enlace a la página de origen.</p>
+    <h2>«H2»</h2>
+«SEC»
+    <h2>Comunicación de contenidos ilícitos</h2>
+    <p>Comunique cualquier contenido ilícito a «MAIL», con la dirección de la página y el motivo.</p>
+    <h2>Ley aplicable</h2>
+    <p>Ley francesa. A falta de acuerdo amistoso, son competentes los tribunales de {LEGAL.jurisdiction}. Última actualización: {LAST_UPDATED}.</p>""",
+)
 
-    <h2>Objeto y ausencia de asesoramiento</h2>
-    <p>Este sitio ofrece de forma gratuita una calculadora de la prestación por desempleo y guías explicativas. Los resultados son <strong>estimaciones orientativas</strong> basadas en la normativa publicada por el SEPE, en las bases de cotización de la Seguridad Social y en los tipos de retención de la Agencia Tributaria. No constituyen asesoramiento jurídico, fiscal ni laboral, ni generan derecho alguno: solo la resolución del SEPE determina la cuantía y la duración de su prestación. Lo que la herramienta cubre y lo que deliberadamente no cubre se detalla en la <a href={route('method', lang)}>metodología</a>.</p>
-
-    <h2>Condiciones de uso</h2>
-    <p>El acceso es libre y gratuito y no requiere registro. El usuario se compromete a utilizar el sitio conforme a la ley y a no realizar actuaciones que puedan dañarlo, sobrecargarlo o impedir su normal funcionamiento, incluida la extracción masiva y automatizada de contenidos. La calculadora puede integrarse gratuitamente mediante iframe en otra web siempre que se mantenga visible el enlace a la página de origen y no se induzca a pensar que se trata de un servicio oficial.</p>
-
-    <h2>Exclusión de responsabilidad</h2>
-    <p>Revisamos los parámetros en cada actualización normativa y comprobamos la calculadora frente a casos de referencia, pero no garantizamos la ausencia de errores ni la exhaustividad. La normativa cambia y determinadas situaciones (trabajo en el extranjero, fijos discontinuos, compatibilidades específicas) siguen reglas que la herramienta no aplica. El titular no responde de las decisiones adoptadas exclusivamente sobre la base de una estimación ni de las interrupciones del servicio. Si detecta un error, comuníquenoslo desde la página de <a href={route('contact', lang)}>contacto</a>: el procedimiento de corrección figura en nuestra <a href={route('editorial', lang)}>política editorial</a>.</p>
-
-    <h2>Propiedad intelectual e industrial</h2>
-    <p>Los textos, el diseño, la estructura de navegación, las bases de datos elaboradas y el código fuente son titularidad del editor y están protegidos por el Real Decreto Legislativo 1/1996. Queda prohibida su reproducción, distribución o transformación sin autorización, salvo cita breve con enlace a la fuente. Las disposiciones normativas y los datos públicos citados pertenecen a sus organismos emisores.</p>
-
-    <h2>Enlaces</h2>
-    <p>Los enlaces a sitios de terceros se ofrecen para facilitar la verificación de las fuentes. No controlamos sus contenidos y no asumimos responsabilidad alguna sobre ellos.</p>
-
-    <h2>Protección de datos y cookies</h2>
-    <p>Los datos que introduce en la calculadora no salen de su navegador. El tratamiento de datos personales se describe en la <a href={route('privacy', lang)}>política de privacidad</a> y en la página de <a href={route('cookies', lang)}>cookies</a>.</p>
-
-    <h2>Legislación aplicable</h2>
-    <p>Este aviso legal se rige por la legislación española. Para cualquier controversia, las partes se someten a los juzgados y tribunales de {LEGAL.jurisdiction}, salvo que la normativa de consumo imponga otro fuero. Última actualización: {LAST_UPDATED}.</p>"""
-
-META['es-calculadora-paro', 'es', 'privacy'] = (
-    'Política de privacidad – ${SITE_NAMES[lang]}',
-    'Qué datos trata este sitio, con qué base jurídica y plazo, quién accede a ellos y cómo ejercer sus derechos o reclamar ante la AEPD.')
-BODIES['es-calculadora-paro', 'es', 'privacy'] = """    <h1>Política de privacidad</h1>
-    <p>Esta política informa, conforme a los artículos 13 y 14 del Reglamento (UE) 2016/679 (RGPD) y a la Ley Orgánica 3/2018 (LOPDGDD), sobre los tratamientos de datos personales asociados al uso de {SITE_URL}.</p>
-
-    <h2>1. Responsable del tratamiento</h2>
+T['nl'] = dict(
+    bc=dict(privacy='Privacy', cookies='Cookies', terms='Disclaimer'),
+    title=dict(privacy='Privacyverklaring', cookies='Cookies', terms='Disclaimer en colofon'),
+    desc=dict(
+        privacy_ga='Bezoekersmeting met Google Analytics en cookies, zonder advertenties; uw invoer blijft in uw browser; serverlogs van de host; uw rechten en de toezichthouder.',
+        privacy_no='Uw invoer blijft in uw browser, geen cookies, serverlogs van de host: welke gegevens de site verwerkt, uw rechten en de bevoegde toezichthouder.',
+        cookies_ga='Cookies voor bezoekersmeting van Google Analytics en verder geen: namen, doel, een looptijd van hoogstens 13 maanden, aanbieder en bezwaar.',
+        cookies_no='De site plaatst geen cookies: wat u invult blijft in uw browser en er wordt niets op uw apparaat bewaard.',
+        terms='Uitgever, verantwoordelijke voor de inhoud, host, geen advies, intellectueel eigendom, persoonsgegevens en toepasselijk recht.'),
+    base='het gerechtvaardigd belang van de uitgever (art. 6 lid 1 sub f AVG«BASE»)',
+    privacy="""    <h1>Privacyverklaring</h1>
+    <p>Deze pagina beschrijft de verwerking van persoonsgegevens bij het gebruik van {SITE_URL}, op grond van de artikelen 12 tot en met 14 van Verordening (EU) 2016/679 (AVG)«LOI».</p>
+    <h2>1. Verwerkingsverantwoordelijke</h2>
     <LegalIdentity lang={lang} />
-    <p>Contacto en materia de protección de datos: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. No se ha designado delegado de protección de datos por no concurrir los supuestos del artículo 37 del RGPD ni del artículo 34 de la LOPDGDD.</p>
-
-    <h2>2. Lo que la calculadora no hace</h2>
-    <p>El cálculo se ejecuta íntegramente en su navegador. Las bases de cotización, los días cotizados, la edad, los hijos a cargo y la retención voluntaria <strong>no se transmiten a ningún servidor</strong>, no se almacenan y no se asocian a ningún identificador. No hay registro ni cuenta de usuario. Si utiliza el enlace para compartir, sus datos quedan codificados en la URL: compártalo solo con quien desee.</p>
-
-    <h2>3. Tratamientos que sí se realizan</h2>
-    <h3>Registros del servidor</h3>
-    <p>El proveedor de alojamiento registra la dirección IP, la fecha y hora, la página solicitada, el código de respuesta, el navegador y el referente. Finalidad: seguridad, prevención de abusos y diagnóstico de incidencias. Base jurídica: interés legítimo del responsable en mantener un servicio disponible y seguro (art. 6.1.f del RGPD). Plazo de conservación: 30 días como máximo.</p>
-    <h3>Medición de audiencia</h3>
-    <p>Si presta su consentimiento, medimos la audiencia con Google Analytics 4, con anonimización de IP y modo de consentimiento, para saber qué páginas se encuentran y se utilizan. Base jurídica: su consentimiento (art. 6.1.a del RGPD y art. 22.2 de la LSSI). Sin consentimiento no se instala ninguna cookie de medición. Conservación de los datos de audiencia: 14 meses.</p>
-    <h3>Publicidad</h3>
-    <p>Algunas páginas pueden mostrar publicidad de Google AdSense. Con su consentimiento, Google puede instalar cookies de personalización; sin él, solo se muestran anuncios no personalizados. El tratamiento que Google realiza por cuenta propia se describe en sus <a href="https://policies.google.com/technologies/ads" rel="noopener" target="_blank">políticas de publicidad</a>.</p>
-    <h3>Mensajes que nos envía</h3>
-    <p>Si nos escribe, tratamos su dirección de correo y el contenido del mensaje para responderle y, en su caso, corregir un error de cálculo (interés legítimo). Conservación: tres años desde el último contacto.</p>
-
-    <h2>4. Destinatarios y encargados</h2>
-    <p>No vendemos ni cedemos datos. Solo acceden a ellos el proveedor de alojamiento, como encargado del tratamiento con contrato conforme al artículo 28 del RGPD, y, únicamente si consiente, Google Ireland Limited para la medición de audiencia y la publicidad.</p>
-
-    <h2>5. Transferencias internacionales</h2>
-    <p>Los servicios de Google pueden implicar una transferencia a Estados Unidos, amparada en las cláusulas contractuales tipo de la Comisión Europea y en la certificación de Google LLC en el marco EU–U.S. Data Privacy Framework. Si rechaza la medición y la publicidad, no se produce transferencia alguna.</p>
-
-    <h2>6. Sus derechos</h2>
-    <p>Puede ejercer los derechos de acceso, rectificación, supresión, limitación, oposición y portabilidad (arts. 15 a 22 del RGPD), así como retirar en cualquier momento el consentimiento prestado, con la misma facilidad con que lo otorgó, desde la configuración de cookies del pie de página. Escriba a <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; responderemos en el plazo de un mes. Al no existir cuenta de usuario, lo habitual es que no dispongamos de dato alguno que permita identificarle, y así se lo indicaremos.</p>
-    <p>Si considera que sus derechos no han sido atendidos, puede presentar una reclamación ante la {LEGAL.supervisoryAuthority}: <a href={LEGAL.supervisoryAuthorityUrl} rel="noopener" target="_blank">{LEGAL.supervisoryAuthorityUrl}</a>.</p>
-
-    <h2>7. Sin decisiones automatizadas ni elaboración de perfiles</h2>
-    <p>El resultado que muestra la calculadora es un cálculo realizado a petición suya, sobre sus propios datos y en su navegador. No produce efectos jurídicos ni constituye una decisión automatizada del artículo 22 del RGPD. No elaboramos perfiles.</p>
-
-    <h2>8. Menores y seguridad</h2>
-    <p>El sitio no se dirige a menores de catorce años ni recaba conscientemente sus datos. Se sirve exclusivamente por HTTPS y no mantiene ninguna base de datos de usuarios. Esta política puede actualizarse por motivos legales o técnicos. Última actualización: {LAST_UPDATED}.</p>"""
-
-# --------------------------------------------------------------------------- #
-# Pays-Bas — ww-berekenen.nl
-# Disclaimer et colofon (identité du fournisseur, art. 3:15d BW), AVG pour la privacy.
-# --------------------------------------------------------------------------- #
-META['nl-ww-berekenen', 'nl', 'terms'] = (
-    'Disclaimer en colofon – ${SITE_NAMES[lang]}',
-    'Wie deze site uitgeeft, waarvoor de rekenhulp wel en niet dient, aansprakelijkheid, auteursrecht, insluiten van de tool en toepasselijk recht.')
-BODIES['nl-ww-berekenen', 'nl', 'terms'] = """    <h1>Disclaimer en colofon</h1>
-    <p>Gegevens van de dienstverlener zoals bedoeld in artikel 3:15d van het Burgerlijk Wetboek, en de voorwaarden waaronder u deze site gebruikt.</p>
-
+    <p>Vragen over uw gegevens: «MAIL». Er is geen functionaris voor gegevensbescherming aangesteld, omdat niet aan de voorwaarden van artikel 37 AVG is voldaan.</p>
+    <h2>2. Uw invoer blijft in uw browser</h2>
+    <p>De berekeningen draaien in uw browser. Bedragen, data en omstandigheden die u invult <strong>worden naar geen enkele server gestuurd</strong>, nergens opgeslagen en aan geen enkele identificatie gekoppeld. De site vraagt geen account, naam of e-mailadres. Een deellink bevat uw invoer in het adres van de pagina: stuur hem alleen naar mensen die u kiest.</p>
+    <h2>3. Verwerkingen</h2>
+    <h3>Serverlogs van de host</h3>
+    <p>De host legt bij elk verzoek het IP-adres, de datum en tijd, de opgevraagde pagina, de browser en de verwijzende pagina vast. Doel: beveiliging van de dienst en storingsonderzoek. Grondslag: «B». Bewaartermijn: volgens het beleid van de host.</p>
+    {GA4_ID ? (<>
+    <h3>Bezoekersmeting met Google Analytics</h3>
+    <p>De site gebruikt Google Analytics 4 om bezoeken te tellen en te zien welke pagina’s helpen: bekeken pagina’s, verwijzende pagina, duur van het bezoek, type apparaat en browser, land en stad bij benadering. Daarvoor plaatst Google Analytics twee cookies op uw apparaat: <code>_ga</code>, dat bezoekers onderscheidt met een willekeurige code, en <code>_ga_«ID»</code>, dat de stand van het bezoek bewaart. De looptijd is ingesteld op hoogstens 13 maanden (390 dagen) en wordt niet bij elk bezoek verlengd; Google gaat standaard uit van 2 jaar.</p>
+    <p>Het IP-adres wordt geanonimiseerd: Google Analytics 4 legt het niet vast en bewaart het niet, en gebruikt het alleen bij het verzamelen om land en stad bij benadering te bepalen. Het paginaadres dat naar Google Analytics gaat, is ontdaan van parameters, zodat de invoer uit een deellink niet wordt meegestuurd. De site toont geen advertenties: advertentieopslag, advertentiegegevens, gepersonaliseerde advertenties en Google-signalen staan uit, en meetgegevens worden met geen enkele adverteerder gedeeld.</p>
+    <p>Doel: bezoekersmeting. Grondslag: «B». Aanbieder: «GOOGLE», Ierland. Bewaartermijn bij Google: 14 maanden voor gegevens op het niveau van bezoeken en codes, daarna verwijdering; alleen anonieme totalen blijven over.</p>
+    </>) : (<>
+    <h3>Geen bezoekersmeting</h3>
+    <p>De site plaatst geen cookies en gebruikt geen analyse- of advertentietools.</p>
+    </>)}
+    {CLARITY_ID && (<>
+    <h3>Technische stabiliteitsmeting met Microsoft Clarity, zonder cookies</h3>
+    <p>Om fouten, trage pagina’s en knoppen die niet reageren op te sporen, gebruikt de site Microsoft Clarity in de modus zonder cookies: Clarity plaatst geen cookies, elke paginaweergave krijgt een eigen code en de tekst van de pagina’s en uw invoer worden afgeschermd. Clarity ontvangt de opbouw van de pagina, klikken, scrollen, type apparaat, laadtijden en fouten. Doel: stabiliteit van de site. Grondslag: «B». Aanbieder: «MS», Ierland. Bewaartermijn: 30 dagen voor paginaopnames, hoogstens 13 maanden voor samengevoegde gegevens.</p>
+    </>)}
+    <h3>Berichten die u ons stuurt</h3>
+    <p>Schrijft u naar het contactadres, dan bewaren we uw e-mailadres en bericht zo lang als nodig is om te antwoorden en zo nodig een fout te herstellen, en verwijderen we ze uiterlijk drie jaar na het laatste contact. Grondslag: «B».</p>
+    <h2>4. Ontvangers</h2>
+    <p>Er worden geen gegevens verkocht, verhuurd of doorgegeven. Toegang hebben alleen de host{GA4_ID && ', Google Ireland Limited voor Google Analytics'}{CLARITY_ID && ', Microsoft Ireland Operations Limited voor Clarity'}, als verwerkers in de zin van artikel 28 AVG. Er is geen advertentienetwerk actief op de site.</p>
+    <h2>5. Doorgifte buiten de Europese Unie</h2>
+    <p>Serverlogs van de host kunnen in de Verenigde Staten worden verwerkt.{GA4_ID && ' Gegevens van Google Analytics kunnen worden doorgegeven aan Google LLC in de Verenigde Staten.'}{CLARITY_ID && ' Gegevens van Clarity kunnen worden doorgegeven aan Microsoft Corporation in de Verenigde Staten.'} Deze doorgifte steunt op het EU-VS-kader voor gegevensbescherming (EU–U.S. Data Privacy Framework) en de standaardcontractbepalingen van de Europese Commissie.</p>
+«SITE»    <h2>6. Uw rechten</h2>
+    <p>U hebt recht op inzage, rectificatie, wissing, beperking, bezwaar en overdraagbaarheid (artikelen 15 tot en met 22 AVG). Schrijf naar «MAIL»; we antwoorden binnen een maand. Zonder gebruikersaccounts hebben we meestal geen gegevens die u identificeren; dat laten we u dan weten.</p>
+    {GA4_ID && (<p>Bezwaar maken tegen de bezoekersmeting kan ook zonder ons te schrijven: blokkeer of verwijder cookies in de instellingen van uw browser, of installeer de <a href="«OPTOUT»" «EXT»>browser-add-on voor het uitschakelen van Google Analytics</a>. De site werkt dan precies hetzelfde.</p>)}
+    {CLARITY_ID && (<p>Voor de stabiliteitsmeting: blokkeer het domein <code>clarity.ms</code> in uw browser of met een contentblocker.</p>)}
+    <p>U kunt een klacht indienen bij de toezichthouder: {LEGAL.supervisoryAuthority} (<a href={LEGAL.supervisoryAuthorityUrl} «EXT»>{LEGAL.supervisoryAuthorityUrl}</a>).«AUT»</p>
+    <h2>7. Geen geautomatiseerde besluiten</h2>
+    <p>Een rekenresultaat is een schatting die op uw verzoek, met uw invoer, in uw browser wordt gemaakt. Het heeft geen rechtsgevolg en is geen geautomatiseerd besluit in de zin van artikel 22 AVG. Er vindt geen profilering plaats.</p>
+    <p>Zie ook de pagina <a href={route('cookies', lang)}>cookies</a>. Laatst bijgewerkt: {LAST_UPDATED}.</p>""",
+    cookies="""    <h1>Cookies</h1>
+    {GA4_ID ? (<>
+    <p>De site plaatst cookies voor bezoekersmeting van Google Analytics en alleen die: geen advertentiecookies, geen cookies van sociale netwerken. Alle details staan in de <a href={route('privacy', lang)}>privacyverklaring</a>.</p>
+    <h2>Geplaatste cookies</h2>
+    <table><thead><tr><th>Naam</th><th>Aanbieder</th><th>Doel</th><th>Looptijd</th></tr></thead><tbody>
+    <tr><td><code>_ga</code></td><td>Google Analytics</td><td>Bezoekers onderscheiden met een willekeurige code</td><td>hoogstens 13 maanden (390 dagen)</td></tr>
+    <tr><td><code>_ga_«ID»</code></td><td>Google Analytics</td><td>De stand van het lopende bezoek bewaren</td><td>hoogstens 13 maanden (390 dagen)</td></tr>
+    </tbody></table>
+    <p>Deze looptijden worden niet bij elk bezoek verlengd; Google gaat standaard uit van 2 jaar en de site verkort dat. Doel: bezoekersmeting (bekeken pagina’s, herkomst, apparaat, land bij benadering). Het IP-adres wordt geanonimiseerd: Google Analytics 4 legt het niet vast en bewaart het niet. Geen advertenties en geen delen voor advertenties: advertentieopslag, gepersonaliseerde advertenties en Google-signalen staan uit.</p>
+    <p>Aanbieder: «GOOGLE», Ierland. Gegevens kunnen worden doorgegeven aan Google LLC in de Verenigde Staten, op grond van het EU–U.S. Data Privacy Framework en de standaardcontractbepalingen van de Europese Commissie. Bewaartermijn bij Google: 14 maanden. Grondslag: «B».</p>
+    <h2>Bezwaar tegen deze cookies</h2>
+    <p>Blokkeer of verwijder cookies in de instellingen van uw browser, of installeer de <a href="«OPTOUT»" «EXT»>browser-add-on voor het uitschakelen van Google Analytics</a>. De site en de rekenhulpen werken dan precies hetzelfde.</p>
+    </>) : (<>
+    <p>De site <strong>plaatst geen cookies</strong>. Alle details staan in de <a href={route('privacy', lang)}>privacyverklaring</a>.</p>
+    </>)}
+    {CLARITY_ID && (<><h2>Microsoft Clarity, zonder cookies</h2><p>De stabiliteit van de pagina’s wordt gemeten met Microsoft Clarity in de modus zonder cookies: Clarity plaatst geen cookies, elke paginaweergave krijgt een eenmalige code en de inhoud en uw invoer worden afgeschermd. Wie <code>clarity.ms</code> blokkeert, stopt de meting.</p></>)}
+    <h2>Wat u invult</h2>
+    <p>De berekeningen gebeuren in uw browser: wat u invult gaat naar geen enkele server en is weg zodra u de pagina sluit.</p>
+    <p>Vragen: «MAIL». Laatst bijgewerkt: {LAST_UPDATED}.</p>""",
+    terms_h2='Persoonsgegevens en cookies',
+    terms_sec="""    {GA4_ID ? (<p>Wat u in de rekenhulpen invult, verlaat uw browser niet. De site plaatst cookies voor bezoekersmeting van Google Analytics (<code>_ga</code>, <code>_ga_«ID»</code>, hoogstens 13 maanden), zonder advertenties{CLARITY_ID && '; de stabiliteit van de pagina’s wordt gemeten met Microsoft Clarity, zonder cookies'}. Details, grondslag en bezwaar: <a href={route('privacy', lang)}>privacyverklaring</a> en pagina <a href={route('cookies', lang)}>cookies</a>.</p>) : (<p>Wat u in de rekenhulpen invult, verlaat uw browser niet en de site plaatst geen cookies{CLARITY_ID && '; de stabiliteit van de pagina’s wordt anoniem gemeten met Microsoft Clarity, zonder cookies'}. Zie de <a href={route('privacy', lang)}>privacyverklaring</a> en de pagina <a href={route('cookies', lang)}>cookies</a>.</p>)}""",
+    terms="""    <h1>Disclaimer en colofon</h1>
+    <p>Gegevens van de aanbieder (artikel 3:15d BW) en gebruiksvoorwaarden van {SITE_URL}.</p>
     <h2>Uitgever</h2>
     <LegalIdentity lang={lang} />
     <p>Verantwoordelijk voor de inhoud: {AUTHOR_NAME}.</p>
-
     <h2>Hosting</h2>
     <LegalIdentity mode="hosting" lang={lang} />
-
-    <h2>Waarvoor deze site dient – en waarvoor niet</h2>
-    <p>Deze site biedt kosteloos een rekenhulp voor de WW-uitkering en de transitievergoeding, met bijbehorende uitleg. De uitkomsten zijn <strong>indicatieve schattingen</strong> op basis van de Werkloosheidswet, de dagloonregels van het UWV en de loonheffingstabellen van de Belastingdienst. Ze zijn geen juridisch, fiscaal of financieel advies en geven geen recht op een uitkering: alleen de beslissing van het UWV is bepalend. Wat de rekenhulp wel en bewust niet meeneemt, staat in de <a href={route('method', lang)}>methode en bronnen</a>.</p>
-
+    <h2>Doel van de site en geen advies</h2>
+    <p>De site biedt gratis rekenhulpen en uitleg ter informatie. De uitkomsten zijn schattingen op basis van de officiële regels en bedragen die op elke pagina worden genoemd; ze zijn geen persoonlijk advies, geen besluit en geen toezegging van een instantie. Methode en grenzen: <a href={route('method', lang)}>methode</a>.</p>
     <h2>Aansprakelijkheid</h2>
-    <p>We controleren de parameters bij elke wijziging en toetsen de rekenhulp aan referentiegevallen, maar we garanderen niet dat alles foutloos en volledig is. Regelgeving verandert, en sommige situaties (werken in het buitenland, oproepcontracten, samenloop met andere uitkeringen) volgen regels die de rekenhulp niet toepast. We zijn niet aansprakelijk voor beslissingen die uitsluitend op een schatting zijn gebaseerd, noch voor tijdelijke onbereikbaarheid. Ziet u een fout, meld die dan via de <a href={route('contact', lang)}>contactpagina</a>; hoe we die afhandelen staat in ons <a href={route('editorial', lang)}>redactiestatuut</a>.</p>
-
-    <h2>Auteursrecht</h2>
-    <p>Teksten, vormgeving, databewerkingen en broncode van deze site zijn auteursrechtelijk beschermd. Overname of hergebruik zonder toestemming is niet toegestaan; een kort citaat met bronvermelding en link mag. Wetteksten en overheidsgegevens zijn ingevolge artikel 11 van de Auteurswet vrij van auteursrecht.</p>
-
-    <h2>Rekenhulp insluiten</h2>
-    <p>U mag de rekenhulp kosteloos in een iframe op uw eigen site plaatsen, mits de zichtbare bronvermelding naar deze site blijft staan en niet de indruk ontstaat dat het om een dienst van de overheid gaat. Vraag ons om de insluitcode.</p>
-
-    <h2>Links naar andere sites</h2>
-    <p>Voor de inhoud van websites van derden zijn uitsluitend hun beheerders verantwoordelijk. Op het moment van linken waren er geen aanwijzingen voor onrechtmatige inhoud.</p>
-
-    <h2>Persoonsgegevens en cookies</h2>
-    <p>Wat u in de rekenhulp invult, verlaat uw browser niet. Hoe we met persoonsgegevens omgaan, leest u in de <a href={route('privacy', lang)}>privacyverklaring</a> en op de pagina <a href={route('cookies', lang)}>cookies</a>.</p>
-
+    <p>De parameters worden bijgewerkt en de berekeningen getoetst aan referentiegevallen, zonder garantie dat ze foutloos zijn. De uitgever is niet aansprakelijk voor een beslissing die alleen op een schatting berust. Fouten meldt u via de <a href={route('contact', lang)}>contactpagina</a>.</p>
+    <h2>Intellectueel eigendom</h2>
+    <p>Teksten, vormgeving en code zijn eigendom van de uitgever; korte citaten met een link naar de oorspronkelijke pagina zijn toegestaan.</p>
+    <h2>«H2»</h2>
+«SEC»
+    <h2>Melden van onrechtmatige inhoud</h2>
+    <p>Meld onrechtmatige inhoud aan «MAIL», met het adres van de pagina en de reden.</p>
     <h2>Toepasselijk recht</h2>
-    <p>Op het gebruik van deze site is Nederlands recht van toepassing. Geschillen worden voorgelegd aan de bevoegde rechter in {LEGAL.jurisdiction}, tenzij dwingend recht anders bepaalt. Laatst bijgewerkt: {LAST_UPDATED}.</p>"""
-
-META['nl-ww-berekenen', 'nl', 'privacy'] = (
-    'Privacyverklaring – ${SITE_NAMES[lang]}',
-    'Welke gegevens deze site verwerkt, op welke grondslag en hoe lang, wie ze inziet, en hoe u uw AVG-rechten uitoefent of klaagt bij de AP.')
-BODIES['nl-ww-berekenen', 'nl', 'privacy'] = """    <h1>Privacyverklaring</h1>
-    <p>Deze verklaring beschrijft, op grond van de artikelen 13 en 14 van de Algemene verordening gegevensbescherming (AVG), welke persoonsgegevens bij het gebruik van {SITE_URL} worden verwerkt.</p>
-
-    <h2>1. Verwerkingsverantwoordelijke</h2>
-    <LegalIdentity lang={lang} />
-    <p>Vragen over privacy: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Een functionaris voor gegevensbescherming is niet aangesteld; de gevallen van artikel 37 AVG doen zich hier niet voor.</p>
-
-    <h2>2. Wat de rekenhulp niet doet</h2>
-    <p>De berekening gebeurt volledig in uw browser. SV-loon, gewerkte uren, einddatum van het dienstverband, arbeidsverleden en loonheffingskorting <strong>worden niet naar een server gestuurd</strong>, nergens opgeslagen en aan geen enkele identificatie gekoppeld. Er is geen account en geen registratie. Gebruikt u de deellink, dan staan uw invoergegevens in de URL: deel die alleen met wie u wilt.</p>
-
-    <h2>3. Wat wel wordt verwerkt</h2>
-    <h3>Serverlogbestanden</h3>
-    <p>De hostingpartij legt per verzoek het IP-adres, het tijdstip, de opgevraagde pagina, de responscode, de browser en de verwijzende pagina vast. Doel: veilige werking, misbruikpreventie en storingsanalyse. Grondslag: ons gerechtvaardigd belang bij een beschikbare en veilige dienst (artikel 6, lid 1, onder f, AVG). Bewaartermijn: maximaal 30 dagen.</p>
-    <h3>Bezoekstatistieken</h3>
-    <p>Alleen met uw toestemming meten we het bezoek met Google Analytics 4, met IP-anonimisering en consent mode, om te zien welke pagina’s worden gevonden en gebruikt. Grondslag: uw toestemming (artikel 6, lid 1, onder a, AVG en artikel 11.7a Telecommunicatiewet). Zonder toestemming wordt geen statistiekcookie geplaatst. Bewaartermijn van de statistiekgegevens: 14 maanden.</p>
-    <h3>Advertenties</h3>
-    <p>Op sommige pagina’s kan advertentieruimte van Google AdSense worden getoond. Met uw toestemming mag Google cookies voor personalisatie plaatsen; zonder toestemming worden uitsluitend niet-gepersonaliseerde advertenties getoond. Zie de <a href="https://policies.google.com/technologies/ads" rel="noopener" target="_blank">advertentievoorwaarden van Google</a>.</p>
-    <h3>Berichten die u ons stuurt</h3>
-    <p>Schrijft u ons, dan verwerken we uw e-mailadres en de inhoud van uw bericht om te antwoorden en gemelde rekenfouten te herstellen (gerechtvaardigd belang). Bewaartermijn: drie jaar na het laatste contact.</p>
-
-    <h2>4. Ontvangers en verwerkers</h2>
-    <p>We verkopen of verhuren geen gegevens. Toegang hebben alleen de hostingpartij, als verwerker met een verwerkersovereenkomst op grond van artikel 28 AVG, en – uitsluitend bij toestemming – Google Ireland Limited voor statistieken en advertenties.</p>
-
-    <h2>5. Doorgifte buiten de EER</h2>
-    <p>Bij gebruik van de Google-diensten kunnen gegevens naar de Verenigde Staten worden doorgegeven, op basis van de modelcontractbepalingen van de Europese Commissie en de certificering van Google LLC onder het EU–U.S. Data Privacy Framework. Weigert u de statistieken en advertenties, dan vindt geen doorgifte plaats.</p>
-
-    <h2>6. Uw rechten</h2>
-    <p>U heeft recht op inzage, rectificatie, verwijdering, beperking, bezwaar en overdraagbaarheid (artikelen 15 tot en met 22 AVG). Gegeven toestemming kunt u op elk moment intrekken, net zo eenvoudig als u die heeft gegeven, via de cookie-instellingen onderaan de pagina. Stuur een bericht naar <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; we reageren binnen een maand. Omdat er geen account bestaat, hebben we meestal geen gegevens waarmee we u kunnen identificeren – dat laten we u dan weten.</p>
-    <p>U kunt ook een klacht indienen bij {LEGAL.supervisoryAuthority}: <a href={LEGAL.supervisoryAuthorityUrl} rel="noopener" target="_blank">{LEGAL.supervisoryAuthorityUrl}</a>.</p>
-
-    <h2>7. Geen geautomatiseerde besluitvorming</h2>
-    <p>De uitkomst van de rekenhulp ontstaat op uw verzoek, met uw eigen invoer, in uw browser. Ze heeft geen rechtsgevolg en is geen geautomatiseerd besluit in de zin van artikel 22 AVG. We stellen geen profielen op.</p>
-
-    <h2>8. Beveiliging en wijzigingen</h2>
-    <p>De site wordt uitsluitend via HTTPS aangeboden en houdt geen gebruikersdatabase bij. We passen deze verklaring aan als wet- of regelgeving of de techniek daartoe aanleiding geeft. Laatst bijgewerkt: {LAST_UPDATED}.</p>"""
-
-# --------------------------------------------------------------------------- #
-# Canada — ei-calculator.ca (EN + FR)
-# LPRPDE/PIPEDA, plus mention de la Loi 25 pour le Québec.
-# --------------------------------------------------------------------------- #
-META['ca-ei-calculator', 'en', 'terms'] = (
-    'Terms of use – ${SITE_NAMES[lang]}',
-    'Who publishes this EI calculator, what the estimates are and are not, limits of liability, copyright, embedding the tool and the governing law.')
-BODIES['ca-ei-calculator', 'en', 'terms'] = """    <h1>Terms of use</h1>
-    <p>By using this website you accept the terms below. They apply to every page and to the calculator itself.</p>
-
-    <h2>Publisher</h2>
-    <LegalIdentity lang={lang} />
-    <p>Responsible for content: {AUTHOR_NAME}.</p>
-
-    <h2>Hosting</h2>
-    <LegalIdentity mode="hosting" lang={lang} />
-
-    <h2>What this site is — and what it is not</h2>
-    <p>This site offers a free Employment Insurance calculator and explanatory guides. Results are <strong>estimates</strong> based on the Employment Insurance Act, the weekly benefit rates and maximum insurable earnings published by Service Canada, and the regional unemployment rates published by Statistics Canada. They are not legal, tax or financial advice, they create no entitlement, and they do not bind Service Canada, which alone decides your claim. This site is independent and is not affiliated with, endorsed by, or operated on behalf of the Government of Canada. What the tool covers and deliberately does not cover is set out in our <a href={route('method', lang)}>methodology</a>.</p>
-
-    <h2>Accuracy and liability</h2>
-    <p>We update the parameters at every change and test the calculator against reference cases, but we do not warrant that it is error-free or complete. Rules change, and some situations — work outside Canada, fishing benefits, self-employed special benefits, overlapping claims — follow rules the calculator does not apply. To the fullest extent permitted by law, we are not liable for any loss arising from a decision made solely on an estimate, or from any interruption of the service. The site is provided "as is", without warranty of any kind. If you spot an error, tell us through the <a href={route('contact', lang)}>contact page</a>; our correction process is described in the <a href={route('editorial', lang)}>editorial policy</a>.</p>
-
-    <h2>Copyright</h2>
-    <p>The text, design, compiled data and source code of this site are protected by the Copyright Act and remain the property of the publisher. Reproduction or reuse without permission is prohibited, except for short quotations with a link to the source page. Statutes and Government of Canada data are reproduced under the terms set by their originating departments.</p>
-
-    <h2>Embedding the calculator</h2>
-    <p>You may embed the calculator free of charge in an iframe on your own site, provided the visible credit link back to this site remains and nothing suggests the tool is an official government service. Ask us for the embed code.</p>
-
-    <h2>Links to other sites</h2>
-    <p>Links to third-party sites are provided so you can verify our sources. We do not control their content and accept no responsibility for it.</p>
-
-    <h2>Personal information and cookies</h2>
-    <p>What you type into the calculator never leaves your browser. How we handle personal information is set out in our <a href={route('privacy', lang)}>privacy policy</a> and on the <a href={route('cookies', lang)}>cookies</a> page.</p>
-
-    <h2>Governing law</h2>
-    <p>These terms are governed by the laws of {LEGAL.jurisdiction} and the federal laws of Canada applicable there. We may amend them; the date below shows the current version. Last updated: {LAST_UPDATED}.</p>"""
-
-META['ca-ei-calculator', 'en', 'privacy'] = (
-    'Privacy policy – ${SITE_NAMES[lang]}',
-    'What this site collects under PIPEDA, why, how long it is kept, where it is stored, how to opt out of analytics and how to reach the Privacy Commissioner.')
-BODIES['ca-ei-calculator', 'en', 'privacy'] = """    <h1>Privacy policy</h1>
-    <p>This policy explains what personal information is handled when you use {SITE_URL}, under the Personal Information Protection and Electronic Documents Act (PIPEDA). If you are a Quebec resident, the rights described below also reflect Quebec’s Act respecting the protection of personal information in the private sector, as amended by Law 25.</p>
-
-    <h2>1. Who is accountable</h2>
-    <LegalIdentity lang={lang} />
-    <p>Privacy enquiries: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. {AUTHOR_NAME} is the individual accountable for personal information under our control, as required by PIPEDA’s first principle.</p>
-
-    <h2>2. The calculator sends nothing</h2>
-    <p>Every calculation runs in your browser. Insurable earnings, insurable hours, your economic region or postal code, the number of best weeks and the Family Supplement question <strong>are never transmitted to a server</strong>, never stored, and never linked to an identifier. There is no account and no sign-up. If you use the share link, your entries are encoded in the URL — send it only to people you choose.</p>
-
-    <h2>3. What is actually collected</h2>
-    <h3>Server logs</h3>
-    <p>Our hosting provider records, for each request, the IP address, timestamp, page requested, response code, browser and referring page. Purpose: keeping the service available and secure, and diagnosing faults. This is information a reasonable person would consider appropriate in the circumstances, and it is kept for no more than 30 days.</p>
-    <h3>Analytics</h3>
-    <p>We use Google Analytics 4 with IP anonymisation and Google consent mode to see which pages are found and used. Consent is implied when you continue to use the site after the notice shown on your first visit, and you may withdraw it at any time through the cookie settings in the footer — analytics then stops on your device. Analytics data is retained for 14 months.</p>
-    <h3>Advertising</h3>
-    <p>Some pages may carry Google AdSense advertising. Where you have not opted out, Google may set cookies to personalise ads; once you opt out, only non-personalised ads are served. Google’s own processing is described in its <a href="https://policies.google.com/technologies/ads" rel="noopener" target="_blank">advertising policies</a>.</p>
-    <h3>Messages you send us</h3>
-    <p>If you write to us, we process your email address and the content of your message to reply and, where relevant, to fix a calculation error. We keep that correspondence for three years after the last exchange.</p>
-
-    <h2>4. Who sees it</h2>
-    <p>We never sell, rent or trade personal information. Access is limited to our hosting provider, acting on our instructions under contract, and to Google where analytics or advertising is active.</p>
-
-    <h2>5. Storage outside Canada</h2>
-    <p>Our hosting provider and Google may store or process this information outside Canada, including in the United States. While it is there, it is subject to the laws of that country and may be accessible to its courts and law enforcement under a lawful order. We use providers that contractually commit to a comparable level of protection, as PIPEDA requires of transfers for processing.</p>
-
-    <h2>6. Your rights</h2>
-    <p>You may ask what personal information we hold about you, ask for it to be corrected, and challenge our compliance with this policy. Write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; we respond within 30 days, at no cost for a routine request. Because there is no user account, we usually hold nothing that identifies you, and we will say so plainly.</p>
-    <p>If our answer does not satisfy you, you may complain to the {LEGAL.supervisoryAuthority}: <a href={LEGAL.supervisoryAuthorityUrl} rel="noopener" target="_blank">{LEGAL.supervisoryAuthorityUrl}</a>.</p>
-
-    <h2>7. No automated decisions, no profiling</h2>
-    <p>The figure the calculator shows is a computation you asked for, made in your browser from your own entries. It has no legal effect and is not an automated decision about you. We build no profiles.</p>
-
-    <h2>8. Safeguards and changes</h2>
-    <p>The site is served over HTTPS only and keeps no user database. We may update this policy; the date below identifies the current version. Last updated: {LAST_UPDATED}.</p>"""
-
-META['ca-ei-calculator', 'fr', 'terms'] = (
-    'Conditions d’utilisation – ${SITE_NAMES[lang]}',
-    'Qui publie ce calculateur d’assurance-emploi, ce que valent les estimations, limites de responsabilité, droit d’auteur, intégration et droit applicable.')
-BODIES['ca-ei-calculator', 'fr', 'terms'] = """    <h1>Conditions d’utilisation</h1>
-    <p>L’utilisation de ce site vaut acceptation des conditions ci-dessous. Elles s’appliquent à toutes les pages et au calculateur.</p>
-
-    <h2>Éditeur</h2>
-    <LegalIdentity lang={lang} />
-    <p>Responsable du contenu : {AUTHOR_NAME}.</p>
-
-    <h2>Hébergement</h2>
-    <LegalIdentity mode="hosting" lang={lang} />
-
-    <h2>Ce que ce site est, et ce qu’il n’est pas</h2>
-    <p>Ce site offre gratuitement un calculateur d’assurance-emploi et des guides explicatifs. Les résultats sont des <strong>estimations</strong> fondées sur la Loi sur l’assurance-emploi, les taux de prestations et le maximum de la rémunération assurable publiés par Service Canada, ainsi que sur les taux de chômage régionaux de Statistique Canada. Ils ne constituent pas un avis juridique, fiscal ou financier, ne créent aucun droit et ne lient pas Service Canada, seul compétent pour statuer sur votre demande. Ce site est indépendant : il n’est ni affilié au gouvernement du Canada, ni approuvé par lui, ni exploité pour son compte. Ce que l’outil couvre et ce qu’il ne couvre volontairement pas figure dans notre <a href={route('method', lang)}>méthodologie</a>.</p>
-
-    <h2>Exactitude et responsabilité</h2>
-    <p>Nous mettons les paramètres à jour à chaque changement et testons le calculateur sur des cas de référence, sans pour autant garantir l’absence d’erreur ni l’exhaustivité. Les règles évoluent et certaines situations — travail hors du Canada, prestations de pêcheur, prestations spéciales des travailleurs autonomes, demandes qui se chevauchent — obéissent à des règles que le calculateur n’applique pas. Dans la mesure permise par la loi, nous déclinons toute responsabilité pour les préjudices résultant d’une décision prise sur la seule base d’une estimation ou d’une interruption du service. Le site est fourni « tel quel », sans garantie d’aucune sorte. Signalez-nous toute erreur par la page <a href={route('contact', lang)}>contact</a> ; notre procédure de correction est décrite dans la <a href={route('editorial', lang)}>charte éditoriale</a>.</p>
-
-    <h2>Droit d’auteur</h2>
-    <p>Les textes, la conception, les données compilées et le code source de ce site sont protégés par la Loi sur le droit d’auteur et demeurent la propriété de l’éditeur. Toute reproduction ou réutilisation sans autorisation est interdite, sauf courte citation accompagnée d’un lien vers la page d’origine. Les lois et les données du gouvernement du Canada sont reproduites aux conditions fixées par les ministères qui les publient.</p>
-
-    <h2>Intégration du calculateur</h2>
-    <p>Vous pouvez intégrer gratuitement le calculateur dans une iframe sur votre site, à condition de conserver le lien de crédit visible vers ce site et de ne rien laisser croire qui suggère un service gouvernemental officiel. Demandez-nous le code d’intégration.</p>
-
-    <h2>Liens externes</h2>
-    <p>Les liens vers des sites tiers vous permettent de vérifier nos sources. Nous n’exerçons aucun contrôle sur leur contenu et n’en assumons aucune responsabilité.</p>
-
-    <h2>Renseignements personnels et témoins</h2>
-    <p>Ce que vous saisissez dans le calculateur ne quitte jamais votre navigateur. Le traitement des renseignements personnels est décrit dans notre <a href={route('privacy', lang)}>politique de confidentialité</a> et sur la page <a href={route('cookies', lang)}>cookies</a>.</p>
-
-    <h2>Droit applicable</h2>
-    <p>Les présentes conditions sont régies par les lois en vigueur à {LEGAL.jurisdiction} et par les lois fédérales du Canada qui s’y appliquent. Nous pouvons les modifier ; la date ci-dessous identifie la version en vigueur. Dernière mise à jour : {LAST_UPDATED}.</p>"""
-
-META['ca-ei-calculator', 'fr', 'privacy'] = (
-    'Politique de confidentialité – ${SITE_NAMES[lang]}',
-    'Ce que ce site recueille sous la LPRPDE, pourquoi, pendant combien de temps, où c’est stocké, comment refuser la mesure d’audience et saisir le Commissariat.')
-BODIES['ca-ei-calculator', 'fr', 'privacy'] = """    <h1>Politique de confidentialité</h1>
-    <p>Cette politique explique quels renseignements personnels sont traités lorsque vous utilisez {SITE_URL}, au sens de la Loi sur la protection des renseignements personnels et les documents électroniques (LPRPDE). Si vous résidez au Québec, les droits décrits ci-dessous tiennent également compte de la Loi sur la protection des renseignements personnels dans le secteur privé, modifiée par la Loi 25.</p>
-
-    <h2>1. Personne responsable</h2>
-    <LegalIdentity lang={lang} />
-    <p>Questions relatives à la vie privée : <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. {AUTHOR_NAME} est la personne responsable des renseignements personnels sous notre contrôle, conformément au premier principe de la LPRPDE.</p>
-
-    <h2>2. Le calculateur ne transmet rien</h2>
-    <p>Tous les calculs s’exécutent dans votre navigateur. Rémunération assurable, heures assurables, région économique ou code postal, nombre de semaines les mieux rémunérées et supplément familial <strong>ne sont jamais transmis à un serveur</strong>, jamais conservés et jamais reliés à un identifiant. Il n’y a ni compte, ni inscription. Si vous utilisez le lien de partage, vos saisies sont encodées dans l’URL : ne le transmettez qu’aux personnes de votre choix.</p>
-
-    <h2>3. Ce qui est réellement recueilli</h2>
-    <h3>Journaux du serveur</h3>
-    <p>Notre hébergeur enregistre, à chaque requête, l’adresse IP, l’horodatage, la page demandée, le code de réponse, le navigateur et le référent. Finalité : maintenir un service disponible et sécurisé et diagnostiquer les pannes. Ces fins sont celles qu’une personne raisonnable estimerait acceptables dans les circonstances ; les journaux sont conservés 30 jours au plus.</p>
-    <h3>Mesure d’audience</h3>
-    <p>Nous utilisons Google Analytics 4 avec anonymisation de l’adresse IP et mode de consentement, afin de savoir quelles pages sont trouvées et utilisées. Le consentement est implicite lorsque vous poursuivez votre visite après l’avis affiché la première fois ; vous pouvez le retirer à tout moment depuis les réglages cookies du pied de page, ce qui arrête la mesure sur votre appareil. Les données d’audience sont conservées 14 mois.</p>
-    <h3>Publicité</h3>
-    <p>Certaines pages peuvent afficher de la publicité Google AdSense. Tant que vous ne vous y êtes pas opposé, Google peut déposer des témoins de personnalisation ; après opposition, seules des annonces non personnalisées sont diffusées. Les traitements propres à Google sont décrits dans ses <a href="https://policies.google.com/technologies/ads" rel="noopener" target="_blank">règles publicitaires</a>.</p>
-    <h3>Messages que vous nous envoyez</h3>
-    <p>Lorsque vous nous écrivez, votre adresse électronique et le contenu de votre message servent à vous répondre et, le cas échéant, à corriger une erreur de calcul. Cette correspondance est conservée trois ans après le dernier échange.</p>
-
-    <h2>4. Qui y a accès</h2>
-    <p>Nous ne vendons, ne louons ni n’échangeons aucun renseignement personnel. Seuls y accèdent notre hébergeur, qui agit sur nos instructions en vertu d’un contrat, et Google lorsque la mesure d’audience ou la publicité est active.</p>
-
-    <h2>5. Stockage à l’extérieur du Canada</h2>
-    <p>Notre hébergeur et Google peuvent stocker ou traiter ces renseignements à l’extérieur du Canada, notamment aux États-Unis. Ils sont alors soumis au droit de ce pays et peuvent être accessibles à ses tribunaux et à ses autorités dans le cadre d’une ordonnance légale. Nous recourons à des fournisseurs qui s’engagent contractuellement à un niveau de protection comparable, comme l’exige la LPRPDE pour les communications aux fins de traitement.</p>
-
-    <h2>6. Vos droits</h2>
-    <p>Vous pouvez demander quels renseignements personnels nous détenons à votre sujet, en exiger la rectification et contester notre conformité à la présente politique. Écrivez à <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> ; nous répondons dans les 30 jours, sans frais pour une demande courante. En l’absence de compte utilisateur, nous ne détenons généralement rien qui permette de vous identifier, et nous vous le dirons clairement.</p>
-    <p>Si notre réponse ne vous satisfait pas, vous pouvez porter plainte auprès du {LEGAL.supervisoryAuthority} : <a href={LEGAL.supervisoryAuthorityUrl} rel="noopener" target="_blank">{LEGAL.supervisoryAuthorityUrl}</a>.</p>
-
-    <h2>7. Aucune décision automatisée, aucun profilage</h2>
-    <p>Le montant affiché est un calcul que vous avez demandé, effectué dans votre navigateur à partir de vos propres saisies. Il n’a aucun effet juridique et ne constitue pas une décision automatisée vous concernant. Nous n’établissons aucun profil.</p>
-
-    <h2>8. Mesures de sécurité et modifications</h2>
-    <p>Le site est servi uniquement en HTTPS et ne tient aucune base de données d’utilisateurs. Cette politique peut être modifiée ; la date ci-dessous identifie la version en vigueur. Dernière mise à jour : {LAST_UPDATED}.</p>"""
-
-# --------------------------------------------------------------------------- #
-# Australie — finalpaycalculator.com.au
-# Privacy Act 1988 et Australian Privacy Principles ; mention de l'ACL.
-# --------------------------------------------------------------------------- #
-META['au-final-pay', 'en', 'terms'] = (
-    'Terms of use – ${SITE_NAMES[lang]}',
-    'Who publishes this final pay calculator, what the estimates are and are not, liability, copyright, embedding the tool and the governing law.')
-BODIES['au-final-pay', 'en', 'terms'] = """    <h1>Terms of use</h1>
-    <p>By using this website you accept the terms below. They apply to every page and to the calculators themselves.</p>
-
-    <h2>Publisher</h2>
-    <LegalIdentity lang={lang} />
-    <p>Responsible for content: {AUTHOR_NAME}.</p>
-
-    <h2>Hosting</h2>
-    <LegalIdentity mode="hosting" lang={lang} />
-
-    <h2>What this site is — and what it is not</h2>
-    <p>This site provides free calculators for final pay, redundancy and long service leave, together with explanatory guides. Results are <strong>estimates</strong> based on the Fair Work Act 2009 and the National Employment Standards, the long service leave Act of each state and territory, and the Australian Taxation Office rates for employment termination payments. They are not legal, tax or financial advice, and they do not take the place of an award, an enterprise agreement or a contract of employment, which may give you more. This site is independent and is not affiliated with the Fair Work Ombudsman, the Fair Work Commission or the ATO. What the tools cover and deliberately do not cover is set out in our <a href={route('method', lang)}>methodology</a>.</p>
-
-    <h2>Accuracy and liability</h2>
-    <p>We update the parameters at every change and test the calculators against reference cases, but we do not warrant that they are error-free or complete. Entitlements vary with the applicable award or agreement, and some situations — casual conversion, transfer of business, small business redundancy, terminations for serious misconduct — follow rules the calculators do not apply. To the fullest extent permitted by law, we exclude liability for any loss arising from reliance on an estimate or from any interruption of the service, and the site is provided "as is". Nothing in these terms excludes, restricts or modifies any guarantee, right or remedy you have under the Australian Consumer Law that cannot lawfully be excluded. If you spot an error, tell us through the <a href={route('contact', lang)}>contact page</a>; our correction process is in the <a href={route('editorial', lang)}>editorial policy</a>.</p>
-
-    <h2>Copyright</h2>
-    <p>The text, design, compiled data and source code of this site are protected under the Copyright Act 1968 and remain the property of the publisher. Reproduction or reuse without permission is prohibited, except for short quotations with a link to the source page. Legislation and government data are reproduced on the terms set by the bodies that publish them.</p>
-
-    <h2>Embedding the calculators</h2>
-    <p>You may embed a calculator free of charge in an iframe on your own site, provided the visible credit link back to this site remains and nothing suggests the tool is an official government service. Ask us for the embed code.</p>
-
-    <h2>Links to other sites</h2>
-    <p>Links to third-party sites are provided so you can verify our sources. We do not control their content and accept no responsibility for it.</p>
-
-    <h2>Personal information and cookies</h2>
-    <p>What you type into a calculator never leaves your browser. How we handle personal information is set out in our <a href={route('privacy', lang)}>privacy policy</a> and on the <a href={route('cookies', lang)}>cookies</a> page.</p>
-
-    <h2>Governing law</h2>
-    <p>These terms are governed by the laws of {LEGAL.jurisdiction}, and you submit to the non-exclusive jurisdiction of its courts. We may amend them; the date below shows the current version. Last updated: {LAST_UPDATED}.</p>"""
-
-META['au-final-pay', 'en', 'privacy'] = (
-    'Privacy policy – ${SITE_NAMES[lang]}',
-    'How this site handles personal information under the Privacy Act 1988 and the APPs: what is collected, overseas disclosure, access, correction and complaints.')
-BODIES['au-final-pay', 'en', 'privacy'] = """    <h1>Privacy policy</h1>
-    <p>This policy sets out, as Australian Privacy Principle 1 requires, how personal information is handled when you use {SITE_URL}. We follow the Privacy Act 1988 and the Australian Privacy Principles, and we do so whether or not the small business exemption applies to us.</p>
-
-    <h2>1. Who is responsible</h2>
-    <LegalIdentity lang={lang} />
-    <p>Privacy enquiries: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>, marked for the attention of {AUTHOR_NAME}.</p>
-
-    <h2>2. The calculators send nothing</h2>
-    <p>Every calculation runs in your browser. Your pay rate, years of continuous service, state or territory, accrued leave balances and termination details <strong>are never transmitted to a server</strong>, never stored and never linked to an identifier. There is no account and no sign-up. If you use the share link, your entries are encoded in the URL — send it only to people you choose. We never ask for a tax file number, and you should not send one to us.</p>
-
-    <h2>3. What is actually collected</h2>
-    <h3>Server logs</h3>
-    <p>Our hosting provider records, for each request, the IP address, timestamp, page requested, response code, browser and referring page. We collect this only for the security and reliability of the service, as APP 3 requires: it is reasonably necessary for operating the site. Logs are kept for no more than 30 days and then destroyed, in line with APP 11.2.</p>
-    <h3>Analytics</h3>
-    <p>We use Google Analytics 4 with IP anonymisation and Google consent mode to see which pages are found and used. The notice shown on your first visit tells you before the collection happens, as APP 5 requires. You can turn analytics off at any time through the cookie settings in the footer. Analytics data is retained for 14 months.</p>
-    <h3>Advertising</h3>
-    <p>Some pages may carry Google AdSense advertising. Unless you opt out, Google may set cookies to personalise ads; once you opt out, only non-personalised ads are served. Google’s own handling is described in its <a href="https://policies.google.com/technologies/ads" rel="noopener" target="_blank">advertising policies</a>. We do not use personal information for direct marketing.</p>
-    <h3>Messages you send us</h3>
-    <p>If you write to us, we use your email address and the content of your message to reply and, where relevant, to fix a calculation error. We keep that correspondence for three years after the last exchange, then delete it.</p>
-
-    <h2>4. Who we disclose it to</h2>
-    <p>We do not sell, rent or trade personal information, and we do not disclose it for any purpose other than the one it was collected for, unless the law requires it. Access is limited to our hosting provider, acting under contract on our instructions, and to Google where analytics or advertising is active.</p>
-
-    <h2>5. Overseas disclosure</h2>
-    <p>Our hosting provider and Google may store or process this information outside Australia, including in the United States, Ireland and other countries where they operate data centres. As APP 8 requires, we take reasonable steps to ensure those recipients handle the information consistently with the Australian Privacy Principles, through the contractual terms they commit to.</p>
-
-    <h2>6. Access, correction and anonymity</h2>
-    <p>You may ask for access to any personal information we hold about you and ask us to correct it, under APP 12 and APP 13. Write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>; we respond within 30 days and do not charge for a routine request. You can use every calculator on this site anonymously — we have no account system, so in practice we usually hold nothing that identifies you, and we will tell you so.</p>
-
-    <h2>7. Complaints</h2>
-    <p>If you believe we have breached the Australian Privacy Principles, write to us first at the address above. We acknowledge complaints within five business days and answer within 30 days. If you are not satisfied with our response, you may complain to the {LEGAL.supervisoryAuthority}: <a href={LEGAL.supervisoryAuthorityUrl} rel="noopener" target="_blank">{LEGAL.supervisoryAuthorityUrl}</a>.</p>
-
-    <h2>8. No automated decisions and no profiling</h2>
-    <p>The figure a calculator shows is a computation you asked for, made in your browser from your own entries. It has no legal effect, it is not a decision about you, and we build no profiles.</p>
-
-    <h2>9. Security and changes</h2>
-    <p>The site is served over HTTPS only and keeps no user database, which is the most effective safeguard available to us: information we never collect cannot be misused. We may update this policy; the date below identifies the current version. Last updated: {LAST_UPDATED}.</p>"""
-
-# --------------------------------------------------------------------------- #
-# Libellés du fil d'Ariane
-# --------------------------------------------------------------------------- #
-BREADCRUMB = {
-    ('ch-lohnrechner', 'de'):      dict(terms='Impressum', privacy='Datenschutz'),
-    ('ch-lohnrechner', 'fr'):      dict(terms='Mentions légales', privacy='Protection des données'),
-    ('de-arbeitslosengeld', 'de'): dict(terms='Impressum', privacy='Datenschutz'),
-    ('fr-simulateur-are', 'fr'):   dict(terms='Mentions légales', privacy='Confidentialité'),
-    ('es-calculadora-paro', 'es'): dict(terms='Aviso legal', privacy='Privacidad'),
-    ('nl-ww-berekenen', 'nl'):     dict(terms='Disclaimer', privacy='Privacy'),
-    ('ca-ei-calculator', 'en'):    dict(terms='Terms of use', privacy='Privacy'),
-    ('ca-ei-calculator', 'fr'):    dict(terms='Conditions d’utilisation', privacy='Confidentialité'),
-    ('au-final-pay', 'en'):        dict(terms='Terms of use', privacy='Privacy'),
-}
-
-CONFIG_NAMES = ['AUTHOR_NAME', 'CONTACT_EMAIL', 'LAST_UPDATED', 'LEGAL', 'SITE_NAMES',
-                'SITE_NAME_FR', 'SITE_NAME', 'SITE_URL']
-
-
-def render(site, lang, kind):
-    title_tpl, desc = META[site, lang, kind]
-    body = BODIES[site, lang, kind]
-    hay = title_tpl + body
-    # SITE_NAME est un préfixe de SITE_NAME_FR : on ne l'importe que s'il apparaît seul
-    names = []
-    for n in CONFIG_NAMES:
-        if n == 'SITE_NAME':
-            if 'SITE_NAME}' in hay or 'SITE_NAME ' in hay:
-                names.append(n)
-        elif n in hay:
-            names.append(n)
-    imports = [
-        "import PageLayout from '../../layouts/PageLayout.astro';",
-        "import LegalIdentity from '../../components/LegalIdentity.astro';",
-        f"import {{ {', '.join(sorted(names))} }} from '../../data/site-config';",
-        "import { route } from '../../i18n/routes';",
-    ]
-    bc = BREADCRUMB[site, lang][kind]
-    return ("---\n" + "\n".join(imports) + f"\nconst lang = '{lang}';\n"
-            f"const title = `{title_tpl}`;\n"
-            f"const description = '{desc.replace(chr(92), chr(92)*2).replace(chr(39), chr(92)+chr(39))}';\n---\n"
+    <p>Frans recht. Bij gebreke van een minnelijke regeling zijn de rechters van {LEGAL.jurisdiction} bevoegd. Laatst bijgewerkt: {LAST_UPDATED}.</p>""",
+)
+
+# Section « données personnelles » d'une page de mentions existante, toutes langues.
+SECTION_DONNEES = re.compile(
+    r'(cookie|donn[ée]es personnelles|renseignements personnels|t[ée]moins'
+    r'|personal (data|information)|cookies and personal|privacy and cookies|data protection'
+    r'|datenschutz|daten und cookies|cookies und daten'
+    r'|datos personales|privacidad y cookies|cookies y datos|persoonsgegevens|privacy en cookies)', re.I)
+
+
+def remplir(txt, lang, region):
+    r = REG[lang].get(region, REG[lang][''])
+    base = T[lang]['base'].replace('«BASE»', r['base'])
+    out = (txt.replace('«B»', base).replace('«LOI»', r['loi']).replace('«AUT»', r['aut'])
+              .replace('«ID»', ID).replace('«MAIL»', MAIL).replace('«OPTOUT»', GA_OPTOUT)
+              .replace('«EXT»', EXT).replace('«GOOGLE»', GOOGLE_IE).replace('«MS»', MS_IE))
+    if lang == 'fr' and region == 'CA':
+        # Français du Canada : « témoin » (OQLF) ; les identifiants de route restent en anglais.
+        out = re.sub(r"(?<!['/_])\bcookies\b(?!['/])", 'témoins', out)
+        out = re.sub(r"(?<!['/_])\bcookie\b(?!['/])", 'témoin', out)
+        out = re.sub(r"(?<!['/_])\bCookies\b(?!['/])", 'Témoins', out)
+        out = out.replace('<h1>Témoins</h1>', '<h1>Témoins (cookies)</h1>')
+    return out
+
+
+def imports(depth, body):
+    up = '../' * depth
+    noms = [n for n in ('AUTHOR_NAME', 'CLARITY_ID', 'CONTACT_EMAIL', 'GA4_ID', 'LAST_UPDATED', 'LEGAL',
+                        'SITE_NAMES', 'SITE_URL') if re.search(r'\b' + n + r'\b', body) or n in ('GA4_ID', 'CLARITY_ID', 'SITE_NAMES')]
+    lignes = [f"import PageLayout from '{up}layouts/PageLayout.astro';"]
+    if 'LegalIdentity' in body:
+        lignes.append(f"import LegalIdentity from '{up}components/LegalIdentity.astro';")
+    exports = set(re.findall(r'export const (\w+)', lire('src/data/site-config.ts')))
+    absents = [n for n in noms if n not in exports and n in ('CLARITY_ID', 'GA4_ID')]
+    noms = [n for n in noms if n not in absents]
+    lignes.append(f"import {{ {', '.join(noms)} }} from '{up}data/site-config';")
+    # Site ancien sans CLARITY_ID (ou GA4_ID) dans site-config : la mesure correspondante n'existe pas.
+    lignes += [f"const {n} = '';" for n in absents]
+    lignes.append(f"import {{ route }} from '{up}i18n/routes';")
+    return '\n'.join(lignes)
+
+
+def page(lang, kind, region, depth, body):
+    t = T[lang]
+    titre = remplir(t['title'][kind], lang, region)
+    bc = remplir(t['bc'][kind], lang, region)
+    if kind == 'terms':
+        desc = f"'{t['desc']['terms']}'"
+    else:
+        desc = f"GA4_ID ? '{t['desc'][kind + '_ga']}' : '{t['desc'][kind + '_no']}'"
+    desc = remplir(desc, lang, region)
+    return ("---\n" + imports(depth, body) + f"\nconst lang = '{lang}';\n"
+            f"const title = `{titre} – ${{SITE_NAMES[lang]}}`;\n"
+            f"const description = {desc};\n"
+            "---\n"
+            "{/* Page générée par scripts/gen-legal-pages.py (trame, décision GA4 du 2026-10-17). Ne pas\n"
+            "     retoucher à la main : relancer le script. Un passage propre au site se garde entre\n"
+            "     les marqueurs site:debut et site:fin. */}\n"
             "<PageLayout title={title} description={description} lang={lang} noindex={true} "
             f"breadcrumbs={{[{{ label: '{bc}' }}]}} showAuthor={{false}}>\n"
             '  <div class="prose prose-slate max-w-none">\n' + body + "\n  </div>\n</PageLayout>\n")
 
 
-written = 0
-for site, cfg in SITES.items():
-    for lang in cfg['langs']:
-        for kind in ('terms', 'privacy'):
-            url = PATHS[site, lang][kind]
-            dest = os.path.join(ROOT, site, 'src/pages', url.strip('/') + '.astro')
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
-            open(dest, 'w', encoding='utf-8').write(render(site, lang, kind))
-            written += 1
-            print(f'  {site}{url}')
-print(f'{written} pages légales écrites')
+def bloc_site(ancien):
+    m = re.search(r'[ \t]*\{/\* site:debut \*/\}[\s\S]*?\{/\* site:fin \*/\}\n?', ancien or '')
+    return m.group(0) if m else ''
+
+
+def section_terms(lang, region):
+    t = T[lang]
+    return (f"    <h2>{remplir(t['terms_h2'], lang, region)}</h2>\n"
+            + remplir(t['terms_sec'], lang, region))
+
+
+def patch_terms(src, lang, region):
+    """Remplace la section « données personnelles » d'une page de mentions existante.
+    Renvoie (nouveau_source, mode) ; mode = 'section' | 'ajout' | 'deja'."""
+    sec = section_terms(lang, region)
+    if 'gen-legal-pages:terms' in src:
+        nouveau = re.sub(r'[ \t]*\{/\* gen-legal-pages:terms \*/\}[\s\S]*?\{/\* /gen-legal-pages:terms \*/\}',
+                         lambda _: '    {/* gen-legal-pages:terms */}\n' + sec + '\n    {/* /gen-legal-pages:terms */}', src)
+        return nouveau, 'deja'
+    marque = '    {/* gen-legal-pages:terms */}\n' + sec + '\n    {/* /gen-legal-pages:terms */}\n'
+    for m in re.finditer(r'[ \t]*<h2[^>]*>([\s\S]*?)</h2>', src):
+        if SECTION_DONNEES.search(re.sub(r'<[^>]+>', '', m.group(1))):
+            fin = re.search(r'\n[ \t]*<h2|\n[ \t]*</div>\s*\n?\s*</PageLayout>', src[m.end():])
+            stop = m.end() + fin.start() + 1 if fin else len(src)
+            return src[:m.start()] + marque + src[stop:], 'section'
+    # Pas de section : avant le dernier <h2> (droit applicable, en général).
+    h2s = list(re.finditer(r'\n[ \t]*<h2', src))
+    if h2s:
+        k = h2s[-1].start() + 1
+        return src[:k] + marque + src[k:], 'ajout'
+    k = src.rfind('</div>')
+    return src[:k] + marque + '  ' + src[k:], 'ajout'
+
+
+def ajoute_imports(src, depth):
+    """Ajoute à la page de mentions les noms qu'utilise la section (GA4_ID, CLARITY_ID, route)."""
+    up = '../' * depth
+    fm = src.split('---', 2)
+    if len(fm) < 3:
+        return src
+    tete = fm[1]
+    m = re.search(r"import\s*\{([^}]*)\}\s*from\s*'[./]*data/site-config(\.ts)?';", tete)
+    exports = set(re.findall(r'export const (\w+)', lire('src/data/site-config.ts')))
+    besoin = {n for n in ('GA4_ID', 'CLARITY_ID', 'CONTACT_EMAIL') if n in exports}
+    absents = [n for n in ('GA4_ID', 'CLARITY_ID') if n not in exports and not re.search(r'const ' + n + r'\b', tete)]
+    if m:
+        noms = {n.strip() for n in m.group(1).split(',') if n.strip()}
+        tete = tete.replace(m.group(0), m.group(0).replace(m.group(1), ' ' + ', '.join(sorted(noms | besoin)) + ' '))
+    else:
+        tete += f"import {{ {', '.join(sorted(besoin))} }} from '{up}data/site-config';\n"
+    if not re.search(r'\broute\b', tete):
+        tete += f"import {{ route }} from '{up}i18n/routes';\n"
+    tete += ''.join(f"const {n} = '';\n" for n in absents)
+    return '---' + tete + '---' + fm[2]
+
+
+BLOC_GA4 = re.compile(r'(?:[ \t]*\{/\*[^*]*?(?:GA4|régime)[\s\S]*?\*/\}\n)*[ \t]*\{GA4_ID && [\s\S]*?</>\)\}\n(?:[ \t]*\{/\*[^*]*?GA4[\s\S]*?\*/\}\n[ \t]*\{GA4_ID && [\s\S]*?</>\)\}\n)?')
+
+
+def patch_layout():
+    """Remplace le(s) bloc(s) GA4 du BaseLayout du site par ceux de la trame, sans toucher au reste."""
+    f = os.path.join(SITE, 'src/layouts/BaseLayout.astro')
+    if not os.path.isfile(f) or not os.path.isfile(TRAME_LAYOUT):
+        sys.exit(f'gen-legal-pages --layout : {f} ou {TRAME_LAYOUT} introuvable')
+    trame = BLOC_GA4.search(open(TRAME_LAYOUT, encoding='utf-8').read())
+    src = open(f, encoding='utf-8').read()
+    site = BLOC_GA4.search(src)
+    if not trame or not site:
+        sys.exit('gen-legal-pages --layout : bloc {GA4_ID && …} introuvable ; reporter le bloc GA4 de la trame à la main.')
+    if site.group(0) == trame.group(0):
+        print('  src/layouts/BaseLayout.astro : bloc GA4 déjà celui de la trame')
+        return
+    nouveau = src[:site.start()] + trame.group(0) + src[site.end():]
+    if 'CONSENT_MODE' not in re.search(r'^---[\s\S]*?---', nouveau).group(0):
+        sys.exit('gen-legal-pages --layout : CONSENT_MODE non importé dans le layout ; à reprendre à la main.')
+    if DRY:
+        print('  (essai) src/layouts/BaseLayout.astro : bloc GA4 remplacé par celui de la trame')
+        return
+    open(f, 'w', encoding='utf-8').write(nouveau)
+    print('  src/layouts/BaseLayout.astro : bloc GA4 remplacé par celui de la trame')
+
+
+def main():
+    if not os.path.isdir(os.path.join(SITE, 'src')):
+        sys.exit(__doc__)
+    ga4, tags = config()
+    if not ga4 and not FORCE:
+        print(f'gen-legal-pages : GA4_ID vide dans {SITE}/src/data/site-config.ts — pages en place laissées telles quelles '
+              f'(elles sont exactes sans GA4). --force pour écrire quand même les pages types.')
+        return
+    if LAYOUT:
+        patch_layout()
+    locales, chemins = routes()
+    if not locales:
+        sys.exit('gen-legal-pages : LOCALES introuvable dans src/i18n/routes.ts')
+    defaut_region = next((tags[l].split('-')[1] for l in locales if '-' in tags.get(l, '')), '')
+    ecrits, ignores = [], []
+    for lang in locales:
+        if lang not in T:
+            ignores.append(lang)
+            continue
+        tag = tags.get(lang, lang)
+        region = tag.split('-')[1].upper() if '-' in tag else defaut_region
+        for kind in ('privacy', 'cookies', 'terms'):
+            chemin = chemins.get((kind, lang))
+            if not chemin:
+                ignores.append(f'{lang}:{kind} (route absente de routes.ts)')
+                continue
+            f = fichier(chemin)
+            depth = os.path.relpath(f, os.path.join(SITE, 'src')).count(os.sep)
+            ancien = open(f, encoding='utf-8').read() if os.path.isfile(f) else ''
+            if kind == 'terms' and ancien and 'gen-legal-pages.py (trame' not in ancien:
+                src, mode = patch_terms(ancien, lang, region)
+                src = ajoute_imports(src, depth)
+                ecrits.append((f, src, f'section « données personnelles » ({mode})'))
+                continue
+            body = remplir(T[lang][kind], lang, region)
+            if kind == 'terms':
+                body = body.replace('    <h2>«H2»</h2>\n«SEC»',
+                                    '    {/* gen-legal-pages:terms */}\n' + section_terms(lang, region) + '\n    {/* /gen-legal-pages:terms */}')
+            body = body.replace('«SITE»', bloc_site(ancien))
+            ecrits.append((f, page(lang, kind, region, depth, body), 'page entière'))
+    for f, src, quoi in ecrits:
+        rel = os.path.relpath(f, SITE)
+        if DRY:
+            print(f'  (essai) {rel} : {quoi}')
+            continue
+        os.makedirs(os.path.dirname(f), exist_ok=True)
+        open(f, 'w', encoding='utf-8').write(src)
+        print(f'  {rel} : {quoi}')
+    print(f'gen-legal-pages : {len(ecrits)} page(s) {"à écrire" if DRY else "écrite(s)"}, GA4 {ga4 or "absent"}'
+          + (f' ; non gérées, à rédiger à la main : {", ".join(ignores)}' if ignores else ''))
+
+
+if __name__ == '__main__':
+    main()

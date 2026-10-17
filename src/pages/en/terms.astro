@@ -3,7 +3,7 @@ import PageLayout from '../../layouts/PageLayout.astro';
 import LegalIdentity from '../../components/LegalIdentity.astro';
 import { route } from '../../i18n/routes';
 import { breadcrumbSchema } from '../../lib/seo';
-import { LEGAL } from '../../data/site-config';
+import { CLARITY_ID, CONTACT_EMAIL, GA4_ID, LEGAL } from '../../data/site-config';
 const lang = 'en';
 ---
 <PageLayout title="Terms of Use and Legal Notice of NZSalary.com" description="Terms of use and legal notice of NZSalary.com: publisher, host, nature of the results, limitation of liability, reuse of content and the free embeddable pay calculator widget." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Terms of use', path: route('terms', lang) }])]} breadcrumbs={[{ label: 'Terms of use' }]}>
@@ -19,6 +19,10 @@ const lang = 'en';
     <p>Mistakes remain possible despite careful checking, and the site may sometimes be down; reported errors are fixed promptly, but no error-free or uninterrupted service is promised. Choices made on the strength of an estimate are your own responsibility. Where the Consumer Guarantees Act 1993 or any other law prevents liability from being limited, these terms do not try to limit it.</p>
     <h2>Reuse</h2>
     <p>You are welcome to quote a sentence or a table row from NZSalary.com if you link to the page it came from; beyond that, the words, tables and source code are under copyright. Embedding the pay calculator is free with the code from the <a href={route('widget', lang)}>widget page</a>, as long as the credit line underneath remains.</p>
+    {/* gen-legal-pages:terms */}
+    <h2>Personal data and cookies</h2>
+    {GA4_ID ? (<p>What you type in the calculators stays in your browser. The site sets Google Analytics audience measurement cookies (<code>_ga</code>, <code>_ga_{GA4_ID.replace('G-', '')}</code>, 13 months at most), with no advertising{CLARITY_ID && '; page stability is monitored with Microsoft Clarity, cookie-free'}. Details, legal basis and how to object: <a href={route('privacy', lang)}>privacy policy</a> and <a href={route('cookies', lang)}>cookies</a> page.</p>) : (<p>What you type in the calculators stays in your browser and the site sets no cookies{CLARITY_ID && '; page stability is monitored anonymously with Microsoft Clarity, cookie-free'}. See the <a href={route('privacy', lang)}>privacy policy</a> and the <a href={route('cookies', lang)}>cookies</a> page.</p>)}
+    {/* /gen-legal-pages:terms */}
     <h2>Applicable law</h2>
     <p>Radif Partners is based in France, so French law applies to these terms. That takes away none of the consumer protections that New Zealand law, or the law where you live, makes compulsory.</p>
   </div>
